@@ -12,6 +12,7 @@ import CircleFeedScreen from '../screens/CircleFeedScreen';
 import NewUpdateScreen from '../screens/NewUpdateScreen';
 import InviteScreen from '../screens/InviteScreen';
 import JoinScreen from '../screens/JoinScreen';
+import MemberManagementScreen from '../screens/MemberManagementScreen';
 
 // Import auth context
 import { useAuth } from '../lib/authContext';
@@ -70,6 +71,11 @@ const AppNavigator: React.FC = () => {
               name="Join" 
               component={JoinScreen}
               options={{ title: 'Join Circle' }}
+            />
+            <Stack.Screen 
+              name="MemberManagement" 
+              component={MemberManagementScreen}
+              options={{ title: 'Manage Members' }}
             />
           </>
         ) : (

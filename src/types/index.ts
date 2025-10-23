@@ -6,6 +6,7 @@ export interface User {
   photoURL?: string;
   expoPushToken?: string;
   createdAt: Date;
+  circlesMuted?: string[]; // Array of circle IDs where user has muted notifications
 }
 
 export interface Circle {
@@ -13,6 +14,7 @@ export interface Circle {
   title: string;
   ownerId: string;
   members: string[];
+  roles: Record<string, 'owner' | 'member'>;
   createdAt: Date;
 }
 
@@ -50,6 +52,7 @@ export type RootStackParamList = {
   NewUpdate: { circleId: string };
   Invite: { circleId: string };
   Join: { inviteId: string };
+  MemberManagement: { circleId: string };
 };
 
 // Form validation types

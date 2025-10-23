@@ -4,6 +4,7 @@ import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEma
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db, getFCMToken } from './firebase';
 import { User as AppUser } from '../types';
+import { initializeNotifications } from './notificationService';
 
 interface AuthContextType {
   user: AppUser | null;
@@ -43,6 +44,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error) {
         console.warn('Error fetching user data from Firestore:', error);
       }
+    }
+
+    // Initialize notifications for the user
+    try {
+      await initializeNotifications(firebaseUser.uid);
+    } catch (error) {
+      console.warn('Error initializing notifications:', error);
     }
 
     return {

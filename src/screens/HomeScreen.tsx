@@ -54,18 +54,21 @@ const HomeScreen: React.FC = () => {
 
   const renderEmptyState = () => (
     <View className="flex-1 justify-center items-center px-6">
-      <Text className="text-6xl mb-4">👥</Text>
-      <Text className="text-xl font-semibold text-gray-800 mb-2">
-        No circles yet
+      <View className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full items-center justify-center mb-8 shadow-xl">
+        <Text className="text-6xl">💙</Text>
+      </View>
+      <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
+        Welcome to Care Circle
       </Text>
-      <Text className="text-gray-600 text-center mb-8">
-        Create your first circle to start sharing updates with family and friends
+      <Text className="text-gray-600 text-center mb-8 leading-relaxed text-base">
+        Create your first circle to start sharing updates with family and friends. 
+        Stay connected with those who matter most.
       </Text>
       <TouchableOpacity
-        className="bg-blue-500 rounded-xl px-6 py-3"
+        className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl px-8 py-4 shadow-lg"
         onPress={handleCreateCircle}
       >
-        <Text className="text-white font-semibold">Create Circle</Text>
+        <Text className="text-white font-bold text-lg">Create Your First Circle</Text>
       </TouchableOpacity>
     </View>
   );
@@ -79,51 +82,63 @@ const HomeScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-50">
-        <Text className="text-gray-600">Loading circles...</Text>
+      <View className="flex-1 justify-center items-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <View className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full items-center justify-center mb-4">
+          <Text className="text-2xl">💙</Text>
+        </View>
+        <Text className="text-gray-600 text-lg font-medium">Loading circles...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-50 px-6">
-        <Text className="text-red-600 text-center mb-4">{error}</Text>
+      <View className="flex-1 justify-center items-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-6">
+        <View className="w-16 h-16 bg-red-100 rounded-full items-center justify-center mb-4">
+          <Text className="text-2xl">⚠️</Text>
+        </View>
+        <Text className="text-red-600 text-center mb-6 text-lg font-medium">{error}</Text>
         <TouchableOpacity
-          className="bg-blue-500 rounded-xl px-6 py-3"
+          className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl px-6 py-3 shadow-lg"
           onPress={handleRefresh}
         >
-          <Text className="text-white font-semibold">Try Again</Text>
+          <Text className="text-white font-bold text-base">Try Again</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <View className="bg-white px-6 py-4 border-b border-gray-200">
+    <View className="flex-1 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      {/* Header */}
+      <View className="bg-white px-6 py-6 border-b border-gray-100 shadow-sm">
         <View className="flex-row justify-between items-center">
           <View className="flex-1">
-            <Text className="text-2xl font-bold text-gray-800">My Circles</Text>
-            <Text className="text-gray-600 text-sm">Welcome, {user?.displayName || 'User'}</Text>
+            <Text className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              My Circles
+            </Text>
+            <Text className="text-gray-600 text-base mt-1">
+              Welcome, {user?.displayName || 'User'} 💙
+            </Text>
           </View>
-          <View className="flex-row space-x-2">
+          <View className="flex-row space-x-3">
             <TouchableOpacity
-              className="bg-blue-500 rounded-full w-10 h-10 justify-center items-center"
+              className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
               onPress={handleCreateCircle}
             >
-              <Text className="text-white text-xl">+</Text>
+              <Text className="text-white text-xl font-bold">+</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="bg-gray-500 rounded-full w-10 h-10 justify-center items-center"
+              className="bg-gradient-to-r from-gray-500 to-gray-600 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
               onPress={handleSignOut}
             >
-              <Text className="text-white text-sm">↪</Text>
+              <Text className="text-white text-lg">↪</Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
 
+      {/* Content */}
       {circles.length === 0 ? (
         renderEmptyState()
       ) : (
@@ -131,13 +146,15 @@ const HomeScreen: React.FC = () => {
           data={circles}
           renderItem={renderCircle}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 20 }}
           refreshControl={
             <RefreshControl
               refreshing={loading}
               onRefresh={handleRefresh}
+              tintColor="#3b82f6"
             />
           }
+          showsVerticalScrollIndicator={false}
         />
       )}
     </View>

@@ -47,6 +47,14 @@ const CircleFeedScreen: React.FC = () => {
     navigation.navigate('NewUpdate', { circleId });
   };
 
+  const handleInviteMembers = () => {
+    navigation.navigate('Invite', { circleId });
+  };
+
+  const handleManageMembers = () => {
+    navigation.navigate('MemberManagement', { circleId });
+  };
+
   const handleReaction = (updateId: string, emoji: string) => {
     // TODO: Implement reaction functionality
     console.log('Reaction:', updateId, emoji);
@@ -62,61 +70,85 @@ const CircleFeedScreen: React.FC = () => {
 
   const renderEmptyState = () => (
     <View className="flex-1 justify-center items-center px-6">
-      <Text className="text-6xl mb-4">📝</Text>
-      <Text className="text-xl font-semibold text-gray-800 mb-2">
+      <View className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full items-center justify-center mb-8 shadow-xl">
+        <Text className="text-6xl">💙</Text>
+      </View>
+      <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
         No updates yet
       </Text>
-      <Text className="text-gray-600 text-center mb-6">
-        Be the first to share an update with your circle
+      <Text className="text-gray-600 text-center mb-8 leading-relaxed text-base">
+        When you have news, share it here. Your circle is waiting to hear from you.
       </Text>
       <TouchableOpacity
-        className="bg-blue-500 rounded-xl px-6 py-3"
+        className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl px-8 py-4 shadow-lg"
         onPress={handleCreateUpdate}
       >
-        <Text className="text-white font-semibold">Share Update</Text>
+        <Text className="text-white font-bold text-lg">Share Update</Text>
       </TouchableOpacity>
     </View>
   );
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-50">
-        <Text className="text-gray-600">Loading updates...</Text>
+      <View className="flex-1 justify-center items-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <View className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full items-center justify-center mb-4">
+          <Text className="text-2xl">💙</Text>
+        </View>
+        <Text className="text-gray-600 text-lg font-medium">Loading updates...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-50 px-6">
-        <Text className="text-red-600 text-center mb-4">{error}</Text>
+      <View className="flex-1 justify-center items-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-6">
+        <View className="w-16 h-16 bg-red-100 rounded-full items-center justify-center mb-4">
+          <Text className="text-2xl">⚠️</Text>
+        </View>
+        <Text className="text-red-600 text-center mb-6 text-lg font-medium">{error}</Text>
         <TouchableOpacity
-          className="bg-blue-500 rounded-xl px-6 py-3"
+          className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl px-6 py-3 shadow-lg"
           onPress={handleRefresh}
         >
-          <Text className="text-white font-semibold">Try Again</Text>
+          <Text className="text-white font-bold text-base">Try Again</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <View className="bg-white px-6 py-4 border-b border-gray-200">
+      <View className="bg-white px-6 py-6 border-b border-gray-100 shadow-sm">
         <View className="flex-row justify-between items-center">
           <View className="flex-1">
-            <Text className="text-xl font-semibold text-gray-800">Circle Updates</Text>
-            <Text className="text-gray-600 text-sm">
+            <Text className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Circle Updates
+            </Text>
+            <Text className="text-gray-600 text-base mt-1">
               {updates.length} update{updates.length !== 1 ? 's' : ''}
             </Text>
           </View>
-          <TouchableOpacity
-            className="bg-blue-500 rounded-full w-10 h-10 justify-center items-center"
-            onPress={handleCreateUpdate}
-          >
-            <Text className="text-white text-xl">+</Text>
-          </TouchableOpacity>
+          <View className="flex-row space-x-3">
+            <TouchableOpacity
+              className="bg-gradient-to-r from-gray-500 to-gray-600 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              onPress={handleManageMembers}
+            >
+              <Text className="text-white text-lg">⚙️</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              onPress={handleInviteMembers}
+            >
+              <Text className="text-white text-lg">👥</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              onPress={handleCreateUpdate}
+            >
+              <Text className="text-white text-xl font-bold">+</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 

@@ -39,6 +39,7 @@ export const createCircle = async (circleData: {
     const docRef = await addDoc(circlesRef, {
       ...circleData,
       members: [circleData.ownerId], // Owner is automatically a member
+      roles: { [circleData.ownerId]: 'owner' }, // Set owner role
       createdAt: serverTimestamp(),
     });
     
@@ -70,6 +71,7 @@ export const getCircle = async (circleId: string): Promise<Circle | null> => {
       title: data.title,
       ownerId: data.ownerId,
       members: data.members || [],
+      roles: data.roles || {},
       createdAt: data.createdAt?.toDate() || new Date(),
     };
   } catch (error) {
@@ -102,6 +104,7 @@ export const getUserCircles = async (userId: string): Promise<Circle[]> => {
         title: data.title,
         ownerId: data.ownerId,
         members: data.members || [],
+        roles: data.roles || {},
         createdAt: data.createdAt?.toDate() || new Date(),
       });
     });
@@ -164,6 +167,7 @@ export const addMemberToCircle = async (
 
     await updateDoc(circleDoc, {
       members: [...circle.members, userId],
+      [`roles.${userId}`]: 'member', // Set as member role
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
@@ -237,6 +241,147 @@ export const isUserMemberOfCircle = async (
   } catch (error) {
     console.error('Error checking circle membership:', error);
     return false;
+  }
+};
+
+/**
+ * Get user role in circle
+ */
+export const getUserRoleInCircle = async (
+  circleId: string, 
+  userId: string
+): Promise<'owner' | 'member' | null> => {
+  try {
+    const circle = await getCircle(circleId);
+    return circle?.roles?.[userId] || null;
+  } catch (error) {
+    console.error('Error getting user role:', error);
+    return null;
+  }
+};
+
+/**
+ * Promote member to owner
+ */
+export const promoteMemberToOwner = async (
+  circleId: string, 
+  userId: string
+): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const circleDoc = doc(circlesRef, circleId);
+    await updateDoc(circleDoc, {
+      [`roles.${userId}`]: 'owner',
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error promoting member:', error);
+    throw new Error('Failed to promote member. Please try again.');
+  }
+};
+
+/**
+ * Demote owner to member
+ */
+export const demoteOwnerToMember = async (
+  circleId: string, 
+  userId: string
+): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const circleDoc = doc(circlesRef, circleId);
+    await updateDoc(circleDoc, {
+      [`roles.${userId}`]: 'member',
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error demoting owner:', error);
+    throw new Error('Failed to demote owner. Please try again.');
+  }
+};
+
+/**
+ * Leave circle (remove self)
+ */
+export const leaveCircle = async (
+  circleId: string, 
+  userId: string
+): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const circle = await getCircle(circleId);
+    if (!circle) {
+      throw new Error('Circle not found');
+    }
+
+    // Check if user is the owner
+    if (circle.ownerId === userId) {
+      throw new Error('Owners cannot leave their own circle. Transfer ownership first.');
+    }
+
+    const updatedMembers = circle.members.filter(id => id !== userId);
+    const updatedRoles = { ...circle.roles };
+    delete updatedRoles[userId];
+
+    const circleDoc = doc(circlesRef, circleId);
+    await updateDoc(circleDoc, {
+      members: updatedMembers,
+      roles: updatedRoles,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error leaving circle:', error);
+    throw new Error('Failed to leave circle. Please try again.');
+  }
+};
+
+/**
+ * Toggle mute notifications for a circle
+ */
+export const toggleCircleMute = async (
+  userId: string, 
+  circleId: string, 
+  isMuted: boolean
+): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const userDoc = doc(usersRef, userId);
+    const userSnap = await getDoc(userDoc);
+    
+    if (!userSnap.exists()) {
+      throw new Error('User not found');
+    }
+
+    const userData = userSnap.data();
+    const circlesMuted = userData?.circlesMuted || [];
+    
+    let updatedMuted;
+    if (isMuted) {
+      // Add to muted list if not already there
+      updatedMuted = circlesMuted.includes(circleId) ? circlesMuted : [...circlesMuted, circleId];
+    } else {
+      // Remove from muted list
+      updatedMuted = circlesMuted.filter((id: string) => id !== circleId);
+    }
+
+    await updateDoc(userDoc, {
+      circlesMuted: updatedMuted,
+    });
+  } catch (error) {
+    console.error('Error toggling circle mute:', error);
+    throw new Error('Failed to update notification settings. Please try again.');
   }
 };
 
@@ -339,6 +484,7 @@ export const subscribeToUserCircles = (
         title: data.title,
         ownerId: data.ownerId,
         members: data.members || [],
+        roles: data.roles || {},
         createdAt: data.createdAt?.toDate() || new Date(),
       });
     });

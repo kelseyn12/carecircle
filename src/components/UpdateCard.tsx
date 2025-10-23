@@ -37,17 +37,25 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
   };
 
   return (
-    <View className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-100">
+    <View className="bg-white rounded-3xl p-6 mb-4 shadow-lg border border-gray-100"
+      style={{
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+      }}
+    >
       {/* Header with author and time */}
-      <View className="flex-row items-center justify-between mb-3">
-        <View className="flex-row items-center">
-          <View className="w-8 h-8 bg-blue-500 rounded-full items-center justify-center mr-3">
-            <Text className="text-white font-semibold text-sm">
+      <View className="flex-row items-center justify-between mb-4">
+        <View className="flex-row items-center flex-1">
+          <View className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl items-center justify-center mr-4">
+            <Text className="text-white font-bold text-lg">
               {authorName.charAt(0).toUpperCase()}
             </Text>
           </View>
-          <View>
-            <Text className="font-semibold text-gray-800">{authorName}</Text>
+          <View className="flex-1">
+            <Text className="font-bold text-gray-800 text-lg">{authorName}</Text>
             <Text className="text-gray-500 text-sm">
               {formatRelativeTime(update.createdAt)}
             </Text>
@@ -56,50 +64,50 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
       </View>
 
       {/* Update text */}
-      <Text className="text-gray-800 text-base leading-6 mb-3">
+      <Text className="text-gray-800 text-base leading-relaxed mb-4">
         {update.text}
       </Text>
 
       {/* Photo if available */}
       {update.photoURL && (
-        <View className="mb-3">
+        <View className="mb-4 rounded-2xl overflow-hidden">
           <Image
             source={{ uri: update.photoURL }}
-            className="w-full h-48 rounded-xl"
+            className="w-full h-48"
             resizeMode="cover"
           />
         </View>
       )}
 
       {/* Reactions */}
-      <View className="flex-row items-center space-x-4 pt-3 border-t border-gray-100">
+      <View className="flex-row items-center space-x-4 pt-4 border-t border-gray-100">
         <TouchableOpacity
-          className="flex-row items-center space-x-1"
+          className="flex-row items-center space-x-2 bg-red-50 rounded-full px-4 py-2"
           onPress={() => onReaction?.(update.id, '❤️')}
         >
           <Text className="text-lg">❤️</Text>
           {getReactionCount('❤️') > 0 && (
-            <Text className="text-gray-600 text-sm">{getReactionCount('❤️')}</Text>
+            <Text className="text-red-600 text-sm font-semibold">{getReactionCount('❤️')}</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="flex-row items-center space-x-1"
+          className="flex-row items-center space-x-2 bg-yellow-50 rounded-full px-4 py-2"
           onPress={() => onReaction?.(update.id, '🙏')}
         >
           <Text className="text-lg">🙏</Text>
           {getReactionCount('🙏') > 0 && (
-            <Text className="text-gray-600 text-sm">{getReactionCount('🙏')}</Text>
+            <Text className="text-yellow-600 text-sm font-semibold">{getReactionCount('🙏')}</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="flex-row items-center space-x-1"
+          className="flex-row items-center space-x-2 bg-green-50 rounded-full px-4 py-2"
           onPress={() => onReaction?.(update.id, '👍')}
         >
           <Text className="text-lg">👍</Text>
           {getReactionCount('👍') > 0 && (
-            <Text className="text-gray-600 text-sm">{getReactionCount('👍')}</Text>
+            <Text className="text-green-600 text-sm font-semibold">{getReactionCount('👍')}</Text>
           )}
         </TouchableOpacity>
       </View>

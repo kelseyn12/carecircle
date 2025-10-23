@@ -1,14 +1,19 @@
-// Join screen for accepting circle invitations
-// TODO: Implement Cloud Function to validate and accept invites
-// TODO: Add consent flow with clear privacy information
-// TODO: Add loading states and error handling
-// TODO: Navigate to circle feed after joining
-
+// Join screen for accepting circle invites
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  Alert, 
+  ActivityIndicator,
+  ScrollView 
+} from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
+import { useAuth } from '../lib/authContext';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../lib/firebase';
 
 type JoinScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Join'>;
 type JoinScreenRouteProp = RouteProp<RootStackParamList, 'Join'>;
@@ -16,210 +21,201 @@ type JoinScreenRouteProp = RouteProp<RootStackParamList, 'Join'>;
 const JoinScreen: React.FC = () => {
   const navigation = useNavigation<JoinScreenNavigationProp>();
   const route = useRoute<JoinScreenRouteProp>();
+  const { user } = useAuth();
   const { inviteId } = route.params;
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [isValidating, setIsValidating] = useState(false);
-  const [inviteData, setInviteData] = useState<{
-    circleTitle: string;
-    inviterName: string;
-    expiresAt: Date;
+  
+  const [circleInfo, setCircleInfo] = useState<{
+    title: string;
+    circleId: string;
+    alreadyMember: boolean;
   } | null>(null);
-  const [hasAccepted, setHasAccepted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isJoining, setIsJoining] = useState(false);
 
-  // TODO: Implement Cloud Function to validate invite
-  const validateInvite = async () => {
+  const acceptInvite = httpsCallable(functions, 'acceptInvite');
+
+  useEffect(() => {
+    if (!user) {
+      Alert.alert('Authentication Required', 'Please sign in to join a circle.');
+      navigation.navigate('SignIn');
+      return;
+    }
+
+    handleAcceptInvite();
+  }, [user, inviteId]);
+
+  const handleAcceptInvite = async () => {
+    if (!user) return;
+
     try {
       setIsLoading(true);
       
-      // TODO: Call Cloud Function to validate invite
-      console.log('Validating invite:', inviteId);
+      const result = await acceptInvite({ inviteId });
+      const data = result.data as any;
       
-      // Mock data for now
-      setInviteData({
-        circleTitle: 'Dad\'s Recovery',
-        inviterName: 'Sarah Johnson',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      setCircleInfo({
+        title: data.title,
+        circleId: data.circleId,
+        alreadyMember: data.alreadyMember,
       });
-    } catch (error) {
-      Alert.alert('Invalid Invite', 'This invitation is no longer valid or has expired.');
-      navigation.navigate('SignIn');
+    } catch (error: any) {
+      console.error('Error accepting invite:', error);
+      
+      let errorMessage = 'Failed to join circle. Please try again.';
+      
+      if (error.code === 'functions/not-found') {
+        errorMessage = 'Invite not found or has expired.';
+      } else if (error.code === 'functions/deadline-exceeded') {
+        errorMessage = 'This invite has expired. Please request a new one.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Error', errorMessage, [
+        {
+          text: 'OK',
+          onPress: () => navigation.navigate('Home'),
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    validateInvite();
-  }, [inviteId]);
+  const handleJoinCircle = () => {
+    if (!circleInfo) return;
 
-  // TODO: Implement Cloud Function to accept invite
-  const handleAcceptInvite = async () => {
-    try {
-      setIsValidating(true);
-      
-      // TODO: Call Cloud Function to accept invite
-      console.log('Accepting invite:', inviteId);
-      
-      // TODO: Add user to circle members
-      // TODO: Delete invite document
-      // TODO: Navigate to circle feed
-      
-      setHasAccepted(true);
-      
+    if (circleInfo.alreadyMember) {
+      // User is already a member, just navigate to the circle
+      navigation.navigate('CircleFeed', { circleId: circleInfo.circleId });
+    } else {
+      // Show consent screen
       Alert.alert(
-        'Welcome to the Circle!',
-        'You have successfully joined the circle. You can now view and share updates.',
+        'Join Circle',
+        `By joining "${circleInfo.title}", you'll be able to see updates shared within this circle. Do you want to join?`,
         [
           {
-            text: 'View Circle',
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => navigation.navigate('Home'),
+          },
+          {
+            text: 'Join',
             onPress: () => {
-              // TODO: Navigate to circle feed
-              navigation.navigate('Home');
+              // User has already been added to the circle by the Cloud Function
+              navigation.navigate('CircleFeed', { circleId: circleInfo.circleId });
             },
           },
         ]
       );
-    } catch (error) {
-      Alert.alert('Error', 'Failed to join circle. Please try again.');
-    } finally {
-      setIsValidating(false);
     }
-  };
-
-  const handleDecline = () => {
-    Alert.alert(
-      'Decline Invitation',
-      'Are you sure you want to decline this invitation?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Decline',
-          style: 'destructive',
-          onPress: () => navigation.navigate('SignIn'),
-        },
-      ]
-    );
   };
 
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-gray-50">
-        <Text className="text-gray-600">Validating invitation...</Text>
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text className="text-gray-600 mt-4">Joining circle...</Text>
       </View>
     );
   }
 
-  if (!inviteData) {
+  if (!circleInfo) {
     return (
       <View className="flex-1 justify-center items-center bg-gray-50 px-6">
-        <Text className="text-6xl mb-4">❌</Text>
-        <Text className="text-xl font-semibold text-gray-800 mb-2">
-          Invalid Invitation
-        </Text>
-        <Text className="text-gray-600 text-center mb-8">
-          This invitation is no longer valid or has expired.
-        </Text>
-        <TouchableOpacity
-          className="bg-blue-500 rounded-xl px-6 py-3"
-          onPress={() => navigation.navigate('SignIn')}
-        >
-          <Text className="text-white font-semibold">Sign In</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  if (hasAccepted) {
-    return (
-      <View className="flex-1 justify-center items-center bg-gray-50 px-6">
-        <Text className="text-6xl mb-4">✅</Text>
-        <Text className="text-xl font-semibold text-gray-800 mb-2">
-          Welcome to the Circle!
-        </Text>
-        <Text className="text-gray-600 text-center mb-8">
-          You have successfully joined {inviteData.circleTitle}.
-        </Text>
+        <Text className="text-red-600 text-center mb-4">Failed to load circle information</Text>
         <TouchableOpacity
           className="bg-blue-500 rounded-xl px-6 py-3"
           onPress={() => navigation.navigate('Home')}
         >
-          <Text className="text-white font-semibold">View Circle</Text>
+          <Text className="text-white font-semibold">Go Home</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <ScrollView className="flex-1 bg-gray-50">
+      {/* Header */}
       <View className="bg-white px-6 py-4 border-b border-gray-200">
-        <Text className="text-xl font-semibold text-gray-800">Join Circle</Text>
-        <Text className="text-gray-600 mt-1">
-          You've been invited to join a care circle
+        <Text className="text-xl font-semibold text-gray-800 text-center">
+          {circleInfo.alreadyMember ? 'Welcome Back!' : 'Join Circle'}
         </Text>
       </View>
 
-      <ScrollView className="flex-1 px-6 py-6">
+      <View className="flex-1 px-6 py-6">
         <View className="bg-white rounded-2xl p-6 shadow-sm">
-          <View className="text-center mb-6">
+          <View className="items-center mb-6">
             <Text className="text-6xl mb-4">👥</Text>
-            <Text className="text-2xl font-bold text-gray-800 mb-2">
-              {inviteData.circleTitle}
+            <Text className="text-2xl font-semibold text-gray-800 mb-2">
+              {circleInfo.title}
             </Text>
-            <Text className="text-gray-600">
-              Invited by {inviteData.inviterName}
-            </Text>
-          </View>
-
-          {/* Privacy and consent information */}
-          <View className="mb-6 bg-blue-50 rounded-xl p-4">
-            <Text className="text-blue-800 font-semibold mb-2">🔒 Privacy & Consent</Text>
-            <Text className="text-blue-700 text-sm mb-2">
-              By joining this circle, you agree to:
-            </Text>
-            <Text className="text-blue-700 text-sm">
-              • View and share personal health/medical updates{'\n'}
-              • Respect the privacy of all circle members{'\n'}
-              • Only share information you're comfortable with{'\n'}
-              • Keep all updates confidential within the circle
+            <Text className="text-gray-600 text-center">
+              {circleInfo.alreadyMember 
+                ? "You're already a member of this circle!"
+                : "You've been invited to join this Care Circle"
+              }
             </Text>
           </View>
 
-          <View className="space-y-4">
-            <TouchableOpacity
-              className="bg-green-500 rounded-xl py-4"
-              onPress={handleAcceptInvite}
-              disabled={isValidating}
-            >
+          {!circleInfo.alreadyMember && (
+            <View className="mb-6">
+              <Text className="text-lg font-semibold text-gray-800 mb-3">
+                What you'll be able to do:
+              </Text>
+              <View className="space-y-2">
+                <View className="flex-row items-center">
+                  <Text className="text-green-600 text-lg mr-3">✓</Text>
+                  <Text className="text-gray-700">See updates shared by circle members</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Text className="text-green-600 text-lg mr-3">✓</Text>
+                  <Text className="text-gray-700">Post your own updates and photos</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Text className="text-green-600 text-lg mr-3">✓</Text>
+                  <Text className="text-gray-700">React to updates with emojis</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Text className="text-green-600 text-lg mr-3">✓</Text>
+                  <Text className="text-gray-700">Receive push notifications for new updates</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          <TouchableOpacity
+            className={`rounded-xl py-4 ${
+              isJoining ? 'bg-gray-300' : 'bg-blue-500'
+            }`}
+            onPress={handleJoinCircle}
+            disabled={isJoining}
+          >
+            {isJoining ? (
+              <View className="flex-row items-center justify-center">
+                <ActivityIndicator color="white" size="small" />
+                <Text className="text-white font-semibold ml-2">Joining...</Text>
+              </View>
+            ) : (
               <Text className="text-white text-center font-semibold text-lg">
-                {isValidating ? 'Joining Circle...' : 'Join Circle'}
+                {circleInfo.alreadyMember ? 'View Circle' : 'Join Circle'}
               </Text>
-            </TouchableOpacity>
+            )}
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              className="bg-gray-100 rounded-xl py-4"
-              onPress={handleDecline}
-              disabled={isValidating}
-            >
-              <Text className="text-gray-700 text-center font-semibold text-lg">
-                Decline
-              </Text>
-            </TouchableOpacity>
+          {/* Privacy notice */}
+          <View className="mt-6 bg-blue-50 rounded-xl p-4">
+            <Text className="text-blue-800 font-semibold mb-2">🔒 Privacy & Security</Text>
+            <Text className="text-blue-700 text-sm">
+              • Only circle members can see updates{'\n'}
+              • Your personal information is protected{'\n'}
+              • You can leave the circle anytime{'\n'}
+              • Updates are not shared publicly
+            </Text>
           </View>
         </View>
-
-        {/* Additional information */}
-        <View className="mt-6 bg-yellow-50 rounded-xl p-4">
-          <Text className="text-yellow-800 font-semibold mb-2">ℹ️ Important Information:</Text>
-          <Text className="text-yellow-700 text-sm">
-            • You can leave this circle at any time{'\n'}
-            • All updates are private to circle members only{'\n'}
-            • You'll receive notifications for new updates{'\n'}
-            • You can mute notifications if needed
-          </Text>
-        </View>
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   );
 };
 
