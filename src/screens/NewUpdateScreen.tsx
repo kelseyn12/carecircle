@@ -1,16 +1,25 @@
-// New Update screen for sharing updates in a circle
-// TODO: Implement Firestore document creation for updates
-// TODO: Add image picker and upload functionality
-// TODO: Add form validation with Zod schemas
-// TODO: Add loading states and error handling
-// TODO: Strip EXIF data from photos before upload
-
+// New update screen for creating text and photo updates
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  Alert, 
+  KeyboardAvoidingView, 
+  Platform, 
+  ScrollView,
+  Image 
+} from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/stack';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { RootStackParamList } from '../types';
 import { createUpdateSchema } from '../validation/schemas';
+import { useAuth } from '../lib/authContext';
+import { createUpdate } from '../lib/firestoreUtils';
+import { uploadPhoto } from '../lib/firebase';
 
 type NewUpdateScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'NewUpdate'>;
 type NewUpdateScreenRouteProp = RouteProp<RootStackParamList, 'NewUpdate'>;
@@ -18,43 +27,87 @@ type NewUpdateScreenRouteProp = RouteProp<RootStackParamList, 'NewUpdate'>;
 const NewUpdateScreen: React.FC = () => {
   const navigation = useNavigation<NewUpdateScreenNavigationProp>();
   const route = useRoute<NewUpdateScreenRouteProp>();
+  const { user } = useAuth();
   const { circleId } = route.params;
-
+  
   const [text, setText] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // TODO: Implement image picker functionality
   const handlePickImage = async () => {
     try {
-      // TODO: Add Expo ImagePicker logic
-      // TODO: Strip EXIF data with ImageManipulator
-      console.log('Picking image...');
+      // Request permissions
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Please allow access to your photo library to add images.');
+        return;
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        
+        // Compress the image
+        const compressedImage = await ImageManipulator.manipulateAsync(
+          asset.uri,
+          [{ resize: { width: 800 } }],
+          { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+        );
+
+        setPhoto(compressedImage.uri);
+      }
     } catch (error) {
+      console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
   };
 
-  // TODO: Implement Firestore document creation
-  const handleShareUpdate = async () => {
+  const handleRemovePhoto = () => {
+    setPhoto(null);
+  };
+
+  const handleSubmit = async () => {
     try {
+      if (!user) {
+        Alert.alert('Error', 'You must be logged in to post updates.');
+        return;
+      }
+
+      setIsLoading(true);
+      
+      let photoURL: string | undefined;
+      
+      // Upload photo if one was selected
+      if (photo) {
+        const timestamp = Date.now();
+        const photoPath = `updates/${user.id}/${timestamp}.jpg`;
+        photoURL = await uploadPhoto(photo, photoPath);
+      }
+      
       // Validate form data
       const validatedData = createUpdateSchema.parse({ 
         text, 
-        photoURL: photo || undefined 
+        photoURL 
       });
       
-      setIsLoading(true);
-      
-      // TODO: Add Firestore document creation logic
-      console.log('Sharing update:', validatedData);
-      
-      // TODO: Create update document in Firestore
-      // TODO: Upload photo to Firebase Storage if present
-      // TODO: Trigger Cloud Function for push notifications
+      // Create update in Firestore
+      await createUpdate({
+        circleId,
+        authorId: user.id,
+        text: validatedData.text,
+        photoURL: validatedData.photoURL,
+      });
       
       Alert.alert(
-        'Update Shared!',
+        'Update Posted!',
         'Your update has been shared with the circle.',
         [
           {
@@ -65,9 +118,9 @@ const NewUpdateScreen: React.FC = () => {
       );
     } catch (error) {
       if (error instanceof Error) {
-        Alert.alert('Validation Error', error.message);
+        Alert.alert('Error', error.message);
       } else {
-        Alert.alert('Error', 'Failed to share update. Please try again.');
+        Alert.alert('Error', 'Failed to post update. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -75,100 +128,109 @@ const NewUpdateScreen: React.FC = () => {
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <View className="bg-white px-6 py-4 border-b border-gray-200">
-        <Text className="text-xl font-semibold text-gray-800">Share Update</Text>
-        <Text className="text-gray-600 mt-1">
-          Keep your circle informed with a personal update
-        </Text>
-      </View>
-
-      <ScrollView className="flex-1 px-6 py-6">
-        <View className="bg-white rounded-2xl p-6 shadow-sm">
-          <View className="mb-6">
-            <Text className="text-lg font-semibold text-gray-800 mb-2">
-              What's happening?
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base min-h-[120px]"
-              placeholder="Share an update with your circle..."
-              value={text}
-              onChangeText={setText}
-              multiline
-              maxLength={2000}
-              textAlignVertical="top"
-            />
-            <Text className="text-gray-500 text-sm mt-2">
-              {text.length}/2000 characters
-            </Text>
-          </View>
-
-          {/* Photo section */}
-          <View className="mb-6">
-            <Text className="text-lg font-semibold text-gray-800 mb-2">
-              Add a photo (optional)
-            </Text>
-            
-            {photo ? (
-              <View className="relative">
-                {/* TODO: Add Image component to display selected photo */}
-                <View className="bg-gray-200 rounded-xl h-48 justify-center items-center">
-                  <Text className="text-gray-500">Photo selected</Text>
-                </View>
-                <TouchableOpacity
-                  className="absolute top-2 right-2 bg-red-500 rounded-full w-8 h-8 justify-center items-center"
-                  onPress={() => setPhoto(null)}
-                >
-                  <Text className="text-white text-sm">×</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity
-                className="border-2 border-dashed border-gray-300 rounded-xl h-32 justify-center items-center"
-                onPress={handlePickImage}
-              >
-                <Text className="text-4xl mb-2">📷</Text>
-                <Text className="text-gray-600 font-medium">Add Photo</Text>
-                <Text className="text-gray-500 text-sm">Tap to select from gallery</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <View className="space-y-4">
+    <KeyboardAvoidingView 
+      className="flex-1 bg-gray-50" 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView 
+        className="flex-1" 
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Header */}
+        <View className="bg-white px-6 py-4 border-b border-gray-200">
+          <View className="flex-row justify-between items-center">
             <TouchableOpacity
-              className="bg-blue-500 rounded-xl py-4"
-              onPress={handleShareUpdate}
-              disabled={isLoading || !text.trim()}
-            >
-              <Text className="text-white text-center font-semibold text-lg">
-                {isLoading ? 'Sharing Update...' : 'Share Update'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="bg-gray-100 rounded-xl py-4"
+              className="bg-gray-100 rounded-xl px-4 py-2"
               onPress={() => navigation.goBack()}
               disabled={isLoading}
             >
-              <Text className="text-gray-700 text-center font-semibold text-lg">
-                Cancel
+              <Text className="text-gray-700 font-semibold">Cancel</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              className={`rounded-xl px-4 py-2 ${
+                isLoading || !text.trim() 
+                  ? 'bg-gray-300' 
+                  : 'bg-blue-500'
+              }`}
+              onPress={handleSubmit}
+              disabled={isLoading || !text.trim()}
+            >
+              <Text className="text-white font-semibold">
+                {isLoading ? 'Posting...' : 'Post'}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* TODO: Add helpful tips */}
-        <View className="mt-6 bg-green-50 rounded-xl p-4">
-          <Text className="text-green-800 font-semibold mb-2">💡 Update Tips:</Text>
-          <Text className="text-green-700 text-sm">
-            • Share specific details about progress or changes{'\n'}
-            • Include photos to make updates more personal{'\n'}
-            • Be encouraging and supportive in your tone{'\n'}
-            • Keep updates concise but informative
-          </Text>
+        <View className="flex-1 px-6 py-6">
+          <View className="bg-white rounded-2xl p-6 shadow-sm">
+            {/* Text Input */}
+            <View className="mb-6">
+              <Text className="text-lg font-semibold text-gray-800 mb-2">
+                What's happening?
+              </Text>
+              <TextInput
+                className="border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base min-h-[120px]"
+                placeholder="Share an update with your circle..."
+                value={text}
+                onChangeText={setText}
+                maxLength={2000}
+                multiline
+                textAlignVertical="top"
+              />
+              <Text className="text-gray-500 text-sm mt-2 text-right">
+                {text.length}/2000 characters
+              </Text>
+            </View>
+
+            {/* Photo Section */}
+            <View className="mb-6">
+              <Text className="text-lg font-semibold text-gray-800 mb-2">
+                Add a photo (optional)
+              </Text>
+              
+              {photo ? (
+                <View className="relative">
+                  <Image
+                    source={{ uri: photo }}
+                    className="w-full h-48 rounded-xl"
+                    resizeMode="cover"
+                  />
+                  <TouchableOpacity
+                    className="absolute top-2 right-2 bg-red-500 rounded-full w-8 h-8 justify-center items-center"
+                    onPress={handleRemovePhoto}
+                  >
+                    <Text className="text-white text-lg">×</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  className="border-2 border-dashed border-gray-300 rounded-xl p-6 items-center"
+                  onPress={handlePickImage}
+                >
+                  <Text className="text-4xl mb-2">📷</Text>
+                  <Text className="text-gray-600 font-medium">Tap to add a photo</Text>
+                  <Text className="text-gray-500 text-sm">Optional</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Tips */}
+            <View className="bg-blue-50 rounded-xl p-4">
+              <Text className="text-blue-800 font-semibold mb-2">💡 Tips for great updates:</Text>
+              <Text className="text-blue-700 text-sm">
+                • Share how you're feeling{'\n'}
+                • Include photos of activities or progress{'\n'}
+                • Keep updates positive and encouraging{'\n'}
+                • Be specific about what's happening
+              </Text>
+            </View>
+          </View>
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

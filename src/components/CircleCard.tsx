@@ -1,8 +1,4 @@
 // Circle card component for displaying circle information
-// TODO: Add proper styling and interaction states
-// TODO: Add member count and last update info
-// TODO: Add navigation to circle feed
-
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Circle } from '../types';
@@ -13,9 +9,18 @@ interface CircleCardProps {
 }
 
 const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress }) => {
-  // TODO: Add member count and last update logic
   const memberCount = circle.members.length;
-  const lastUpdate = '2 hours ago'; // TODO: Calculate from actual data
+  
+  // Format creation date
+  const formatDate = (date: Date) => {
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
+    return date.toLocaleDateString();
+  };
 
   return (
     <TouchableOpacity
@@ -32,7 +37,7 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress }) => {
             {memberCount} member{memberCount !== 1 ? 's' : ''}
           </Text>
           <Text className="text-gray-500 text-sm">
-            Last update: {lastUpdate}
+            Created {formatDate(circle.createdAt)}
           </Text>
         </View>
         
@@ -41,7 +46,6 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress }) => {
         </View>
       </View>
       
-      {/* TODO: Add unread indicator if there are new updates */}
       <View className="mt-3 pt-3 border-t border-gray-100">
         <Text className="text-blue-600 text-sm font-medium">
           Tap to view updates →

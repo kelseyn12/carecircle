@@ -2,7 +2,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
@@ -87,6 +87,33 @@ export const getCurrentUser = () => {
     return null;
   }
   return auth.currentUser;
+};
+
+// Photo upload utility
+export const uploadPhoto = async (uri: string, path: string): Promise<string> => {
+  if (!storage) {
+    throw new Error('Firebase Storage not initialized');
+  }
+
+  try {
+    // Convert URI to blob
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    
+    // Create storage reference
+    const storageRef = ref(storage, path);
+    
+    // Upload the blob
+    const snapshot = await uploadBytes(storageRef, blob);
+    
+    // Get download URL
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    
+    return downloadURL;
+  } catch (error) {
+    console.error('Error uploading photo:', error);
+    throw new Error('Failed to upload photo. Please try again.');
+  }
 };
 
 export default app;

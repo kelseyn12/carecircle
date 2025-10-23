@@ -1,16 +1,12 @@
-// Circle Feed screen showing updates for a specific circle
-// TODO: Implement Firestore queries to fetch circle updates
-// TODO: Add real-time updates with Firestore listeners
-// TODO: Add pull-to-refresh functionality
-// TODO: Add loading states and error handling
-// TODO: Implement emoji reactions
-
+// Circle feed screen showing updates for a specific circle
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Update } from '../types';
 import UpdateCard from '../components/UpdateCard';
+import { useAuth } from '../lib/authContext';
+import { subscribeToCircleUpdates } from '../lib/firestoreUtils';
 
 type CircleFeedScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CircleFeed'>;
 type CircleFeedScreenRouteProp = RouteProp<RootStackParamList, 'CircleFeed'>;
@@ -18,50 +14,51 @@ type CircleFeedScreenRouteProp = RouteProp<RootStackParamList, 'CircleFeed'>;
 const CircleFeedScreen: React.FC = () => {
   const navigation = useNavigation<CircleFeedScreenNavigationProp>();
   const route = useRoute<CircleFeedScreenRouteProp>();
+  const { user } = useAuth();
   const { circleId } = route.params;
-
+  
   const [updates, setUpdates] = useState<Update[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [circleTitle, setCircleTitle] = useState('Circle Updates');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // TODO: Implement Firestore query to fetch circle updates
-  const fetchUpdates = async () => {
-    try {
-      // TODO: Add Firestore query logic
-      console.log('Fetching updates for circle:', circleId);
-      // Mock data for now
-      setUpdates([]);
-    } catch (error) {
-      console.error('Error fetching updates:', error);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
+  // Subscribe to real-time updates
   useEffect(() => {
-    fetchUpdates();
+    if (!circleId) return;
+
+    setLoading(true);
+    setError(null);
+
+    const unsubscribe = subscribeToCircleUpdates(circleId, (updatesData) => {
+      setUpdates(updatesData);
+      setLoading(false);
+      setRefreshing(false);
+    });
+
+    return unsubscribe;
   }, [circleId]);
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    fetchUpdates();
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // The real-time subscription will automatically update the data
   };
 
-  const handleNewUpdate = () => {
+  const handleCreateUpdate = () => {
     navigation.navigate('NewUpdate', { circleId });
   };
 
-  const handleInvite = () => {
-    navigation.navigate('Invite', { circleId });
+  const handleReaction = (updateId: string, emoji: string) => {
+    // TODO: Implement reaction functionality
+    console.log('Reaction:', updateId, emoji);
   };
 
-  // TODO: Implement emoji reaction functionality
-  const handleReaction = (updateId: string, emoji: '❤️' | '🙏' | '👍') => {
-    console.log('Reacting to update:', updateId, 'with', emoji);
-    // TODO: Add Firestore update for reaction
-  };
+  const renderUpdate = ({ item }: { item: Update }) => (
+    <UpdateCard
+      update={item}
+      authorName={item.authorId === user?.id ? 'You' : 'Member'}
+      onReaction={handleReaction}
+    />
+  );
 
   const renderEmptyState = () => (
     <View className="flex-1 justify-center items-center px-6">
@@ -69,58 +66,61 @@ const CircleFeedScreen: React.FC = () => {
       <Text className="text-xl font-semibold text-gray-800 mb-2">
         No updates yet
       </Text>
-      <Text className="text-gray-600 text-center mb-8">
-        Share the first update to keep your circle informed
+      <Text className="text-gray-600 text-center mb-6">
+        Be the first to share an update with your circle
       </Text>
       <TouchableOpacity
         className="bg-blue-500 rounded-xl px-6 py-3"
-        onPress={handleNewUpdate}
+        onPress={handleCreateUpdate}
       >
         <Text className="text-white font-semibold">Share Update</Text>
       </TouchableOpacity>
     </View>
   );
 
-  const renderUpdate = ({ item }: { item: Update }) => (
-    <UpdateCard
-      update={item}
-      onReaction={handleReaction}
-    />
-  );
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <View className="flex-1 justify-center items-center">
+      <View className="flex-1 justify-center items-center bg-gray-50">
         <Text className="text-gray-600">Loading updates...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 justify-center items-center bg-gray-50 px-6">
+        <Text className="text-red-600 text-center mb-4">{error}</Text>
+        <TouchableOpacity
+          className="bg-blue-500 rounded-xl px-6 py-3"
+          onPress={handleRefresh}
+        >
+          <Text className="text-white font-semibold">Try Again</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
     <View className="flex-1 bg-gray-50">
+      {/* Header */}
       <View className="bg-white px-6 py-4 border-b border-gray-200">
         <View className="flex-row justify-between items-center">
           <View className="flex-1">
-            <Text className="text-xl font-bold text-gray-800">{circleTitle}</Text>
-            <Text className="text-gray-600">{updates.length} updates</Text>
+            <Text className="text-xl font-semibold text-gray-800">Circle Updates</Text>
+            <Text className="text-gray-600 text-sm">
+              {updates.length} update{updates.length !== 1 ? 's' : ''}
+            </Text>
           </View>
-          <View className="flex-row space-x-2">
-            <TouchableOpacity
-              className="bg-green-500 rounded-full w-10 h-10 justify-center items-center"
-              onPress={handleNewUpdate}
-            >
-              <Text className="text-white text-xl">+</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="bg-blue-500 rounded-full w-10 h-10 justify-center items-center"
-              onPress={handleInvite}
-            >
-              <Text className="text-white text-sm">👥</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            className="bg-blue-500 rounded-full w-10 h-10 justify-center items-center"
+            onPress={handleCreateUpdate}
+          >
+            <Text className="text-white text-xl">+</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
+      {/* Updates List */}
       {updates.length === 0 ? (
         renderEmptyState()
       ) : (
@@ -131,7 +131,7 @@ const CircleFeedScreen: React.FC = () => {
           contentContainerStyle={{ padding: 16 }}
           refreshControl={
             <RefreshControl
-              refreshing={isRefreshing}
+              refreshing={refreshing}
               onRefresh={handleRefresh}
             />
           }

@@ -1,65 +1,68 @@
-// Update card component for displaying circle updates
-// TODO: Add proper styling and interaction states
-// TODO: Implement emoji reactions functionality
-// TODO: Add photo display functionality
-// TODO: Add author information display
-
-import React, { useState } from 'react';
+// Update card component for displaying individual updates
+import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Update } from '../types';
 
 interface UpdateCardProps {
   update: Update;
-  onReaction: (updateId: string, emoji: '❤️' | '🙏' | '👍') => void;
+  authorName?: string;
+  onReaction?: (updateId: string, emoji: string) => void;
 }
 
-const UpdateCard: React.FC<UpdateCardProps> = ({ update, onReaction }) => {
-  const [userReaction, setUserReaction] = useState<string | null>(null);
-
-  // TODO: Get author information from Firestore
-  const authorName = 'Sarah Johnson'; // TODO: Replace with actual author data
-  const timeAgo = '2 hours ago'; // TODO: Calculate from createdAt
-
-  const handleReaction = (emoji: '❤️' | '🙏' | '👍') => {
-    if (userReaction === emoji) {
-      // Remove reaction
-      setUserReaction(null);
-      // TODO: Remove reaction from Firestore
-    } else {
-      // Add/change reaction
-      setUserReaction(emoji);
-      onReaction(update.id, emoji);
-    }
+const UpdateCard: React.FC<UpdateCardProps> = ({ 
+  update, 
+  authorName = 'Anonymous',
+  onReaction 
+}) => {
+  // Format relative time
+  const formatRelativeTime = (date: Date) => {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+    
+    return date.toLocaleDateString();
   };
 
+  // Get reaction count for an emoji
   const getReactionCount = (emoji: string) => {
-    if (!update.reactions) return 0;
-    return Object.values(update.reactions).filter(r => r === emoji).length;
+    return update.reactions?.[emoji]?.length || 0;
   };
 
   return (
-    <View className="bg-white rounded-2xl p-6 mb-4 shadow-sm border border-gray-100">
-      {/* Author info */}
-      <View className="flex-row items-center mb-4">
-        <View className="w-10 h-10 bg-blue-100 rounded-full justify-center items-center mr-3">
-          <Text className="text-blue-600 font-semibold text-lg">
-            {authorName.charAt(0)}
-          </Text>
-        </View>
-        <View className="flex-1">
-          <Text className="font-semibold text-gray-800">{authorName}</Text>
-          <Text className="text-gray-500 text-sm">{timeAgo}</Text>
+    <View className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-100">
+      {/* Header with author and time */}
+      <View className="flex-row items-center justify-between mb-3">
+        <View className="flex-row items-center">
+          <View className="w-8 h-8 bg-blue-500 rounded-full items-center justify-center mr-3">
+            <Text className="text-white font-semibold text-sm">
+              {authorName.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+          <View>
+            <Text className="font-semibold text-gray-800">{authorName}</Text>
+            <Text className="text-gray-500 text-sm">
+              {formatRelativeTime(update.createdAt)}
+            </Text>
+          </View>
         </View>
       </View>
 
       {/* Update text */}
-      <Text className="text-gray-800 text-base leading-6 mb-4">
+      <Text className="text-gray-800 text-base leading-6 mb-3">
         {update.text}
       </Text>
 
-      {/* Photo */}
+      {/* Photo if available */}
       {update.photoURL && (
-        <View className="mb-4">
+        <View className="mb-3">
           <Image
             source={{ uri: update.photoURL }}
             className="w-full h-48 rounded-xl"
@@ -69,48 +72,35 @@ const UpdateCard: React.FC<UpdateCardProps> = ({ update, onReaction }) => {
       )}
 
       {/* Reactions */}
-      <View className="flex-row items-center justify-between pt-4 border-t border-gray-100">
-        <View className="flex-row space-x-4">
-          <TouchableOpacity
-            className={`flex-row items-center px-3 py-2 rounded-full ${
-              userReaction === '❤️' ? 'bg-red-100' : 'bg-gray-100'
-            }`}
-            onPress={() => handleReaction('❤️')}
-          >
-            <Text className="text-lg mr-1">❤️</Text>
-            <Text className="text-gray-700 font-medium">
-              {getReactionCount('❤️')}
-            </Text>
-          </TouchableOpacity>
+      <View className="flex-row items-center space-x-4 pt-3 border-t border-gray-100">
+        <TouchableOpacity
+          className="flex-row items-center space-x-1"
+          onPress={() => onReaction?.(update.id, '❤️')}
+        >
+          <Text className="text-lg">❤️</Text>
+          {getReactionCount('❤️') > 0 && (
+            <Text className="text-gray-600 text-sm">{getReactionCount('❤️')}</Text>
+          )}
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            className={`flex-row items-center px-3 py-2 rounded-full ${
-              userReaction === '🙏' ? 'bg-yellow-100' : 'bg-gray-100'
-            }`}
-            onPress={() => handleReaction('🙏')}
-          >
-            <Text className="text-lg mr-1">🙏</Text>
-            <Text className="text-gray-700 font-medium">
-              {getReactionCount('🙏')}
-            </Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          className="flex-row items-center space-x-1"
+          onPress={() => onReaction?.(update.id, '🙏')}
+        >
+          <Text className="text-lg">🙏</Text>
+          {getReactionCount('🙏') > 0 && (
+            <Text className="text-gray-600 text-sm">{getReactionCount('🙏')}</Text>
+          )}
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            className={`flex-row items-center px-3 py-2 rounded-full ${
-              userReaction === '👍' ? 'bg-green-100' : 'bg-gray-100'
-            }`}
-            onPress={() => handleReaction('👍')}
-          >
-            <Text className="text-lg mr-1">👍</Text>
-            <Text className="text-gray-700 font-medium">
-              {getReactionCount('👍')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* TODO: Add comment functionality */}
-        <TouchableOpacity className="flex-row items-center">
-          <Text className="text-gray-500 text-sm">💬</Text>
+        <TouchableOpacity
+          className="flex-row items-center space-x-1"
+          onPress={() => onReaction?.(update.id, '👍')}
+        >
+          <Text className="text-lg">👍</Text>
+          {getReactionCount('👍') > 0 && (
+            <Text className="text-gray-600 text-sm">{getReactionCount('👍')}</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>

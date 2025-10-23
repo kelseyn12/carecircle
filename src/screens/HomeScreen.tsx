@@ -1,49 +1,19 @@
 // Home screen showing user's circles
-// TODO: Implement Firestore queries to fetch user's circles
-// TODO: Add pull-to-refresh functionality
-// TODO: Add empty state when no circles exist
-// TODO: Add loading states and error handling
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList, Circle } from '../types';
+import { RootStackParamList } from '../types';
 import CircleCard from '../components/CircleCard';
 import { useAuth } from '../lib/authContext';
+import { useCircles } from '../lib/useCircles';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user, signOut } = useAuth();
-  const [circles, setCircles] = useState<Circle[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // TODO: Implement Firestore query to fetch user's circles
-  const fetchCircles = async () => {
-    try {
-      // TODO: Add Firestore query logic
-      console.log('Fetching circles...');
-      // Mock data for now
-      setCircles([]);
-    } catch (error) {
-      console.error('Error fetching circles:', error);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCircles();
-  }, []);
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    fetchCircles();
-  };
+  const { circles, loading, error, refreshCircles } = useCircles();
 
   const handleCreateCircle = () => {
     navigation.navigate('CreateCircle');
@@ -51,6 +21,14 @@ const HomeScreen: React.FC = () => {
 
   const handleCirclePress = (circleId: string) => {
     navigation.navigate('CircleFeed', { circleId });
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await refreshCircles();
+    } catch (error) {
+      console.error('Error refreshing circles:', error);
+    }
   };
 
   const handleSignOut = async () => {
@@ -99,10 +77,24 @@ const HomeScreen: React.FC = () => {
     />
   );
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <View className="flex-1 justify-center items-center">
+      <View className="flex-1 justify-center items-center bg-gray-50">
         <Text className="text-gray-600">Loading circles...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 justify-center items-center bg-gray-50 px-6">
+        <Text className="text-red-600 text-center mb-4">{error}</Text>
+        <TouchableOpacity
+          className="bg-blue-500 rounded-xl px-6 py-3"
+          onPress={handleRefresh}
+        >
+          <Text className="text-white font-semibold">Try Again</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -142,7 +134,7 @@ const HomeScreen: React.FC = () => {
           contentContainerStyle={{ padding: 16 }}
           refreshControl={
             <RefreshControl
-              refreshing={isRefreshing}
+              refreshing={loading}
               onRefresh={handleRefresh}
             />
           }
