@@ -123,16 +123,42 @@ const HomeScreen: React.FC = () => {
           </View>
           <View className="flex-row space-x-3">
             <TouchableOpacity
-              className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              className="bg-emerald-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
               onPress={handleCreateCircle}
+              style={{
+                backgroundColor: '#10b981',
+                borderRadius: 16,
+                width: 48,
+                height: 48,
+                justifyContent: 'center',
+                alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 4,
+                elevation: 5,
+              }}
             >
-              <Text className="text-white text-xl font-bold">+</Text>
+              <Text className="text-white text-xl font-bold" style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>+</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="bg-gradient-to-r from-gray-500 to-gray-600 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              className="bg-gray-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
               onPress={handleSignOut}
+              style={{
+                backgroundColor: '#6b7280',
+                borderRadius: 16,
+                width: 48,
+                height: 48,
+                justifyContent: 'center',
+                alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 4,
+                elevation: 5,
+              }}
             >
-              <Text className="text-white text-lg">↪</Text>
+              <Text className="text-white text-lg" style={{ color: 'white', fontSize: 18 }}>↪</Text>
             </TouchableOpacity>
           </View>
         </View>
