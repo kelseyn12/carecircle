@@ -43,7 +43,7 @@ const InviteScreen: React.FC = () => {
       const result = await createInvite({ circleId });
       const data = result.data as any;
       
-      setInviteLink(data.dynamicLink);
+      setInviteLink(data.inviteLink);
     } catch (error: any) {
       console.error('Error creating invite:', error);
       

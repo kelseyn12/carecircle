@@ -18,14 +18,27 @@ export default {
     ],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.carecircle.app'
+      bundleIdentifier: 'com.carecircle.app',
+      associatedDomains: ['applinks:carecircle.web.app']
     },
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: '#FFFFFF'
       },
-      package: 'com.carecircle.app'
+      package: 'com.carecircle.app',
+      intentFilters: [
+        {
+          action: 'VIEW',
+          data: [
+            {
+              scheme: 'https',
+              host: 'carecircle.web.app'
+            }
+          ],
+          category: ['BROWSABLE', 'DEFAULT']
+        }
+      ]
     },
     web: {
       favicon: './assets/icon.png'
@@ -39,8 +52,9 @@ export default {
         messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
         appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
       },
-      dynamicLinkDomain: process.env.EXPO_PUBLIC_DYNAMIC_LINK_DOMAIN,
+      inviteLinkDomain: process.env.EXPO_PUBLIC_INVITE_LINK_DOMAIN || 'carecircle.web.app',
     },
+    scheme: 'carecircle',
     plugins: [
       'expo-notifications',
       'expo-image-picker',

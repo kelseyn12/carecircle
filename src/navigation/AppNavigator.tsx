@@ -3,6 +3,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { View, Text, ActivityIndicator } from 'react-native';
+import * as Linking from 'expo-linking';
 
 // Import screens
 import SignInScreen from '../screens/SignInScreen';
@@ -31,13 +32,25 @@ const LoadingScreen: React.FC = () => (
 const AppNavigator: React.FC = () => {
   const { user, loading } = useAuth();
 
+  // Configure deep linking
+  const prefix = Linking.createURL('/');
+  const linking = {
+    prefixes: [prefix, 'https://carecircle.web.app', 'carecircle://'],
+    config: {
+      screens: {
+        Join: 'join',
+        Home: 'home',
+      },
+    },
+  };
+
   // Show loading screen while checking authentication
   if (loading) {
     return <LoadingScreen />;
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
           // Authenticated user screens

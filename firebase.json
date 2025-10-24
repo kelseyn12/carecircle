@@ -13,5 +13,14 @@
   },
   "storage": {
     "rules": "storage.rules"
+  },
+  "hosting": {
+    "public": "public",
+    "rewrites": [
+      {
+        "source": "/inviteRedirect/**",
+        "function": "inviteRedirect"
+      }
+    ]
   }
 }

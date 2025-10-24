@@ -36,7 +36,7 @@ export interface Invite {
   circleId: string;
   createdBy: string;
   expiresAt: Date;
-  dynamicLink?: string;
+  inviteLink?: string;
 }
 
 export interface Reaction {
