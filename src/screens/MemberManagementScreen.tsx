@@ -288,8 +288,8 @@ const MemberManagementScreen: React.FC = () => {
       <View className="bg-white px-6 py-4 border-b border-gray-200">
         <View className="flex-row justify-between items-center">
           <TouchableOpacity
-            className="bg-gray-100 rounded-xl px-4 py-2"
-            onPress={() => navigation.goBack()}
+            className="bg-gray-100 rounded-xl px-4 py-3 mt-2"
+            onPress={() => navigation.navigate('CircleFeed', { circleId })}
           >
             <Text className="text-gray-700 font-semibold">Back</Text>
           </TouchableOpacity>

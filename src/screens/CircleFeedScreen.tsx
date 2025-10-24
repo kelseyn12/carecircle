@@ -121,13 +121,27 @@ const CircleFeedScreen: React.FC = () => {
       {/* Header */}
       <View className="bg-white px-6 py-6 border-b border-gray-100 shadow-sm">
         <View className="flex-row justify-between items-center">
-          <View className="flex-1">
-            <Text className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Circle Updates
-            </Text>
-            <Text className="text-gray-600 text-base mt-1">
-              {updates.length} update{updates.length !== 1 ? 's' : ''}
-            </Text>
+          <View className="flex-row items-center flex-1">
+            <TouchableOpacity
+              className="bg-gray-100 rounded-2xl w-12 h-12 items-center justify-center mr-4 mt-2"
+              onPress={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                } else {
+                  navigation.navigate('Home');
+                }
+              }}
+            >
+              <Text className="text-gray-700 text-lg font-bold">←</Text>
+            </TouchableOpacity>
+            <View className="flex-1">
+              <Text className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Circle Updates
+              </Text>
+              <Text className="text-gray-600 text-base mt-1">
+                {updates.length} update{updates.length !== 1 ? 's' : ''}
+              </Text>
+            </View>
           </View>
           <View className="flex-row space-x-3">
             <TouchableOpacity

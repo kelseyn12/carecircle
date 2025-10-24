@@ -67,10 +67,19 @@ const CreateCircleScreen: React.FC = () => {
       >
         {/* Header */}
         <View className="bg-white px-6 py-6 border-b border-gray-100 shadow-sm">
-          <View className="flex-row items-center mb-4">
-            <View className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl items-center justify-center mr-4">
-              <Text className="text-white text-xl font-bold">👥</Text>
-            </View>
+          <View className="flex-row items-center justify-between mb-4">
+            <TouchableOpacity
+              className="bg-gray-100 rounded-2xl w-12 h-12 items-center justify-center mr-4 mt-2"
+              onPress={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                } else {
+                  navigation.navigate('Home');
+                }
+              }}
+            >
+              <Text className="text-gray-700 text-lg font-bold">←</Text>
+            </TouchableOpacity>
             <View className="flex-1">
               <Text className="text-2xl font-bold text-gray-800">Create New Circle</Text>
               <Text className="text-gray-600 mt-1 text-base">
