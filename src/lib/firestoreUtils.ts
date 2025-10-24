@@ -401,11 +401,20 @@ export const createUpdate = async (updateData: {
   }
 
   try {
-    const docRef = await addDoc(updatesRef, {
-      ...updateData,
+    const updateDoc: any = {
+      circleId: updateData.circleId,
+      authorId: updateData.authorId,
+      text: updateData.text,
       createdAt: serverTimestamp(),
       reactions: {},
-    });
+    };
+    
+    // Only include photoURL if it exists
+    if (updateData.photoURL) {
+      updateDoc.photoURL = updateData.photoURL;
+    }
+    
+    const docRef = await addDoc(updatesRef, updateDoc);
     
     return docRef.id;
   } catch (error) {

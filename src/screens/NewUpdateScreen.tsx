@@ -99,12 +99,18 @@ const NewUpdateScreen: React.FC = () => {
       });
       
       // Create update in Firestore
-      await createUpdate({
+      const updateData: any = {
         circleId,
         authorId: user.id,
         text: validatedData.text,
-        photoURL: validatedData.photoURL,
-      });
+      };
+      
+      // Only include photoURL if it exists
+      if (validatedData.photoURL) {
+        updateData.photoURL = validatedData.photoURL;
+      }
+      
+      await createUpdate(updateData);
       
       Alert.alert(
         'Update Posted!',
@@ -138,10 +144,10 @@ const NewUpdateScreen: React.FC = () => {
         keyboardShouldPersistTaps="handled"
       >
         {/* Header */}
-        <View className="bg-white px-6 py-4 border-b border-gray-200">
+        <View className="bg-white px-6 py-6 border-b border-gray-200">
           <View className="flex-row justify-between items-center">
             <TouchableOpacity
-              className="bg-gray-100 rounded-xl px-4 py-2"
+              className="bg-gray-100 rounded-xl px-4 py-3 mt-2"
               onPress={() => navigation.navigate('CircleFeed', { circleId })}
               disabled={isLoading}
             >

@@ -69,7 +69,7 @@ const CreateCircleScreen: React.FC = () => {
         <View className="bg-white px-6 py-6 border-b border-gray-100 shadow-sm">
           <View className="flex-row items-center justify-between mb-4">
             <TouchableOpacity
-              className="bg-gray-100 rounded-2xl w-12 h-12 items-center justify-center mr-4 mt-2"
+              className="bg-gray-100 rounded-2xl w-12 h-12 items-center justify-center mr-4 mt-4"
               onPress={() => navigation.navigate('Home')}
             >
               <Text className="text-gray-700 text-lg font-bold">←</Text>

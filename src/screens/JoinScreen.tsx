@@ -137,10 +137,10 @@ const JoinScreen: React.FC = () => {
   return (
     <ScrollView className="flex-1 bg-gray-50">
       {/* Header */}
-      <View className="bg-white px-6 py-4 border-b border-gray-200">
+      <View className="bg-white px-6 py-6 border-b border-gray-200">
         <View className="flex-row justify-between items-center">
           <TouchableOpacity
-            className="bg-gray-100 rounded-xl px-4 py-3 mt-2"
+            className="bg-gray-100 rounded-xl px-4 py-3 mt-4"
             onPress={() => navigation.navigate('Home')}
           >
             <Text className="text-gray-700 font-semibold">Back</Text>
