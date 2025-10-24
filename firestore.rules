@@ -17,21 +17,32 @@ service cloud.firestore {
         request.auth.uid == resource.data.ownerId;
       allow update: if request.auth != null && (
         // Owners can update metadata and roles
-        request.auth.uid == resource.data.ownerId ||
+        request.auth.uid in resource.data.ownerIds ||
         // Members can only update their own mute setting
         (request.auth.uid in resource.data.members &&
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(["members", "roles"]))
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(["members", "roles", "ownerIds"]))
       );
       allow delete: if request.auth != null && 
-        request.auth.uid == resource.data.ownerId;
+        request.auth.uid in resource.data.ownerIds;
     }
     
-    // Updates: only circle members can read, only members can create
+    // Updates: only circle members can read, only owners can create
     match /updates/{updateId} {
       allow read: if request.auth != null && 
         request.auth.uid in get(/databases/$(database)/documents/circles/$(resource.data.circleId)).data.members;
       allow create: if request.auth != null && 
-        request.auth.uid in get(/databases/$(database)/documents/circles/$(request.resource.data.circleId)).data.members &&
+        request.auth.uid in get(/databases/$(database)/documents/circles/$(request.resource.data.circleId)).data.ownerIds &&
+        request.auth.uid == request.resource.data.authorId;
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.authorId;
+    }
+    
+    // Comments: any circle member can read and create
+    match /comments/{commentId} {
+      allow read: if request.auth != null && 
+        request.auth.uid in get(/databases/$(database)/documents/circles/$(get(/databases/$(database)/documents/updates/$(resource.data.updateId)).data.circleId)).data.members;
+      allow create: if request.auth != null && 
+        request.auth.uid in get(/databases/$(database)/documents/circles/$(get(/databases/$(database)/documents/updates/$(request.resource.data.updateId)).data.circleId)).data.members &&
         request.auth.uid == request.resource.data.authorId;
       allow update, delete: if request.auth != null && 
         request.auth.uid == resource.data.authorId;

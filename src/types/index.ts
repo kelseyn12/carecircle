@@ -12,7 +12,8 @@ export interface User {
 export interface Circle {
   id: string;
   title: string;
-  ownerId: string;
+  ownerId: string; // Keep for backward compatibility
+  ownerIds: string[]; // New: array of owner IDs
   members: string[];
   roles: Record<string, 'owner' | 'member'>;
   createdAt: Date;
@@ -41,6 +42,14 @@ export interface Invite {
 export interface Reaction {
   userId: string;
   emoji: '❤️' | '🙏' | '👍';
+}
+
+export interface Comment {
+  id: string;
+  updateId: string;
+  authorId: string;
+  text: string;
+  createdAt: Date;
 }
 
 // Navigation types

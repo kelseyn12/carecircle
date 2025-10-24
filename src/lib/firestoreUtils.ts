@@ -15,12 +15,13 @@ import {
   Timestamp 
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Circle, Update, User } from '../types';
+import { Circle, Update, User, Comment } from '../types';
 
 // Collection references
 const circlesRef = collection(db, 'circles');
 const updatesRef = collection(db, 'updates');
 const usersRef = collection(db, 'users');
+const commentsRef = collection(db, 'comments');
 
 // Circle Management Functions
 
@@ -38,6 +39,7 @@ export const createCircle = async (circleData: {
   try {
     const docRef = await addDoc(circlesRef, {
       ...circleData,
+      ownerIds: [circleData.ownerId], // New: array of owner IDs
       members: [circleData.ownerId], // Owner is automatically a member
       roles: { [circleData.ownerId]: 'owner' }, // Set owner role
       createdAt: serverTimestamp(),
@@ -69,7 +71,8 @@ export const getCircle = async (circleId: string): Promise<Circle | null> => {
     return {
       id: circleDoc.id,
       title: data.title,
-      ownerId: data.ownerId,
+      ownerId: data.ownerId, // Keep for backward compatibility
+      ownerIds: data.ownerIds || [data.ownerId], // New: array of owner IDs
       members: data.members || [],
       roles: data.roles || {},
       createdAt: data.createdAt?.toDate() || new Date(),
@@ -261,6 +264,22 @@ export const getUserRoleInCircle = async (
 };
 
 /**
+ * Check if user is an owner of the circle
+ */
+export const isUserOwner = async (
+  circleId: string, 
+  userId: string
+): Promise<boolean> => {
+  try {
+    const circle = await getCircle(circleId);
+    return circle?.ownerIds?.includes(userId) || false;
+  } catch (error) {
+    console.error('Error checking if user is owner:', error);
+    return false;
+  }
+};
+
+/**
  * Promote member to owner
  */
 export const promoteMemberToOwner = async (
@@ -272,9 +291,17 @@ export const promoteMemberToOwner = async (
   }
 
   try {
+    const circle = await getCircle(circleId);
+    if (!circle) {
+      throw new Error('Circle not found');
+    }
+
     const circleDoc = doc(circlesRef, circleId);
+    const updatedOwnerIds = [...(circle.ownerIds || []), userId];
+    
     await updateDoc(circleDoc, {
       [`roles.${userId}`]: 'owner',
+      ownerIds: updatedOwnerIds,
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
@@ -295,9 +322,17 @@ export const demoteOwnerToMember = async (
   }
 
   try {
+    const circle = await getCircle(circleId);
+    if (!circle) {
+      throw new Error('Circle not found');
+    }
+
     const circleDoc = doc(circlesRef, circleId);
+    const updatedOwnerIds = (circle.ownerIds || []).filter(id => id !== userId);
+    
     await updateDoc(circleDoc, {
       [`roles.${userId}`]: 'member',
+      ownerIds: updatedOwnerIds,
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
@@ -546,5 +581,106 @@ export const subscribeToCircleUpdates = (
     callback(updates);
   }, (error) => {
     console.error('Error in updates subscription:', error);
+  });
+};
+
+// Comment Management Functions
+
+/**
+ * Create a new comment
+ */
+export const createComment = async (commentData: {
+  updateId: string;
+  authorId: string;
+  text: string;
+}): Promise<string> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const docRef = await addDoc(commentsRef, {
+      ...commentData,
+      createdAt: serverTimestamp(),
+    });
+    
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating comment:', error);
+    throw new Error('Failed to create comment. Please try again.');
+  }
+};
+
+/**
+ * Get comments for an update
+ */
+export const getComments = async (updateId: string): Promise<Comment[]> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const q = query(
+      commentsRef,
+      where('updateId', '==', updateId),
+      orderBy('createdAt', 'asc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const comments: Comment[] = [];
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      comments.push({
+        id: doc.id,
+        updateId: data.updateId,
+        authorId: data.authorId,
+        text: data.text,
+        createdAt: data.createdAt?.toDate() || new Date(),
+      });
+    });
+
+    return comments;
+  } catch (error) {
+    console.error('Error getting comments:', error);
+    throw new Error('Failed to fetch comments. Please try again.');
+  }
+};
+
+/**
+ * Subscribe to comments for an update
+ */
+export const subscribeToComments = (
+  updateId: string,
+  callback: (comments: Comment[]) => void
+): (() => void) => {
+  if (!db) {
+    console.error('Firestore not initialized');
+    return () => {};
+  }
+
+  const q = query(
+    commentsRef,
+    where('updateId', '==', updateId),
+    orderBy('createdAt', 'asc')
+  );
+
+  return onSnapshot(q, (querySnapshot) => {
+    const comments: Comment[] = [];
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      comments.push({
+        id: doc.id,
+        updateId: data.updateId,
+        authorId: data.authorId,
+        text: data.text,
+        createdAt: data.createdAt?.toDate() || new Date(),
+      });
+    });
+
+    callback(comments);
+  }, (error) => {
+    console.error('Error in comments subscription:', error);
   });
 };

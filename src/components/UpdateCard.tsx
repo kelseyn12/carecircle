@@ -7,12 +7,14 @@ interface UpdateCardProps {
   update: Update;
   authorName?: string;
   onReaction?: (updateId: string, emoji: string) => void;
+  onComment?: (updateId: string) => void;
 }
 
 const UpdateCard: React.FC<UpdateCardProps> = ({ 
   update, 
   authorName = 'Anonymous',
-  onReaction 
+  onReaction,
+  onComment 
 }) => {
   // Format relative time
   const formatRelativeTime = (date: Date) => {
@@ -109,6 +111,14 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
           {getReactionCount('👍') > 0 && (
             <Text className="text-green-600 text-sm font-semibold">{getReactionCount('👍')}</Text>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="flex-row items-center space-x-2 bg-blue-50 rounded-full px-4 py-2"
+          onPress={() => onComment?.(update.id)}
+        >
+          <Text className="text-lg">💬</Text>
+          <Text className="text-blue-600 text-sm font-semibold">Comment</Text>
         </TouchableOpacity>
       </View>
     </View>

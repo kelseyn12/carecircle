@@ -16,6 +16,7 @@ import { useAuth } from '../lib/authContext';
 import { 
   getCircle, 
   getUserRoleInCircle, 
+  isUserOwner,
   promoteMemberToOwner, 
   demoteOwnerToMember, 
   removeMemberFromCircle,

@@ -32,8 +32,14 @@ export const reactionSchema = z.object({
   }),
 });
 
+// Comment validation
+export const createCommentSchema = z.object({
+  text: z.string().min(1, 'Comment text is required').max(1000, 'Comment too long (max 1000 characters)'),
+});
+
 // Export types
 export type CreateCircleInput = z.infer<typeof createCircleSchema>;
 export type CreateUpdateInput = z.infer<typeof createUpdateSchema>;
 export type InviteInput = z.infer<typeof inviteSchema>;
 export type ReactionInput = z.infer<typeof reactionSchema>;
+export type CreateCommentInput = z.infer<typeof createCommentSchema>;
