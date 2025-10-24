@@ -47,10 +47,8 @@ exports.inviteRedirect = functions.https.onRequest(async (req, res) => {
             res.status(410).send("Invite expired");
             return;
         }
-        // Create deep link for the app
-        const deepLink = `carecircle://join?inviteId=${inviteId}`;
         // Redirect to the fallback page with inviteId in the URL
-        const fallbackUrl = `https://carecircle.web.app/fallback.html?inviteId=${inviteId}`;
+        const fallbackUrl = `https://care-circle-15fd5.web.app/fallback.html?inviteId=${inviteId}`;
         res.redirect(302, fallbackUrl);
     }
     catch (error) {

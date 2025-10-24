@@ -34,7 +34,7 @@ const db = admin.firestore();
 const expo = new expo_server_sdk_1.Expo();
 // Helper function to generate invite link
 async function generateInviteLink(inviteId) {
-    const baseUrl = 'https://carecircle.web.app';
+    const baseUrl = 'https://care-circle-15fd5.web.app';
     const inviteUrl = `${baseUrl}/inviteRedirect/${inviteId}`;
     return inviteUrl;
 }
@@ -52,8 +52,8 @@ async function sendPushNotification(token, title, body, data) {
         const tickets = [];
         for (const chunk of chunks) {
             try {
-                const ticket = await expo.sendPushNotificationsAsync(chunk);
-                tickets.push(...ticket);
+                const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+                tickets.push(...ticketChunk);
             }
             catch (error) {
                 console.error('Error sending push notification:', error);
@@ -66,31 +66,30 @@ async function sendPushNotification(token, title, body, data) {
 }
 // Cloud Function: Create Invite
 exports.createInvite = (0, https_1.onCall)(async (request) => {
-    var _a;
-    const data = request.data;
-    const context = request.auth;
-    // Check if user is authenticated
-    if (!context) {
-        throw new Error('User must be authenticated');
-    }
-    const { circleId } = data;
-    const userId = context.uid;
+    var _a, _b;
     try {
-        // Verify user is a member of the circle
+        const { circleId } = request.data;
+        const userId = (_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid;
+        if (!userId) {
+            throw new Error('User must be authenticated');
+        }
+        if (!circleId) {
+            throw new Error('Circle ID is required');
+        }
+        // Check if user is a member of the circle
         const circleDoc = await db.collection('circles').doc(circleId).get();
         if (!circleDoc.exists) {
             throw new Error('Circle not found');
         }
         const circleData = circleDoc.data();
-        if (!((_a = circleData === null || circleData === void 0 ? void 0 : circleData.members) === null || _a === void 0 ? void 0 : _a.includes(userId))) {
+        if (!((_b = circleData.members) === null || _b === void 0 ? void 0 : _b.includes(userId))) {
             throw new Error('User is not a member of this circle');
         }
         // Create invite document
-        const inviteRef = db.collection('invites').doc();
-        const inviteId = inviteRef.id;
+        const inviteId = db.collection('invites').doc().id;
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
-        await inviteRef.set({
+        await db.collection('invites').doc(inviteId).set({
             circleId,
             createdBy: userId,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -112,62 +111,47 @@ exports.createInvite = (0, https_1.onCall)(async (request) => {
 });
 // Cloud Function: Accept Invite
 exports.acceptInvite = (0, https_1.onCall)(async (request) => {
-    var _a;
-    const data = request.data;
-    const context = request.auth;
-    // Check if user is authenticated
-    if (!context) {
-        throw new Error('User must be authenticated');
-    }
-    const { inviteId } = data;
-    const userId = context.uid;
+    var _a, _b;
     try {
+        const { inviteId } = request.data;
+        const userId = (_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid;
+        if (!userId) {
+            throw new Error('User must be authenticated');
+        }
+        if (!inviteId) {
+            throw new Error('Invite ID is required');
+        }
         // Get invite document
         const inviteDoc = await db.collection('invites').doc(inviteId).get();
         if (!inviteDoc.exists) {
             throw new Error('Invite not found');
         }
         const inviteData = inviteDoc.data();
-        if (!inviteData) {
-            throw new Error('Invite data not found');
-        }
-        // Check if invite is expired
-        const now = new Date();
-        const expiresAt = inviteData.expiresAt.toDate();
-        if (now > expiresAt) {
+        // Check if invite has expired
+        if (inviteData.expiresAt && inviteData.expiresAt.toDate() < new Date()) {
             throw new Error('Invite has expired');
         }
-        const { circleId } = inviteData;
-        // Get circle document
-        const circleDoc = await db.collection('circles').doc(circleId).get();
+        // Check if user is already a member
+        const circleDoc = await db.collection('circles').doc(inviteData.circleId).get();
         if (!circleDoc.exists) {
             throw new Error('Circle not found');
         }
         const circleData = circleDoc.data();
-        if (!circleData) {
-            throw new Error('Circle data not found');
+        if ((_b = circleData.members) === null || _b === void 0 ? void 0 : _b.includes(userId)) {
+            throw new Error('User is already a member of this circle');
         }
-        // Check if user is already a member
-        if ((_a = circleData.members) === null || _a === void 0 ? void 0 : _a.includes(userId)) {
-            // User is already a member, just return circle info
-            return {
-                circleId,
-                title: circleData.title,
-                alreadyMember: true,
-            };
-        }
-        // Add user to circle members
-        await db.collection('circles').doc(circleId).update({
+        // Add user to circle
+        await db.collection('circles').doc(inviteData.circleId).update({
             members: admin.firestore.FieldValue.arrayUnion(userId),
+            [`roles.${userId}`]: 'member',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
-        // Delete invite if it's one-time
-        if (inviteData.oneTime) {
-            await db.collection('invites').doc(inviteId).delete();
-        }
+        // Delete the invite (one-time use)
+        await db.collection('invites').doc(inviteId).delete();
         return {
-            circleId,
-            title: circleData.title,
-            alreadyMember: false,
+            success: true,
+            circleId: inviteData.circleId,
+            message: 'Successfully joined the circle',
         };
     }
     catch (error) {
@@ -175,56 +159,54 @@ exports.acceptInvite = (0, https_1.onCall)(async (request) => {
         throw error;
     }
 });
-// Cloud Function: Send notifications when update is created
+// Cloud Function: On Update Created (Trigger)
 exports.onUpdateCreated = (0, firestore_1.onDocumentCreated)('updates/{updateId}', async (event) => {
-    var _a, _b;
-    const updateData = (_a = event.data) === null || _a === void 0 ? void 0 : _a.data();
-    const { circleId, authorId, text } = updateData;
+    var _a;
     try {
-        // Get circle document
+        const updateData = (_a = event.data) === null || _a === void 0 ? void 0 : _a.data();
+        if (!updateData)
+            return;
+        const { circleId, authorId } = updateData;
+        // Get circle members
         const circleDoc = await db.collection('circles').doc(circleId).get();
-        if (!circleDoc.exists) {
-            console.error('Circle not found:', circleId);
+        if (!circleDoc.exists)
             return;
-        }
         const circleData = circleDoc.data();
-        if (!(circleData === null || circleData === void 0 ? void 0 : circleData.members)) {
-            console.error('Circle has no members:', circleId);
-            return;
-        }
-        // Get author name
-        const authorDoc = await db.collection('users').doc(authorId).get();
-        const authorName = ((_b = authorDoc.data()) === null || _b === void 0 ? void 0 : _b.displayName) || 'Someone';
-        // Get circle title
-        const circleTitle = circleData.title;
-        // Create notification payload
-        const title = `New update in ${circleTitle}`;
-        const body = `${authorName} posted an update: ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`;
-        const data = { circleId };
-        // Get all members except the author
-        const membersToNotify = circleData.members.filter((memberId) => memberId !== authorId);
-        // Send notifications to all members
-        const notificationPromises = membersToNotify.map(async (memberId) => {
-            try {
-                const userDoc = await db.collection('users').doc(memberId).get();
-                const userData = userDoc.data();
-                const expoPushToken = userData === null || userData === void 0 ? void 0 : userData.expoPushToken;
-                const circlesMuted = (userData === null || userData === void 0 ? void 0 : userData.circlesMuted) || [];
-                // Skip if user has muted this circle
-                if (circlesMuted.includes(circleId)) {
-                    console.log(`Skipping notification for user ${memberId} - circle muted`);
-                    return;
-                }
-                if (expoPushToken) {
-                    await sendPushNotification(expoPushToken, title, body, data);
-                }
+        const members = circleData.members || [];
+        // Get all member user documents to check for muted circles and push tokens
+        const userPromises = members
+            .filter((memberId) => memberId !== authorId) // Exclude the author
+            .map(async (memberId) => {
+            const userDoc = await db.collection('users').doc(memberId).get();
+            if (!userDoc.exists)
+                return null;
+            const userData = userDoc.data();
+            const circlesMuted = userData.circlesMuted || [];
+            // Skip if user has muted this circle
+            if (circlesMuted.includes(circleId)) {
+                return null;
             }
-            catch (error) {
-                console.error(`Error sending notification to user ${memberId}:`, error);
-            }
+            return {
+                id: memberId,
+                expoPushToken: userData.expoPushToken,
+                displayName: userData.displayName,
+            };
+        });
+        const users = (await Promise.all(userPromises)).filter(Boolean);
+        // Send push notifications
+        const notificationPromises = users.map(async (user) => {
+            if (!(user === null || user === void 0 ? void 0 : user.expoPushToken))
+                return;
+            const title = 'New Update in Care Circle';
+            const body = `${user.displayName || 'Someone'} posted an update`;
+            const data = {
+                circleId,
+                updateId: event.params.updateId,
+                type: 'update',
+            };
+            await sendPushNotification(user.expoPushToken, title, body, data);
         });
         await Promise.all(notificationPromises);
-        console.log(`Sent notifications to ${membersToNotify.length} members for circle ${circleId}`);
     }
     catch (error) {
         console.error('Error in onUpdateCreated:', error);
