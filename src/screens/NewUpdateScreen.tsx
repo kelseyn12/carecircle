@@ -142,7 +142,7 @@ const NewUpdateScreen: React.FC = () => {
           <View className="flex-row justify-between items-center">
             <TouchableOpacity
               className="bg-gray-100 rounded-xl px-4 py-2"
-              onPress={() => navigation.goBack()}
+              onPress={() => navigation.navigate('CircleFeed', { circleId })}
               disabled={isLoading}
             >
               <Text className="text-gray-700 font-semibold">Cancel</Text>

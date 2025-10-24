@@ -70,13 +70,7 @@ const CreateCircleScreen: React.FC = () => {
           <View className="flex-row items-center justify-between mb-4">
             <TouchableOpacity
               className="bg-gray-100 rounded-2xl w-12 h-12 items-center justify-center mr-4 mt-2"
-              onPress={() => {
-                if (navigation.canGoBack()) {
-                  navigation.goBack();
-                } else {
-                  navigation.navigate('Home');
-                }
-              }}
+              onPress={() => navigation.navigate('Home')}
             >
               <Text className="text-gray-700 text-lg font-bold">←</Text>
             </TouchableOpacity>

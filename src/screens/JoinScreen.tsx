@@ -9,13 +9,13 @@ import {
   ScrollView 
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/stack';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../lib/authContext';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../lib/firebase';
 
-type JoinScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Join'>;
+type JoinScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Join'>;
 type JoinScreenRouteProp = RouteProp<RootStackParamList, 'Join'>;
 
 const JoinScreen: React.FC = () => {
