@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join your Care Circle</title>
+    <meta name="description" content="You've been invited to join a private Care Circle. Get the app to connect with your family and receive updates.">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #e7e4de 0%, #f5f3f0 50%, #e7e4de 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #322f33;
+            line-height: 1.6;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(50, 47, 51, 0.1);
+            max-width: 400px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #99c7c6 0%, #7bb3b2 100%);
+            border-radius: 20px;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            box-shadow: 0 8px 16px rgba(153, 199, 198, 0.3);
+            animation: gentle-pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes gentle-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #322f33;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: #6b6b6b;
+            margin-bottom: 32px;
+            font-weight: 500;
+        }
+        
+        .description {
+            font-size: 16px;
+            color: #5a5a5a;
+            margin-bottom: 40px;
+            line-height: 1.7;
+        }
+        
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 24px;
+            border-radius: 16px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #99c7c6 0%, #7bb3b2 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(153, 199, 198, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(153, 199, 198, 0.5);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #322f33;
+            border: 2px solid #e9ecef;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+            border-color: #99c7c6;
+            transform: translateY(-1px);
+        }
+        
+        .btn-tertiary {
+            background: #f8f9fa;
+            color: #6b6b6b;
+            border: 2px solid #e9ecef;
+        }
+        
+        .btn-tertiary:hover {
+            background: #e9ecef;
+            border-color: #99c7c6;
+            color: #322f33;
+            transform: translateY(-1px);
+        }
+        
+        .btn-icon {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #e9ecef;
+            font-size: 14px;
+            color: #8b8b8b;
+        }
+        
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+        
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e9ecef;
+            border-top: 3px solid #99c7c6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .download-section {
+            display: none;
+            margin-top: 24px;
+        }
+        
+        .download-section.show {
+            display: block;
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .download-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .download-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 20px;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #322f33;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .download-btn:hover {
+            background: #e9ecef;
+            border-color: #99c7c6;
+            transform: translateY(-1px);
+        }
+        
+        .download-btn-icon {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .subtitle {
+                font-size: 16px;
+            }
+            
+            .description {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">💙</div>
+        
+        <h1>Join your Care Circle</h1>
+        <p class="subtitle">You've been invited to connect</p>
+        
+        <p class="description">
+            You've been invited to join a private Care Circle. Get the app to connect with your family and receive updates.
+        </p>
+        
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p style="margin-top: 12px; color: #6b6b6b;">Opening Care Circle...</p>
+        </div>
+        
+        <div class="buttons" id="mainButtons">
+            <button class="btn btn-primary" id="openAppBtn" onclick="openApp()">
+                <span class="btn-icon">📱</span>
+                Open in App
+            </button>
+        </div>
+        
+        <div class="download-section" id="downloadSection">
+            <p style="color: #6b6b6b; margin-bottom: 16px;">Don't have the app yet?</p>
+            
+            <div class="download-buttons">
+                <a href="https://apps.apple.com/app/care-circle" class="download-btn" target="_blank" rel="noopener">
+                    <span class="download-btn-icon">🍎</span>
+                    Download on App Store
+                </a>
+                
+                <a href="https://play.google.com/store/apps/details?id=com.carecircle.app" class="download-btn" target="_blank" rel="noopener">
+                    <span class="download-btn-icon">🤖</span>
+                    Get it on Google Play
+                </a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Care Circle © 2025 All rights reserved.
+        </div>
+    </div>
+
+    <script>
+        // Get inviteId from URL query parameter
+        function getInviteId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('inviteId');
+        }
+        
+        // Try to open the app
+        function openApp() {
+            const inviteId = getInviteId();
+            if (!inviteId) {
+                showDownloadSection();
+                return;
+            }
+            
+            const deepLink = `carecircle://join?inviteId=${inviteId}`;
+            
+            // Show loading state
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('mainButtons').style.display = 'none';
+            
+            // Try to open the app
+            window.location.href = deepLink;
+            
+            // Show download options after a delay if app doesn't open
+            setTimeout(() => {
+                showDownloadSection();
+            }, 2000);
+        }
+        
+        // Show download section
+        function showDownloadSection() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('mainButtons').style.display = 'none';
+            document.getElementById('downloadSection').classList.add('show');
+        }
+        
+        // Auto-try to open app on page load
+        window.addEventListener('load', () => {
+            const inviteId = getInviteId();
+            if (inviteId) {
+                // Small delay to let page render
+                setTimeout(() => {
+                    openApp();
+                }, 500);
+            } else {
+                // No inviteId, show download options immediately
+                showDownloadSection();
+            }
+        });
+        
+        // Handle page visibility change (user might have returned from app)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                // User returned to page, show download options
+                setTimeout(() => {
+                    showDownloadSection();
+                }, 1000);
+            }
+        });
+        
+        // Handle focus events (user might have returned from app)
+        window.addEventListener('focus', () => {
+            setTimeout(() => {
+                showDownloadSection();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
