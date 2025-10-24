@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "72XY6CY3K9.com.carecircle.app",
+        "paths": ["/inviteRedirect/*"]
+      }
+    ]
+  }
+}

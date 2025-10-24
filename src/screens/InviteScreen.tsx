@@ -1,20 +1,22 @@
-// Invite screen for creating and sharing circle invites
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { 
   View, 
   Text, 
   TouchableOpacity, 
   Alert, 
   Share,
-  ActivityIndicator 
+  ActivityIndicator,
+  TextInput,
+  Platform
 } from 'react-native';
-import Clipboard from '@react-native-community/clipboard';
+import * as Clipboard from 'expo-clipboard';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../lib/authContext';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../lib/firebase';
+import Toast from 'react-native-root-toast';
 
 type InviteScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Invite'>;
 type InviteScreenRouteProp = RouteProp<RootStackParamList, 'Invite'>;
@@ -24,12 +26,30 @@ const InviteScreen: React.FC = () => {
   const route = useRoute<InviteScreenRouteProp>();
   const { user } = useAuth();
   const { circleId } = route.params;
-  
+
   const [inviteLink, setInviteLink] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
   const createInvite = httpsCallable(functions, 'createInvite');
+
+  /** ✅ Force plain-text copy (fixes iOS "bplist00" bug) */
+  const forcePlainCopy = async (text: string) => {
+    const cleanText = String(text).trim();
+    const safeText = Platform.OS === 'ios' ? ` ${cleanText}` : cleanText; // 👈 key fix
+
+    // Optional: write to hidden input (fallback for older iOS versions)
+    if (Platform.OS === 'ios') {
+      try {
+        inputRef.current?.setNativeProps({ text: safeText });
+      } catch (err) {
+        console.warn('Clipboard fallback:', err);
+      }
+    }
+
+    await Clipboard.setStringAsync(safeText);
+  };
 
   const handleCreateInvite = async () => {
     if (!user) {
@@ -39,16 +59,20 @@ const InviteScreen: React.FC = () => {
 
     try {
       setIsCreating(true);
-      
       const result = await createInvite({ circleId });
       const data = result.data as any;
-      
-      setInviteLink(data.inviteLink);
+
+      const link = String(data.inviteLink).trim();
+      setInviteLink(link);
+      await forcePlainCopy(link);
+
+      Toast.show('✅ Invite link copied to clipboard', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
     } catch (error: any) {
       console.error('Error creating invite:', error);
-      
       let errorMessage = 'Failed to create invite. Please try again.';
-      
       if (error.code === 'functions/permission-denied') {
         errorMessage = 'You are not a member of this circle.';
       } else if (error.code === 'functions/not-found') {
@@ -56,7 +80,6 @@ const InviteScreen: React.FC = () => {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
       Alert.alert('Error', errorMessage);
     } finally {
       setIsCreating(false);
@@ -65,31 +88,52 @@ const InviteScreen: React.FC = () => {
 
   const handleCopyLink = async () => {
     if (!inviteLink) return;
-
     try {
-      await Clipboard.setString(inviteLink);
-      Alert.alert('Link Copied!', 'The invite link has been copied to your clipboard.');
-    } catch (error) {
+      await forcePlainCopy(inviteLink);
+      setCopied(true);
+      Toast.show('✅ Invite link copied to clipboard', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
       Alert.alert('Error', 'Failed to copy link. Please try again.');
     }
   };
 
   const handleShareLink = async () => {
     if (!inviteLink) return;
-
     try {
+      const cleanLink = String(inviteLink).trim();
+      const safeMessage = Platform.OS === 'ios'
+        ? `Join my Care Circle:\n${cleanLink}`
+        : cleanLink;
+
       await Share.share({
-        message: `Join my Care Circle! ${inviteLink}`,
-        url: inviteLink,
-        title: 'Join my Care Circle',
+        message: safeMessage,
+        url: cleanLink,
       });
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to share link. Please try again.');
     }
   };
 
   return (
     <View className="flex-1 bg-gray-50">
+      {/* Hidden TextInput (for iOS clipboard sanitization) */}
+      <TextInput
+        ref={inputRef}
+        style={{
+          position: 'absolute',
+          top: -100,
+          left: -100,
+          width: 0,
+          height: 0,
+          opacity: 0,
+        }}
+        editable={false}
+      />
+
       {/* Header */}
       <View className="bg-white px-6 py-6 border-b border-gray-200">
         <View className="flex-row justify-between items-center">
@@ -99,9 +143,9 @@ const InviteScreen: React.FC = () => {
           >
             <Text className="text-gray-700 font-semibold">Back</Text>
           </TouchableOpacity>
-          
+
           <Text className="text-xl font-semibold text-gray-800">Invite Members</Text>
-          
+
           <View className="w-16" />
         </View>
       </View>
@@ -140,7 +184,6 @@ const InviteScreen: React.FC = () => {
               )}
             </TouchableOpacity>
 
-            {/* Tips */}
             <View className="mt-6 bg-blue-50 rounded-xl p-4">
               <Text className="text-blue-800 font-semibold mb-2">💡 How it works:</Text>
               <Text className="text-blue-700 text-sm">
@@ -164,14 +207,12 @@ const InviteScreen: React.FC = () => {
               </Text>
             </View>
 
-            {/* Invite link display */}
             <View className="bg-gray-50 rounded-xl p-4 mb-6">
               <Text className="text-gray-800 text-sm font-mono break-all">
                 {inviteLink}
               </Text>
             </View>
 
-            {/* Action buttons */}
             <View className="space-y-3">
               <TouchableOpacity
                 className="bg-blue-500 rounded-xl py-4"
@@ -187,12 +228,11 @@ const InviteScreen: React.FC = () => {
                 onPress={handleCopyLink}
               >
                 <Text className="text-gray-700 text-center font-semibold text-lg">
-                  Copy Link
+                  {copied ? '✅ Copied!' : 'Copy Link'}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* Success message */}
             <View className="mt-6 bg-green-50 rounded-xl p-4">
               <Text className="text-green-800 font-semibold mb-2">🎉 Ready to share!</Text>
               <Text className="text-green-700 text-sm">
@@ -207,3 +247,6 @@ const InviteScreen: React.FC = () => {
 };
 
 export default InviteScreen;
+
+
+

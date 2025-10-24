@@ -11,38 +11,45 @@ export default {
     splash: {
       image: './assets/icon.png',
       resizeMode: 'contain',
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
     },
-    assetBundlePatterns: [
-      '**/*'
-    ],
+    assetBundlePatterns: ['**/*'],
+
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.carecircle.app',
-      associatedDomains: ['applinks:carecircle.web.app']
+      // ✅ Must match your Firebase Hosting domain
+      associatedDomains: ['applinks:care-circle-15fd5.web.app'],
     },
+
     android: {
+      package: 'com.carecircle.app',
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#FFFFFF'
+        backgroundColor: '#FFFFFF',
       },
-      package: 'com.carecircle.app',
       intentFilters: [
         {
           action: 'VIEW',
           data: [
             {
               scheme: 'https',
-              host: 'carecircle.web.app'
-            }
+              host: 'care-circle-15fd5.web.app',
+              pathPrefix: '/inviteRedirect',
+            },
+            {
+              scheme: 'carecircle',
+            },
           ],
-          category: ['BROWSABLE', 'DEFAULT']
-        }
-      ]
+          category: ['BROWSABLE', 'DEFAULT'],
+        },
+      ],
     },
+
     web: {
-      favicon: './assets/icon.png'
+      favicon: './assets/icon.png',
     },
+
     extra: {
       firebase: {
         apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -52,9 +59,12 @@ export default {
         messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
         appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
       },
-      inviteLinkDomain: process.env.EXPO_PUBLIC_INVITE_LINK_DOMAIN || 'carecircle.web.app',
+      // ✅ Match backend invite links
+      inviteLinkDomain: process.env.EXPO_PUBLIC_INVITE_LINK_DOMAIN || 'care-circle-15fd5.web.app',
     },
+
     scheme: 'carecircle',
+
     plugins: [
       'expo-notifications',
       'expo-image-picker',
@@ -62,10 +72,10 @@ export default {
         'expo-build-properties',
         {
           ios: {
-            useFrameworks: 'static'
-          }
-        }
-      ]
-    ]
-  }
+            useFrameworks: 'static',
+          },
+        },
+      ],
+    ],
+  },
 };
