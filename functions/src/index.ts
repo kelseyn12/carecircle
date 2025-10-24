@@ -26,13 +26,11 @@ interface UpdateData {
   createdAt: admin.firestore.Timestamp;
 }
 
-// Helper function to generate dynamic link
-async function generateDynamicLink(inviteId: string): Promise<string> {
-  const baseUrl = 'https://carecircle.page.link';
-  const inviteUrl = `${baseUrl}/invite?inviteId=${inviteId}`;
+// Helper function to generate invite link
+async function generateInviteLink(inviteId: string): Promise<string> {
+  const baseUrl = 'https://carecircle.web.app';
+  const inviteUrl = `${baseUrl}/inviteRedirect/${inviteId}`;
   
-  // In production, you would use Firebase Dynamic Links API here
-  // For now, we'll return the direct URL
   return inviteUrl;
 }
 
@@ -109,12 +107,12 @@ export const createInvite = onCall(async (request) => {
       oneTime: true,
     });
 
-    // Generate dynamic link
-    const dynamicLink = await generateDynamicLink(inviteId);
+    // Generate invite link
+    const inviteLink = await generateInviteLink(inviteId);
 
     return {
       inviteId,
-      dynamicLink,
+      inviteLink,
       expiresAt: expiresAt.toISOString(),
     };
   } catch (error) {

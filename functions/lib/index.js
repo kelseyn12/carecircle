@@ -32,12 +32,10 @@ const expo_server_sdk_1 = require("expo-server-sdk");
 admin.initializeApp();
 const db = admin.firestore();
 const expo = new expo_server_sdk_1.Expo();
-// Helper function to generate dynamic link
-async function generateDynamicLink(inviteId) {
-    const baseUrl = 'https://carecircle.page.link';
-    const inviteUrl = `${baseUrl}/invite?inviteId=${inviteId}`;
-    // In production, you would use Firebase Dynamic Links API here
-    // For now, we'll return the direct URL
+// Helper function to generate invite link
+async function generateInviteLink(inviteId) {
+    const baseUrl = 'https://carecircle.web.app';
+    const inviteUrl = `${baseUrl}/inviteRedirect/${inviteId}`;
     return inviteUrl;
 }
 // Helper function to send push notification
@@ -99,11 +97,11 @@ exports.createInvite = (0, https_1.onCall)(async (request) => {
             expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
             oneTime: true,
         });
-        // Generate dynamic link
-        const dynamicLink = await generateDynamicLink(inviteId);
+        // Generate invite link
+        const inviteLink = await generateInviteLink(inviteId);
         return {
             inviteId,
-            dynamicLink,
+            inviteLink,
             expiresAt: expiresAt.toISOString(),
         };
     }
