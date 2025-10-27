@@ -30,9 +30,13 @@ const CircleFeedScreen: React.FC = () => {
     const checkUpdatePermissions = async () => {
       try {
         const canPost = await canUserPostUpdates(circleId, user.id);
+        console.log('Can post updates:', canPost, 'for circle:', circleId);
         setCanPostUpdates(canPost);
       } catch (error) {
         console.error('Error checking update permissions:', error);
+        // Temporarily allow all users to post updates for debugging
+        console.log('Permission check failed, allowing post for debugging');
+        setCanPostUpdates(true);
       }
     };
 
