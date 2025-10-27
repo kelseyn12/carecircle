@@ -103,7 +103,7 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
 
   return (
     <KeyboardAvoidingView 
-      className="flex-1 bg-gray-50"
+      style={{ flex: 1, backgroundColor: '#f9fafb' }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Header */}
