@@ -15,6 +15,7 @@ export interface Circle {
   ownerId: string; // Keep for backward compatibility
   ownerIds: string[]; // New: array of owner IDs
   members: string[];
+  updateAuthors: string[]; // New: array of user IDs who can post updates
   roles: Record<string, 'owner' | 'member'>;
   createdAt: Date;
 }

@@ -1,5 +1,5 @@
 // New update screen for creating text and photo updates
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -18,7 +18,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { RootStackParamList } from '../types';
 import { createUpdateSchema } from '../validation/schemas';
 import { useAuth } from '../lib/authContext';
-import { createUpdate } from '../lib/firestoreUtils';
+import { createUpdate, canUserPostUpdates } from '../lib/firestoreUtils';
 import { uploadPhoto } from '../lib/firebase';
 
 type NewUpdateScreenNavigationProp = StackNavigationProp<RootStackParamList, 'NewUpdate'>;
@@ -33,6 +33,32 @@ const NewUpdateScreen: React.FC = () => {
   const [text, setText] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [canPost, setCanPost] = useState(false);
+
+  // Check if user can post updates
+  useEffect(() => {
+    if (!user || !circleId) return;
+    
+    const checkPermissions = async () => {
+      try {
+        const canPostUpdates = await canUserPostUpdates(circleId, user.id);
+        setCanPost(canPostUpdates);
+        
+        if (!canPostUpdates) {
+          Alert.alert(
+            'Permission Denied',
+            'You don\'t have permission to post updates in this circle.',
+            [{ text: 'OK', onPress: () => navigation.goBack() }]
+          );
+        }
+      } catch (error) {
+        console.error('Error checking permissions:', error);
+        Alert.alert('Error', 'Failed to check permissions');
+      }
+    };
+    
+    checkPermissions();
+  }, [user, circleId, navigation]);
 
   const handlePickImage = async () => {
     try {
@@ -156,12 +182,12 @@ const NewUpdateScreen: React.FC = () => {
             
             <TouchableOpacity
               className={`rounded-xl px-4 py-2 ${
-                isLoading || !text.trim() 
+                isLoading || !text.trim() || !canPost
                   ? 'bg-gray-300' 
                   : 'bg-blue-500'
               }`}
               onPress={handleSubmit}
-              disabled={isLoading || !text.trim()}
+              disabled={isLoading || !text.trim() || !canPost}
             >
               <Text className="text-white font-semibold">
                 {isLoading ? 'Posting...' : 'Post'}

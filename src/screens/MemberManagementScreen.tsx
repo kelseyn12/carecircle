@@ -21,7 +21,10 @@ import {
   demoteOwnerToMember, 
   removeMemberFromCircle,
   leaveCircle,
-  toggleCircleMute 
+  toggleCircleMute,
+  addUpdateAuthor,
+  removeUpdateAuthor,
+  canUserPostUpdates,
 } from '../lib/firestoreUtils';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -160,6 +163,54 @@ const MemberManagementScreen: React.FC = () => {
     );
   };
 
+  const handleAddUpdateAuthor = async (memberId: string) => {
+    if (!user) return;
+
+    Alert.alert(
+      'Grant Update Permission',
+      'This member will be able to post updates in this circle.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Grant Permission',
+          onPress: async () => {
+            try {
+              await addUpdateAuthor(circleId, memberId);
+              await loadCircleData(); // Refresh data
+              Alert.alert('Success', 'Member can now post updates');
+            } catch (error) {
+              Alert.alert('Error', error instanceof Error ? error.message : 'Failed to grant update permission');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleRemoveUpdateAuthor = async (memberId: string) => {
+    if (!user) return;
+
+    Alert.alert(
+      'Revoke Update Permission',
+      'This member will no longer be able to post updates in this circle.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Revoke Permission',
+          onPress: async () => {
+            try {
+              await removeUpdateAuthor(circleId, memberId);
+              await loadCircleData(); // Refresh data
+              Alert.alert('Success', 'Update permission revoked');
+            } catch (error) {
+              Alert.alert('Error', error instanceof Error ? error.message : 'Failed to revoke update permission');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleRemoveMember = async (memberId: string, memberName: string) => {
     if (!user) return;
 
@@ -260,6 +311,22 @@ const MemberManagementScreen: React.FC = () => {
                 onPress={() => handleDemoteOwner(item.id)}
               >
                 <Text className="text-white text-xs font-semibold">Demote</Text>
+              </TouchableOpacity>
+            )}
+            {/* Update Author Management */}
+            {circle?.updateAuthors?.includes(item.id) ? (
+              <TouchableOpacity
+                className="bg-orange-500 rounded-lg px-3 py-1"
+                onPress={() => handleRemoveUpdateAuthor(item.id)}
+              >
+                <Text className="text-white text-xs font-semibold">Revoke Updates</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                className="bg-blue-500 rounded-lg px-3 py-1"
+                onPress={() => handleAddUpdateAuthor(item.id)}
+              >
+                <Text className="text-white text-xs font-semibold">Allow Updates</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity

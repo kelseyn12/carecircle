@@ -6,7 +6,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Update } from '../types';
 import UpdateCard from '../components/UpdateCard';
 import { useAuth } from '../lib/authContext';
-import { subscribeToCircleUpdates, isUserOwner } from '../lib/firestoreUtils';
+import { subscribeToCircleUpdates, canUserPostUpdates } from '../lib/firestoreUtils';
 
 type CircleFeedScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CircleFeed'>;
 type CircleFeedScreenRouteProp = RouteProp<RootStackParamList, 'CircleFeed'>;
@@ -21,22 +21,22 @@ const CircleFeedScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
+  const [canPostUpdates, setCanPostUpdates] = useState(false);
 
-  // Check if user is owner
+  // Check if user can post updates
   useEffect(() => {
     if (!user || !circleId) return;
 
-    const checkOwnership = async () => {
+    const checkUpdatePermissions = async () => {
       try {
-        const ownerStatus = await isUserOwner(circleId, user.id);
-        setIsOwner(ownerStatus);
+        const canPost = await canUserPostUpdates(circleId, user.id);
+        setCanPostUpdates(canPost);
       } catch (error) {
-        console.error('Error checking ownership:', error);
+        console.error('Error checking update permissions:', error);
       }
     };
 
-    checkOwnership();
+    checkUpdatePermissions();
   }, [user, circleId]);
 
   // Subscribe to real-time updates
@@ -101,7 +101,7 @@ const CircleFeedScreen: React.FC = () => {
       <Text className="text-gray-600 text-center mb-8 leading-relaxed text-base">
         When you have news, share it here. Your circle is waiting to hear from you.
       </Text>
-      {isOwner && (
+      {canPostUpdates && (
         <TouchableOpacity
           className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl px-8 py-4 shadow-lg"
           onPress={handleCreateUpdate}
@@ -109,10 +109,10 @@ const CircleFeedScreen: React.FC = () => {
           <Text className="text-white font-bold text-lg">Share Update</Text>
         </TouchableOpacity>
       )}
-      {!isOwner && (
+      {!canPostUpdates && (
         <View className="bg-gray-100 rounded-2xl px-8 py-4">
           <Text className="text-gray-600 font-medium text-lg text-center">
-            Only circle owners can post updates
+            You don't have permission to post updates in this circle
           </Text>
         </View>
       )}
@@ -181,7 +181,7 @@ const CircleFeedScreen: React.FC = () => {
             >
               <Text className="text-white text-lg">👥</Text>
             </TouchableOpacity>
-            {isOwner && (
+            {canPostUpdates && (
               <TouchableOpacity
                 className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
                 onPress={handleCreateUpdate}

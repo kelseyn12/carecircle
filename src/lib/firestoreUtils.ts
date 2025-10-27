@@ -41,6 +41,7 @@ export const createCircle = async (circleData: {
       ...circleData,
       ownerIds: [circleData.ownerId], // New: array of owner IDs
       members: [circleData.ownerId], // Owner is automatically a member
+      updateAuthors: [circleData.ownerId], // Owner can post updates
       roles: { [circleData.ownerId]: 'owner' }, // Set owner role
       createdAt: serverTimestamp(),
     });
@@ -74,6 +75,7 @@ export const getCircle = async (circleId: string): Promise<Circle | null> => {
       ownerId: data.ownerId, // Keep for backward compatibility
       ownerIds: data.ownerIds || [data.ownerId], // New: array of owner IDs
       members: data.members || [],
+      updateAuthors: data.updateAuthors || [data.ownerId], // New: array of update authors
       roles: data.roles || {},
       createdAt: data.createdAt?.toDate() || new Date(),
     };
@@ -137,6 +139,8 @@ export const getUserCircles = async (userId: string): Promise<Circle[]> => {
         title: data.title,
         ownerId: data.ownerId,
         members: data.members || [],
+        ownerIds: data.ownerIds || [data.ownerId],
+        updateAuthors: data.updateAuthors || [data.ownerId],
         roles: data.roles || {},
         createdAt: data.createdAt?.toDate() || new Date(),
       });
@@ -558,6 +562,8 @@ export const subscribeToUserCircles = (
         title: data.title,
         ownerId: data.ownerId,
         members: data.members || [],
+        ownerIds: data.ownerIds || [data.ownerId],
+        updateAuthors: data.updateAuthors || [data.ownerId],
         roles: data.roles || {},
         createdAt: data.createdAt?.toDate() || new Date(),
       });
@@ -713,4 +719,100 @@ export const subscribeToComments = (
   }, (error) => {
     console.error('Error in comments subscription:', error);
   });
+};
+
+// Update Author Management Functions
+
+/**
+ * Check if a user can post updates in a circle
+ */
+export const canUserPostUpdates = async (circleId: string, userId: string): Promise<boolean> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const circleDoc = await getDoc(doc(circlesRef, circleId));
+    
+    if (!circleDoc.exists()) {
+      return false;
+    }
+    
+    const data = circleDoc.data();
+    const updateAuthors = data.updateAuthors || [data.ownerId];
+    
+    return updateAuthors.includes(userId);
+  } catch (error) {
+    console.error('Error checking update permissions:', error);
+    return false;
+  }
+};
+
+/**
+ * Add a user to the updateAuthors array for a circle
+ */
+export const addUpdateAuthor = async (circleId: string, userId: string): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const circleDoc = await getDoc(doc(circlesRef, circleId));
+    
+    if (!circleDoc.exists()) {
+      throw new Error('Circle not found');
+    }
+    
+    const data = circleDoc.data();
+    const updateAuthors = data.updateAuthors || [data.ownerId];
+    
+    if (updateAuthors.includes(userId)) {
+      throw new Error('User is already an update author');
+    }
+    
+    await updateDoc(doc(circlesRef, circleId), {
+      updateAuthors: [...updateAuthors, userId],
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error adding update author:', error);
+    throw error;
+  }
+};
+
+/**
+ * Remove a user from the updateAuthors array for a circle
+ */
+export const removeUpdateAuthor = async (circleId: string, userId: string): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const circleDoc = await getDoc(doc(circlesRef, circleId));
+    
+    if (!circleDoc.exists()) {
+      throw new Error('Circle not found');
+    }
+    
+    const data = circleDoc.data();
+    const updateAuthors = data.updateAuthors || [data.ownerId];
+    
+    if (!updateAuthors.includes(userId)) {
+      throw new Error('User is not an update author');
+    }
+    
+    // Don't allow removing the circle owner
+    if (data.ownerId === userId) {
+      throw new Error('Cannot remove circle owner from update authors');
+    }
+    
+    await updateDoc(doc(circlesRef, circleId), {
+      updateAuthors: updateAuthors.filter(id => id !== userId),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error removing update author:', error);
+    throw error;
+  }
 };
