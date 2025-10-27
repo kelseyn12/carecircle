@@ -739,9 +739,25 @@ export const canUserPostUpdates = async (circleId: string, userId: string): Prom
     }
     
     const data = circleDoc.data();
-    const updateAuthors = data.updateAuthors || [data.ownerId];
     
-    return updateAuthors.includes(userId);
+    // Check if updateAuthors field exists
+    if (data.updateAuthors) {
+      return data.updateAuthors.includes(userId);
+    }
+    
+    // Fallback for old circles: check if user is owner or in ownerIds
+    const isOwner = data.ownerId === userId || (data.ownerIds && data.ownerIds.includes(userId));
+    
+    // If no updateAuthors field exists, migrate it now
+    if (isOwner && !data.updateAuthors) {
+      console.log('Migrating circle to updateAuthors system...');
+      await updateDoc(doc(circlesRef, circleId), {
+        updateAuthors: userId === data.ownerId ? [userId] : (data.ownerIds || [userId]),
+      });
+      return true;
+    }
+    
+    return isOwner;
   } catch (error) {
     console.error('Error checking update permissions:', error);
     return false;
