@@ -185,14 +185,12 @@ const CircleFeedScreen: React.FC = () => {
             >
               <Text className="text-white text-lg">👥</Text>
             </TouchableOpacity>
-            {canPostUpdates && (
-              <TouchableOpacity
-                className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
-                onPress={handleCreateUpdate}
-              >
-                <Text className="text-white text-xl font-bold">+</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              className="bg-white border-2 border-blue-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              onPress={handleCreateUpdate}
+            >
+              <Text className="text-blue-600 text-2xl font-bold">+</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
