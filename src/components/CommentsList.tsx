@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform 
 } from 'react-native';
+import Toast from 'react-native-root-toast';
 import { Comment, User } from '../types';
 import { subscribeToComments, createComment } from '../lib/firestoreUtils';
 import { useAuth } from '../lib/authContext';
@@ -42,7 +43,6 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
     if (!user || !newComment.trim()) return;
 
     try {
-      // Validate comment
       const validatedData = createCommentSchema.parse({
         text: newComment.trim(),
       });
@@ -55,6 +55,10 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
       });
 
       setNewComment('');
+      Toast.show('💬 Comment posted!', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
     } catch (error) {
       console.error('Error creating comment:', error);
       Alert.alert('Error', 'Failed to post comment. Please try again.');
@@ -79,7 +83,7 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
   const renderComment = ({ item }: { item: Comment }) => (
     <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
       <View className="flex-row items-start space-x-3">
-        <View className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full items-center justify-center">
+        <View className="w-8 h-8 bg-blue-500 rounded-full items-center justify-center">
           <Text className="text-white font-bold text-sm">
             {users[item.authorId]?.displayName?.charAt(0) || '?'}
           </Text>
@@ -161,15 +165,17 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
           <TouchableOpacity
             className={`rounded-2xl px-6 py-3 ${
               newComment.trim() && !loading
-                ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+                ? 'bg-blue-500'
                 : 'bg-gray-300'
             }`}
             onPress={handleSubmitComment}
             disabled={!newComment.trim() || loading}
           >
-            <Text className={`font-semibold ${
-              newComment.trim() && !loading ? 'text-white' : 'text-gray-500'
-            }`}>
+            <Text
+              className={`font-semibold ${
+                newComment.trim() && !loading ? 'text-white' : 'text-gray-500'
+              }`}
+            >
               {loading ? 'Posting...' : 'Post'}
             </Text>
           </TouchableOpacity>
