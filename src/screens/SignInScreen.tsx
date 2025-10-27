@@ -2,12 +2,12 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/stack';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../lib/authContext';
 import { z } from 'zod';
 
-type SignInScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
+type SignInScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SignIn'>;
 
 // Validation schemas
 const signInSchema = z.object({

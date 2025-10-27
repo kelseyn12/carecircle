@@ -2,14 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert, Modal } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/stack';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Update } from '../types';
 import UpdateCard from '../components/UpdateCard';
 import CommentsList from '../components/CommentsList';
 import { useAuth } from '../lib/authContext';
 import { subscribeToCircleUpdates, isUserOwner } from '../lib/firestoreUtils';
 
-type CircleFeedScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CircleFeed'>;
+type CircleFeedScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CircleFeed'>;
 type CircleFeedScreenRouteProp = RouteProp<RootStackParamList, 'CircleFeed'>;
 
 const CircleFeedScreen: React.FC = () => {

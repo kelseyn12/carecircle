@@ -10,7 +10,7 @@ import {
   Switch 
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/stack';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Circle, User } from '../types';
 import { useAuth } from '../lib/authContext';
 import { 
@@ -26,7 +26,7 @@ import {
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-type MemberManagementScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'MemberManagement'>;
+type MemberManagementScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MemberManagement'>;
 type MemberManagementScreenRouteProp = RouteProp<RootStackParamList, 'MemberManagement'>;
 
 interface MemberWithRole {

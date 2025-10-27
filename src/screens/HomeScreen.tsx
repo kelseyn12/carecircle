@@ -2,13 +2,13 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../types';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList, Circle } from '../types';
 import CircleCard from '../components/CircleCard';
 import { useAuth } from '../lib/authContext';
 import { useCircles } from '../lib/useCircles';
 
-type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();

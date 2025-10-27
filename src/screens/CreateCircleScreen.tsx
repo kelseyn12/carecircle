@@ -2,12 +2,12 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/stack';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { createCircleSchema } from '../validation/schemas';
 import { useCircles } from '../lib/useCircles';
 
-type CreateCircleScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateCircle'>;
+type CreateCircleScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CreateCircle'>;
 
 const CreateCircleScreen: React.FC = () => {
   const navigation = useNavigation<CreateCircleScreenNavigationProp>();

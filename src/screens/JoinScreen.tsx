@@ -32,7 +32,7 @@ const JoinScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
 
-  const acceptInvite = httpsCallable(functions, 'acceptInvite');
+  const acceptInvite = functions ? httpsCallable(functions, 'acceptInvite') : null;
 
   useEffect(() => {
     if (!user) {
@@ -50,6 +50,9 @@ const JoinScreen: React.FC = () => {
     try {
       setIsLoading(true);
       
+      if (!acceptInvite) {
+        throw new Error('Firebase functions not available');
+      }
       const result = await acceptInvite({ inviteId });
       const data = result.data as any;
       

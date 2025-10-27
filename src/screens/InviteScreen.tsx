@@ -11,14 +11,14 @@ import {
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/stack';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../lib/authContext';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../lib/firebase';
 import Toast from 'react-native-root-toast';
 
-type InviteScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Invite'>;
+type InviteScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Invite'>;
 type InviteScreenRouteProp = RouteProp<RootStackParamList, 'Invite'>;
 
 const InviteScreen: React.FC = () => {
@@ -32,7 +32,7 @@ const InviteScreen: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
-  const createInvite = httpsCallable(functions, 'createInvite');
+  const createInvite = functions ? httpsCallable(functions, 'createInvite') : null;
 
   /** ✅ Force plain-text copy (fixes iOS "bplist00" bug) */
   const forcePlainCopy = async (text: string) => {
@@ -59,6 +59,9 @@ const InviteScreen: React.FC = () => {
 
     try {
       setIsCreating(true);
+      if (!createInvite) {
+        throw new Error('Firebase functions not available');
+      }
       const result = await createInvite({ circleId });
       const data = result.data as any;
 

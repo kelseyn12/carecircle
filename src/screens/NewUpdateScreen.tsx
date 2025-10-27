@@ -12,7 +12,7 @@ import {
   Image 
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/stack';
+import { StackNavigationProp } from '@react-navigation/stack';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { RootStackParamList } from '../types';
@@ -21,7 +21,7 @@ import { useAuth } from '../lib/authContext';
 import { createUpdate } from '../lib/firestoreUtils';
 import { uploadPhoto } from '../lib/firebase';
 
-type NewUpdateScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'NewUpdate'>;
+type NewUpdateScreenNavigationProp = StackNavigationProp<RootStackParamList, 'NewUpdate'>;
 type NewUpdateScreenRouteProp = RouteProp<RootStackParamList, 'NewUpdate'>;
 
 const NewUpdateScreen: React.FC = () => {
