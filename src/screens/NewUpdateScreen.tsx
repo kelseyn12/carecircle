@@ -41,7 +41,9 @@ const NewUpdateScreen: React.FC = () => {
     
     const checkPermissions = async () => {
       try {
+        console.log('Checking permissions for circle:', circleId, 'user:', user.id);
         const canPostUpdates = await canUserPostUpdates(circleId, user.id);
+        console.log('Result:', canPostUpdates);
         setCanPost(canPostUpdates);
         
         if (!canPostUpdates) {

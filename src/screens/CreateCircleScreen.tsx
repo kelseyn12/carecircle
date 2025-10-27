@@ -66,36 +66,55 @@ const CreateCircleScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View className="bg-white px-6 py-6 border-b border-gray-100 shadow-sm">
-          <View className="flex-row items-center justify-between mb-4">
+        <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 24, paddingTop: 50, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity
-              className="bg-gray-100 rounded-2xl w-12 h-12 items-center justify-center mr-4 mt-4"
               onPress={() => navigation.navigate('Home')}
+              style={{
+                backgroundColor: '#f3f4f6',
+                borderRadius: 12,
+                width: 44,
+                height: 44,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 16,
+              }}
             >
-              <Text className="text-gray-700 text-lg font-bold">←</Text>
+              <Text style={{ color: '#374151', fontSize: 18, fontWeight: 'bold' }}>←</Text>
             </TouchableOpacity>
-            <View className="flex-1">
-              <Text className="text-2xl font-bold text-gray-800">Create New Circle</Text>
-              <Text className="text-gray-600 mt-1 text-base">
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#1f2937' }}>Create New Circle</Text>
+              <Text style={{ color: '#6b7280', marginTop: 4, fontSize: 15 }}>
                 Set up a private space to share updates with your loved ones
               </Text>
             </View>
           </View>
         </View>
 
-        <View className="flex-1 px-6 py-6">
-          <View className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
-            <View className="mb-8">
-              <Text className="text-xl font-bold text-gray-800 mb-3">
+        <View style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 24 }}>
+          <View style={{
+            backgroundColor: '#ffffff',
+            borderRadius: 24,
+            padding: 32,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 12,
+            elevation: 4,
+            borderWidth: 1,
+            borderColor: '#f3f4f6',
+          }}>
+            <View style={{ marginBottom: 32 }}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1f2937', marginBottom: 12 }}>
                 Circle Name
               </Text>
-              <Text className="text-gray-600 mb-6 text-base leading-relaxed">
+              <Text style={{ color: '#6b7280', marginBottom: 24, fontSize: 15, lineHeight: 22 }}>
                 Choose a meaningful name for your circle (e.g., "Dad's Recovery", "Mom's Health Updates")
               </Text>
               
-              <View className="bg-gray-50 rounded-2xl border border-gray-100">
+              <View style={{ backgroundColor: '#f9fafb', borderRadius: 16, borderWidth: 1, borderColor: '#f3f4f6' }}>
                 <TextInput
-                  className="px-5 py-4 text-gray-800 text-lg"
+                  style={{ paddingHorizontal: 20, paddingVertical: 16, color: '#1f2937', fontSize: 16 }}
                   placeholder="Enter circle name"
                   placeholderTextColor="#9CA3AF"
                   value={title}
@@ -105,41 +124,52 @@ const CreateCircleScreen: React.FC = () => {
                 />
               </View>
               
-              <View className="flex-row justify-between items-center mt-3">
-                <Text className="text-gray-500 text-sm">
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                <Text style={{ color: '#6b7280', fontSize: 13 }}>
                   {title.length}/100 characters
                 </Text>
                 {title.length > 80 && (
-                  <Text className="text-orange-500 text-sm font-medium">
+                  <Text style={{ color: '#f97316', fontSize: 13, fontWeight: '600' }}>
                     Getting close to limit
                   </Text>
                 )}
               </View>
             </View>
 
-            <View className="space-y-4">
+            <View style={{ gap: 16 }}>
               <TouchableOpacity
-                className={`rounded-2xl py-5 shadow-lg ${
-                  isLoading || !title.trim() 
-                    ? 'bg-gray-300' 
-                    : 'bg-gradient-to-r from-blue-500 to-blue-600'
-                }`}
                 onPress={handleCreateCircle}
                 disabled={isLoading || !title.trim()}
-                style={{ opacity: isLoading || !title.trim() ? 0.7 : 1 }}
+                style={{
+                  backgroundColor: isLoading || !title.trim() ? '#d1d5db' : '#3b82f6',
+                  borderRadius: 16,
+                  paddingVertical: 16,
+                  paddingHorizontal: 24,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
+                  opacity: isLoading || !title.trim() ? 0.7 : 1,
+                }}
               >
-                <Text className="text-white text-center font-bold text-lg">
+                <Text style={{ color: '#ffffff', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
                   {isLoading ? 'Creating Circle...' : 'Create Circle'}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="bg-gray-100 rounded-2xl py-4"
                 onPress={() => navigation.goBack()}
                 disabled={isLoading}
-                style={{ opacity: isLoading ? 0.7 : 1 }}
+                style={{
+                  backgroundColor: '#f3f4f6',
+                  borderRadius: 16,
+                  paddingVertical: 14,
+                  paddingHorizontal: 24,
+                  opacity: isLoading ? 0.7 : 1,
+                }}
               >
-                <Text className="text-gray-700 text-center font-semibold text-base">
+                <Text style={{ color: '#374151', textAlign: 'center', fontWeight: '600', fontSize: 15 }}>
                   Cancel
                 </Text>
               </TouchableOpacity>
@@ -147,21 +177,36 @@ const CreateCircleScreen: React.FC = () => {
           </View>
 
           {/* Helpful tips */}
-          <View className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl p-6 border border-blue-100">
-            <View className="flex-row items-center mb-4">
-              <View className="w-8 h-8 bg-blue-500 rounded-full items-center justify-center mr-3">
-                <Text className="text-white text-sm">💡</Text>
+          <View style={{
+            marginTop: 24,
+            backgroundColor: '#eff6ff',
+            borderRadius: 24,
+            padding: 24,
+            borderWidth: 1,
+            borderColor: '#dbeafe',
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+              <View style={{
+                width: 32,
+                height: 32,
+                backgroundColor: '#3b82f6',
+                borderRadius: 16,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 12,
+              }}>
+                <Text style={{ color: '#ffffff', fontSize: 16 }}>💡</Text>
               </View>
-              <Text className="text-blue-800 font-bold text-lg">Tips for a great circle name:</Text>
+              <Text style={{ color: '#1e40af', fontWeight: 'bold', fontSize: 16 }}>Tips for a great circle name:</Text>
             </View>
-            <View className="space-y-2">
-              <Text className="text-blue-700 text-sm leading-relaxed">
+            <View style={{ gap: 8 }}>
+              <Text style={{ color: '#1e3a8a', fontSize: 13, lineHeight: 20 }}>
                 • Use the person's name or relationship (e.g., "Mom's Recovery")
               </Text>
-              <Text className="text-blue-700 text-sm leading-relaxed">
+              <Text style={{ color: '#1e3a8a', fontSize: 13, lineHeight: 20 }}>
                 • Be specific about the purpose (e.g., "Dad's Health Updates")
               </Text>
-              <Text className="text-blue-700 text-sm leading-relaxed">
+              <Text style={{ color: '#1e3a8a', fontSize: 13, lineHeight: 20 }}>
                 • Keep it simple and clear for all family members
               </Text>
             </View>

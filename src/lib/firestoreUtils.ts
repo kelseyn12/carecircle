@@ -290,7 +290,24 @@ export const getUserRoleInCircle = async (
 ): Promise<'owner' | 'member' | null> => {
   try {
     const circle = await getCircle(circleId);
-    return circle?.roles?.[userId] || null;
+    if (!circle) return null;
+    
+    // Check if user is in ownerIds array (new system)
+    if (circle.ownerIds?.includes(userId)) {
+      return 'owner';
+    }
+    
+    // Check if user is in roles object
+    if (circle.roles?.[userId]) {
+      return circle.roles[userId] as 'owner' | 'member';
+    }
+    
+    // Fallback for old circles: check if user is ownerId
+    if (circle.ownerId === userId) {
+      return 'owner';
+    }
+    
+    return null;
   } catch (error) {
     console.error('Error getting user role:', error);
     return null;

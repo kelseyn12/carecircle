@@ -24,53 +24,79 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress }) => {
 
   return (
     <TouchableOpacity
-      className="bg-white rounded-3xl p-6 mb-4 shadow-lg border border-gray-100"
       onPress={onPress}
-      activeOpacity={0.8}
+      activeOpacity={0.7}
       style={{
+        backgroundColor: '#ffffff',
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 16,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.08,
         shadowRadius: 8,
-        elevation: 4,
+        elevation: 3,
+        borderWidth: 1,
+        borderColor: '#f3f4f6',
       }}
     >
-      <View className="flex-row items-center justify-between">
-        <View className="flex-1">
-          <View className="flex-row items-center mb-2">
-            <View className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl items-center justify-center mr-3">
-              <Text className="text-white text-lg font-bold">👥</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <View style={{
+              width: 44,
+              height: 44,
+              backgroundColor: '#3b82f6',
+              borderRadius: 12,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginRight: 12,
+            }}>
+              <Text style={{ fontSize: 18, color: '#ffffff', fontWeight: 'bold' }}>👥</Text>
             </View>
-            <Text className="text-xl font-bold text-gray-800 flex-1">
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1f2937', flex: 1 }}>
               {circle.title}
             </Text>
           </View>
           
-          <View className="flex-row items-center mb-3">
-            <View className="bg-blue-100 rounded-full px-3 py-1 mr-3">
-              <Text className="text-blue-700 text-sm font-semibold">
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <View style={{
+              backgroundColor: '#dbeafe',
+              borderRadius: 12,
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              marginRight: 8,
+            }}>
+              <Text style={{ color: '#1e40af', fontSize: 13, fontWeight: '600' }}>
                 {memberCount} member{memberCount !== 1 ? 's' : ''}
               </Text>
             </View>
-            <Text className="text-gray-500 text-sm">
+            <Text style={{ color: '#6b7280', fontSize: 13 }}>
               {formatDate(circle.createdAt)}
             </Text>
           </View>
         </View>
 
-        <View className="ml-4">
-          <View className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl items-center justify-center">
-            <Text className="text-white text-lg">→</Text>
+        <View style={{ marginLeft: 12 }}>
+          <View style={{
+            width: 40,
+            height: 40,
+            backgroundColor: '#3b82f6',
+            borderRadius: 12,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: 'bold' }}>→</Text>
           </View>
         </View>
       </View>
 
-      <View className="mt-4 pt-4 border-t border-gray-100">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-blue-600 text-sm font-semibold">
+      <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f3f4f6' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ color: '#2563eb', fontSize: 14, fontWeight: '600' }}>
             View updates
           </Text>
-          <View className="w-2 h-2 bg-blue-500 rounded-full" />
+          <View style={{ width: 8, height: 8, backgroundColor: '#3b82f6', borderRadius: 4 }} />
         </View>
       </View>
     </TouchableOpacity>

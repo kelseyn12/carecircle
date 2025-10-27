@@ -39,17 +39,21 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
   };
 
   return (
-    <View className="bg-white rounded-3xl p-6 mb-4 shadow-lg border border-gray-100"
-      style={{
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
-      }}
-    >
+    <View style={{
+      backgroundColor: '#ffffff',
+      borderRadius: 20,
+      padding: 16,
+      marginBottom: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      elevation: 3,
+      borderWidth: 1,
+      borderColor: '#f3f4f6',
+    }}>
       {/* Header with author and time */}
-      <View className="flex-row items-center justify-between mb-4">
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <View className="flex-row items-center flex-1">
           <View className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl items-center justify-center mr-4">
             <Text className="text-white font-bold text-lg">
@@ -66,59 +70,59 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
       </View>
 
       {/* Update text */}
-      <Text className="text-gray-800 text-base leading-relaxed mb-4">
+      <Text style={{ color: '#1f2937', fontSize: 16, lineHeight: 24, marginBottom: update.photoURL ? 16 : 0 }}>
         {update.text}
       </Text>
 
       {/* Photo if available */}
       {update.photoURL && (
-        <View className="mb-4 rounded-2xl overflow-hidden">
+        <View style={{ marginBottom: 16, borderRadius: 16, overflow: 'hidden' }}>
           <Image
             source={{ uri: update.photoURL }}
-            className="w-full h-48"
+            style={{ width: '100%', height: 200 }}
             resizeMode="cover"
           />
         </View>
       )}
 
       {/* Reactions */}
-      <View className="flex-row items-center space-x-4 pt-4 border-t border-gray-100">
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f3f4f6', gap: 8, flexWrap: 'wrap' }}>
         <TouchableOpacity
-          className="flex-row items-center space-x-2 bg-red-50 rounded-full px-4 py-2"
+          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fef2f2', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 }}
           onPress={() => onReaction?.(update.id, '❤️')}
         >
-          <Text className="text-lg">❤️</Text>
+          <Text style={{ fontSize: 16 }}>❤️</Text>
           {getReactionCount('❤️') > 0 && (
-            <Text className="text-red-600 text-sm font-semibold">{getReactionCount('❤️')}</Text>
+            <Text style={{ color: '#dc2626', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount('❤️')}</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="flex-row items-center space-x-2 bg-yellow-50 rounded-full px-4 py-2"
+          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fefce8', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 }}
           onPress={() => onReaction?.(update.id, '🙏')}
         >
-          <Text className="text-lg">🙏</Text>
+          <Text style={{ fontSize: 16 }}>🙏</Text>
           {getReactionCount('🙏') > 0 && (
-            <Text className="text-yellow-600 text-sm font-semibold">{getReactionCount('🙏')}</Text>
+            <Text style={{ color: '#ca8a04', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount('🙏')}</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="flex-row items-center space-x-2 bg-green-50 rounded-full px-4 py-2"
+          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0fdf4', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 }}
           onPress={() => onReaction?.(update.id, '👍')}
         >
-          <Text className="text-lg">👍</Text>
+          <Text style={{ fontSize: 16 }}>👍</Text>
           {getReactionCount('👍') > 0 && (
-            <Text className="text-green-600 text-sm font-semibold">{getReactionCount('👍')}</Text>
+            <Text style={{ color: '#16a34a', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount('👍')}</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="flex-row items-center space-x-2 bg-blue-50 rounded-full px-4 py-2"
+          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#eff6ff', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 }}
           onPress={() => onComment?.(update.id)}
         >
-          <Text className="text-lg">💬</Text>
-          <Text className="text-blue-600 text-sm font-semibold">Comment</Text>
+          <Text style={{ fontSize: 16 }}>💬</Text>
+          <Text style={{ color: '#2563eb', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>Comment</Text>
         </TouchableOpacity>
       </View>
     </View>

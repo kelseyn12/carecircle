@@ -278,66 +278,85 @@ const MemberManagementScreen: React.FC = () => {
   };
 
   const renderMember = ({ item }: { item: MemberWithRole }) => (
-    <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center flex-1">
-          <View className="w-10 h-10 bg-blue-500 rounded-full items-center justify-center mr-3">
-            <Text className="text-white font-semibold">
-              {item.displayName.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          <View className="flex-1">
-            <Text className="font-semibold text-gray-800">
-              {item.displayName} {item.isCurrentUser && '(You)'}
-            </Text>
-            <Text className="text-sm text-gray-600 capitalize">
-              {item.role}
-            </Text>
-          </View>
+    <View style={{
+      backgroundColor: '#ffffff',
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+      borderWidth: 1,
+      borderColor: '#f3f4f6',
+    }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: userRole === 'owner' && !item.isCurrentUser ? 12 : 0 }}>
+        <View style={{
+          width: 44,
+          height: 44,
+          backgroundColor: '#3b82f6',
+          borderRadius: 22,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginRight: 12,
+        }}>
+          <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '600' }}>
+            {item.displayName.charAt(0).toUpperCase()}
+          </Text>
         </View>
-        
-        {userRole === 'owner' && !item.isCurrentUser && (
-          <View className="flex-row space-x-2">
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontWeight: '600', color: '#1f2937', fontSize: 15 }}>
+            {item.displayName} {item.isCurrentUser && '(You)'}
+          </Text>
+          <Text style={{ fontSize: 13, color: '#6b7280', textTransform: 'capitalize', marginTop: 2 }}>
+            {item.role}
+          </Text>
+        </View>
+      </View>
+      
+      {userRole === 'owner' && !item.isCurrentUser && (
+        <View style={{ gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
             {item.role === 'member' ? (
               <TouchableOpacity
-                className="bg-green-500 rounded-lg px-3 py-1"
+                style={{ backgroundColor: '#10b981', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, flex: 1 }}
                 onPress={() => handlePromoteMember(item.id)}
               >
-                <Text className="text-white text-xs font-semibold">Promote</Text>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Promote</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                className="bg-yellow-500 rounded-lg px-3 py-1"
+                style={{ backgroundColor: '#eab308', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, flex: 1 }}
                 onPress={() => handleDemoteOwner(item.id)}
               >
-                <Text className="text-white text-xs font-semibold">Demote</Text>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Demote</Text>
               </TouchableOpacity>
             )}
-            {/* Update Author Management */}
             {circle?.updateAuthors?.includes(item.id) ? (
               <TouchableOpacity
-                className="bg-orange-500 rounded-lg px-3 py-1"
+                style={{ backgroundColor: '#f97316', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, flex: 1 }}
                 onPress={() => handleRemoveUpdateAuthor(item.id)}
               >
-                <Text className="text-white text-xs font-semibold">Revoke Updates</Text>
+                <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '600', textAlign: 'center' }}>Revoke Updates</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                className="bg-blue-500 rounded-lg px-3 py-1"
+                style={{ backgroundColor: '#3b82f6', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, flex: 1 }}
                 onPress={() => handleAddUpdateAuthor(item.id)}
               >
-                <Text className="text-white text-xs font-semibold">Allow Updates</Text>
+                <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '600', textAlign: 'center' }}>Allow Updates</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity
-              className="bg-red-500 rounded-lg px-3 py-1"
-              onPress={() => handleRemoveMember(item.id, item.displayName)}
-            >
-              <Text className="text-white text-xs font-semibold">Remove</Text>
-            </TouchableOpacity>
           </View>
-        )}
-      </View>
+          <TouchableOpacity
+            style={{ backgroundColor: '#ef4444', borderRadius: 8, paddingVertical: 10 }}
+            onPress={() => handleRemoveMember(item.id, item.displayName)}
+          >
+            <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Remove from Circle</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 

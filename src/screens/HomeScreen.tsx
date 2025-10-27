@@ -111,13 +111,13 @@ const HomeScreen: React.FC = () => {
   return (
     <View className="flex-1 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <View className="bg-white px-6 py-6 border-b border-gray-100 shadow-sm">
+      <View className="bg-white px-6 py-4 border-b border-gray-100 shadow-sm" style={{ paddingTop: 50 }}>
         <View className="flex-row justify-between items-center">
           <View className="flex-1">
             <Text className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               My Circles
             </Text>
-            <Text className="text-gray-600 text-base mt-1">
+            <Text className="text-gray-600 text-base mt-2" style={{ marginTop: 4 }}>
               Welcome, {user?.displayName || 'User'} 💙
             </Text>
           </View>

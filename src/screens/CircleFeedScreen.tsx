@@ -6,7 +6,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Update } from '../types';
 import UpdateCard from '../components/UpdateCard';
 import { useAuth } from '../lib/authContext';
-import { subscribeToCircleUpdates, canUserPostUpdates } from '../lib/firestoreUtils';
+import { subscribeToCircleUpdates, canUserPostUpdates, getUser } from '../lib/firestoreUtils';
 
 type CircleFeedScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CircleFeed'>;
 type CircleFeedScreenRouteProp = RouteProp<RootStackParamList, 'CircleFeed'>;
@@ -22,6 +22,7 @@ const CircleFeedScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [canPostUpdates, setCanPostUpdates] = useState(true); // Set to true by default for now
+  const [userNames, setUserNames] = useState<Record<string, string>>({});
 
   // Check if user can post updates
   useEffect(() => {
@@ -50,8 +51,25 @@ const CircleFeedScreen: React.FC = () => {
     setLoading(true);
     setError(null);
 
-    const unsubscribe = subscribeToCircleUpdates(circleId, (updatesData) => {
+    const unsubscribe = subscribeToCircleUpdates(circleId, async (updatesData) => {
       setUpdates(updatesData);
+      
+      // Fetch user names for all authors
+      const authorIds = Array.from(new Set(updatesData.map(u => u.authorId)));
+      const namesMap: Record<string, string> = {};
+      
+      for (const authorId of authorIds) {
+        try {
+          const userData = await getUser(authorId);
+          if (userData) {
+            namesMap[authorId] = userData.displayName;
+          }
+        } catch (error) {
+          console.error('Error fetching user:', authorId, error);
+        }
+      }
+      
+      setUserNames(namesMap);
       setLoading(false);
       setRefreshing(false);
     });
@@ -85,14 +103,18 @@ const CircleFeedScreen: React.FC = () => {
     navigation.navigate('Comments', { updateId });
   };
 
-  const renderUpdate = ({ item }: { item: Update }) => (
-    <UpdateCard
-      update={item}
-      authorName={item.authorId === user?.id ? 'You' : 'Member'}
-      onReaction={handleReaction}
-      onComment={handleComment}
-    />
-  );
+  const renderUpdate = ({ item }: { item: Update }) => {
+    const authorName = item.authorId === user?.id ? 'You' : (userNames[item.authorId] || 'Member');
+    
+    return (
+      <UpdateCard
+        update={item}
+        authorName={authorName}
+        onReaction={handleReaction}
+        onComment={handleComment}
+      />
+    );
+  };
 
   const renderEmptyState = () => (
     <View className="flex-1 justify-center items-center px-6">
@@ -154,42 +176,88 @@ const CircleFeedScreen: React.FC = () => {
   return (
     <View className="flex-1 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <View className="bg-white px-6 py-6 border-b border-gray-100 shadow-sm">
+      <View className="bg-white px-6 py-4 border-b border-gray-100 shadow-sm" style={{ paddingTop: 50 }}>
         <View className="flex-row justify-between items-center">
           <View className="flex-row items-center flex-1">
             <TouchableOpacity
-              className="bg-gray-100 rounded-2xl w-12 h-12 items-center justify-center mr-4 mt-4"
+              className="bg-gray-100 rounded-2xl w-12 h-12 items-center justify-center mr-4"
               onPress={() => navigation.navigate('Home')}
+              style={{
+                backgroundColor: '#f3f4f6',
+                borderRadius: 16,
+                width: 48,
+                height: 48,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
             >
-              <Text className="text-gray-700 text-lg font-bold">←</Text>
+              <Text className="text-gray-700 text-lg font-bold" style={{ fontSize: 18 }}>←</Text>
             </TouchableOpacity>
             <View className="flex-1">
               <Text className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Circle Updates
               </Text>
-              <Text className="text-gray-600 text-base mt-1">
+              <Text className="text-gray-600 text-base" style={{ marginTop: 4 }}>
                 {updates.length} update{updates.length !== 1 ? 's' : ''}
               </Text>
             </View>
           </View>
-          <View className="flex-row space-x-3">
+          <View className="flex-row" style={{ gap: 8 }}>
             <TouchableOpacity
-              className="bg-gradient-to-r from-gray-500 to-gray-600 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              style={{
+                backgroundColor: '#374151',
+                borderRadius: 12,
+                width: 44,
+                height: 44,
+                justifyContent: 'center',
+                alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
               onPress={handleManageMembers}
             >
-              <Text className="text-white text-lg">⚙️</Text>
+              <Text className="text-white" style={{ fontSize: 20 }}>⚙️</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              style={{
+                backgroundColor: '#10b981',
+                borderRadius: 12,
+                width: 44,
+                height: 44,
+                justifyContent: 'center',
+                alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
               onPress={handleInviteMembers}
             >
-              <Text className="text-white text-lg">👥</Text>
+              <Text className="text-white" style={{ fontSize: 20 }}>👥</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="bg-white border-2 border-blue-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              style={{
+                backgroundColor: '#ffffff',
+                borderWidth: 2,
+                borderColor: '#3b82f6',
+                borderRadius: 12,
+                width: 44,
+                height: 44,
+                justifyContent: 'center',
+                alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
               onPress={handleCreateUpdate}
             >
-              <Text className="text-blue-600 text-2xl font-bold">+</Text>
+              <Text className="text-blue-600" style={{ fontSize: 24, fontWeight: 'bold' }}>+</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -203,13 +271,15 @@ const CircleFeedScreen: React.FC = () => {
           data={updates}
           renderItem={renderUpdate}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
+              tintColor="#3b82f6"
             />
           }
+          showsVerticalScrollIndicator={false}
         />
       )}
     </View>
