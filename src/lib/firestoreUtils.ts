@@ -724,6 +724,52 @@ export const subscribeToComments = (
 // Update Author Management Functions
 
 /**
+ * Migrate existing circle to include current user in members array
+ * This fixes permission issues for existing circles
+ */
+export const migrateCircleMembership = async (circleId: string, userId: string): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    // First, try to read the circle document
+    const circleDoc = await getDoc(doc(circlesRef, circleId));
+    
+    if (!circleDoc.exists()) {
+      throw new Error('Circle not found');
+    }
+    
+    const data = circleDoc.data();
+    
+    // Check if user is already in members array
+    if (data.members && data.members.includes(userId)) {
+      return; // Already migrated
+    }
+    
+    // Check if user is the owner
+    const isOwner = data.ownerId === userId || (data.ownerIds && data.ownerIds.includes(userId));
+    
+    if (isOwner) {
+      // Add user to members array and initialize updateAuthors if missing
+      const updates: any = {
+        members: [...(data.members || []), userId],
+      };
+      
+      if (!data.updateAuthors) {
+        updates.updateAuthors = userId === data.ownerId ? [userId] : (data.ownerIds || [userId]);
+      }
+      
+      await updateDoc(doc(circlesRef, circleId), updates);
+      console.log('Circle membership migrated successfully');
+    }
+  } catch (error) {
+    console.error('Error migrating circle membership:', error);
+    throw error;
+  }
+};
+
+/**
  * Check if a user can post updates in a circle
  */
 export const canUserPostUpdates = async (circleId: string, userId: string): Promise<boolean> => {
@@ -760,6 +806,24 @@ export const canUserPostUpdates = async (circleId: string, userId: string): Prom
     return isOwner;
   } catch (error) {
     console.error('Error checking update permissions:', error);
+    
+    // If we can't read the circle document due to permissions,
+    // try to migrate the circle membership first
+    try {
+      console.log('Attempting to migrate circle membership...');
+      await migrateCircleMembership(circleId, userId);
+      
+      // Try again after migration
+      const circleDoc = await getDoc(doc(circlesRef, circleId));
+      if (circleDoc.exists()) {
+        const data = circleDoc.data();
+        return data.updateAuthors ? data.updateAuthors.includes(userId) : 
+               (data.ownerId === userId || (data.ownerIds && data.ownerIds.includes(userId)));
+      }
+    } catch (migrationError) {
+      console.error('Migration failed:', migrationError);
+    }
+    
     return false;
   }
 };

@@ -21,7 +21,7 @@ const CircleFeedScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [canPostUpdates, setCanPostUpdates] = useState(false);
+  const [canPostUpdates, setCanPostUpdates] = useState(true); // Set to true by default for now
 
   // Check if user can post updates
   useEffect(() => {
