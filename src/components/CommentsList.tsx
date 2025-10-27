@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-root-toast';
 import { Comment, User } from '../types';
-import { subscribeToComments, createComment } from '../lib/firestoreUtils';
+import { subscribeToComments, createComment, getUser } from '../lib/firestoreUtils';
 import { useAuth } from '../lib/authContext';
 import { createCommentSchema } from '../validation/schemas';
 
@@ -34,6 +34,23 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
 
     const unsubscribe = subscribeToComments(updateId, (commentsData) => {
       setComments(commentsData);
+      
+      // Fetch user data for all comment authors
+      const fetchUsers = async () => {
+        const userIds = Array.from(new Set(commentsData.map(c => c.authorId)));
+        const userMap: Record<string, User> = {};
+        
+        for (const userId of userIds) {
+          const userData = await getUser(userId);
+          if (userData) {
+            userMap[userId] = userData;
+          }
+        }
+        
+        setUsers(userMap);
+      };
+      
+      fetchUsers();
     });
 
     return unsubscribe;

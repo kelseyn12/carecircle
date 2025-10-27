@@ -84,6 +84,36 @@ export const getCircle = async (circleId: string): Promise<Circle | null> => {
 };
 
 /**
+ * Get a user by their ID
+ */
+export const getUser = async (userId: string): Promise<User | null> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const userDoc = await getDoc(doc(usersRef, userId));
+    
+    if (!userDoc.exists()) {
+      return null;
+    }
+    
+    const data = userDoc.data();
+    return {
+      id: userDoc.id,
+      displayName: data.displayName || 'Unknown User',
+      photoURL: data.photoURL,
+      expoPushToken: data.expoPushToken,
+      createdAt: data.createdAt?.toDate() || new Date(),
+      circlesMuted: data.circlesMuted || [],
+    };
+  } catch (error) {
+    console.error('Error getting user:', error);
+    return null;
+  }
+};
+
+/**
  * Get all circles for a user (where user is a member)
  */
 export const getUserCircles = async (userId: string): Promise<Circle[]> => {
