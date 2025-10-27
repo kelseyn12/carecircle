@@ -1,11 +1,10 @@
 // Circle feed screen showing updates for a specific circle
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert, Modal } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Update } from '../types';
 import UpdateCard from '../components/UpdateCard';
-import CommentsList from '../components/CommentsList';
 import { useAuth } from '../lib/authContext';
 import { subscribeToCircleUpdates, isUserOwner } from '../lib/firestoreUtils';
 
@@ -23,8 +22,6 @@ const CircleFeedScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
-  const [showComments, setShowComments] = useState(false);
-  const [selectedUpdateId, setSelectedUpdateId] = useState<string | null>(null);
 
   // Check if user is owner
   useEffect(() => {
@@ -81,13 +78,7 @@ const CircleFeedScreen: React.FC = () => {
   };
 
   const handleComment = (updateId: string) => {
-    setSelectedUpdateId(updateId);
-    setShowComments(true);
-  };
-
-  const handleCloseComments = () => {
-    setShowComments(false);
-    setSelectedUpdateId(null);
+    navigation.navigate('Comments', { updateId });
   };
 
   const renderUpdate = ({ item }: { item: Update }) => (
@@ -219,21 +210,6 @@ const CircleFeedScreen: React.FC = () => {
           }
         />
       )}
-
-      {/* Comments Modal */}
-      <Modal
-        visible={showComments}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={handleCloseComments}
-      >
-        {selectedUpdateId && (
-          <CommentsList
-            updateId={selectedUpdateId}
-            onClose={handleCloseComments}
-          />
-        )}
-      </Modal>
     </View>
   );
 };

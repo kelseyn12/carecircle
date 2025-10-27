@@ -1,7 +1,7 @@
 // Main navigation component for the Care Circle app
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, Text, ActivityIndicator } from 'react-native';
 import * as Linking from 'expo-linking';
 
@@ -14,12 +14,13 @@ import NewUpdateScreen from '../screens/NewUpdateScreen';
 import InviteScreen from '../screens/InviteScreen';
 import JoinScreen from '../screens/JoinScreen';
 import MemberManagementScreen from '../screens/MemberManagementScreen';
+import CommentsScreen from '../screens/CommentsScreen';
 
 // Import auth context
 import { useAuth } from '../lib/authContext';
 import { RootStackParamList } from '../types';
 
-const Stack = createStackNavigator<RootStackParamList>();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Loading component
 const LoadingScreen: React.FC = () => (
@@ -89,6 +90,14 @@ const AppNavigator: React.FC = () => {
               name="MemberManagement" 
               component={MemberManagementScreen}
               options={{ title: 'Manage Members' }}
+            />
+            <Stack.Screen 
+              name="Comments" 
+              component={CommentsScreen}
+              options={{ 
+                title: 'Comments',
+                presentation: 'modal'
+              }}
             />
           </>
         ) : (
