@@ -19,29 +19,43 @@ export const useNetworkStatus = (): NetworkStatus => {
   useEffect(() => {
     // Get initial network state
     const getInitialState = async () => {
-      const state = await NetInfo.fetch();
-      const status: NetworkStatus = {
-        isConnected: state.isConnected ?? false,
-        isInternetReachable: state.isInternetReachable,
-        type: state.type,
-      };
-      
-      setNetworkStatus(status);
-      setOnlineStatus(status.isConnected && status.isInternetReachable === true);
+      try {
+        const state = await NetInfo.fetch();
+        const status: NetworkStatus = {
+          isConnected: state.isConnected ?? false,
+          isInternetReachable: state.isInternetReachable,
+          type: state.type,
+        };
+        
+        setNetworkStatus(status);
+        // Don't call setOnlineStatus here to avoid circular dependency
+      } catch (error) {
+        console.error('Error fetching initial network state:', error);
+        // Set safe defaults on error
+        setNetworkStatus({
+          isConnected: false,
+          isInternetReachable: false,
+          type: 'unknown',
+        });
+      }
     };
 
     getInitialState();
 
     // Subscribe to network state changes
     const unsubscribe = NetInfo.addEventListener((state) => {
-      const status: NetworkStatus = {
-        isConnected: state.isConnected ?? false,
-        isInternetReachable: state.isInternetReachable,
-        type: state.type,
-      };
-      
-      setNetworkStatus(status);
-      setOnlineStatus(status.isConnected && status.isInternetReachable === true);
+      try {
+        const status: NetworkStatus = {
+          isConnected: state.isConnected ?? false,
+          isInternetReachable: state.isInternetReachable,
+          type: state.type,
+        };
+        
+        setNetworkStatus(status);
+        // Don't call setOnlineStatus here to avoid circular dependency
+      } catch (error) {
+        console.error('Error in network state listener:', error);
+      }
     });
 
     return () => {
