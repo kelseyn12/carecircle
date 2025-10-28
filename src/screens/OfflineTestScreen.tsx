@@ -7,15 +7,35 @@ import { addOfflineUpdate, addOfflineComment, addOfflineReaction } from '../lib/
 import { useAuth } from '../lib/authContext';
 
 const OfflineTestScreen: React.FC = () => {
-  const networkStatus = useNetworkStatus();
-  const { user } = useAuth();
-  const [queueStatus, setQueueStatus] = useState(getOfflineQueueStatus());
+  console.log('OfflineTestScreen starting to render...');
+  
+  try {
+    const networkStatus = useNetworkStatus();
+    console.log('Network status loaded:', networkStatus);
+    
+    const { user } = useAuth();
+    console.log('User loaded:', user?.id);
+    
+    const [queueStatus, setQueueStatus] = useState(() => {
+      try {
+        const status = getOfflineQueueStatus();
+        console.log('Queue status loaded:', status);
+        return status;
+      } catch (error) {
+        console.error('Error loading queue status:', error);
+        return { count: 0, operations: [] };
+      }
+    });
 
-  console.log('OfflineTestScreen rendered');
+    console.log('OfflineTestScreen rendered successfully');
 
-  const refreshQueueStatus = () => {
-    setQueueStatus(getOfflineQueueStatus());
-  };
+    const refreshQueueStatus = () => {
+      try {
+        setQueueStatus(getOfflineQueueStatus());
+      } catch (error) {
+        console.error('Error refreshing queue status:', error);
+      }
+    };
 
   const testOfflineUpdate = async () => {
     if (!user) {
@@ -74,9 +94,9 @@ const OfflineTestScreen: React.FC = () => {
     }
   };
 
-  const isOnline = isGoodConnection(networkStatus);
+    const isOnline = isGoodConnection(networkStatus);
 
-  return (
+    return (
     <View style={{ flex: 1, padding: 20, backgroundColor: '#f9fafb' }}>
       <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' }}>
         Offline Functionality Test
@@ -245,6 +265,19 @@ const OfflineTestScreen: React.FC = () => {
       </View>
     </View>
   );
+  } catch (error) {
+    console.error('Error in OfflineTestScreen:', error);
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#dc2626', marginBottom: 12 }}>
+          Error Loading Test Screen
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center' }}>
+          {error?.message || 'Unknown error occurred'}
+        </Text>
+      </View>
+    );
+  }
 };
 
 export default OfflineTestScreen;
