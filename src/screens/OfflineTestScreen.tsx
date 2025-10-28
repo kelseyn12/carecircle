@@ -75,14 +75,17 @@ const OfflineTestScreen: React.FC = () => {
               return;
             }
             try {
+              console.log('Adding offline update...');
               await addOfflineUpdate({
                 circleId: 'test-circle',
                 authorId: user.id,
                 text: `Test offline update - ${new Date().toLocaleTimeString()}`,
               });
+              console.log('Offline update added successfully');
               Alert.alert('Success', 'Test update added to offline queue!');
             } catch (error) {
-              Alert.alert('Error', 'Failed to add offline update');
+              console.error('Error adding offline update:', error);
+              Alert.alert('Error', `Failed to add offline update: ${error.message || error}`);
             }
           }}
         >
@@ -105,14 +108,17 @@ const OfflineTestScreen: React.FC = () => {
               return;
             }
             try {
+              console.log('Adding offline reaction...');
               await addOfflineReaction({
                 updateId: 'test-update',
                 userId: user.id,
                 emoji: '❤️',
               });
+              console.log('Offline reaction added successfully');
               Alert.alert('Success', 'Test reaction added to offline queue!');
             } catch (error) {
-              Alert.alert('Error', 'Failed to add offline reaction');
+              console.error('Error adding offline reaction:', error);
+              Alert.alert('Error', `Failed to add offline reaction: ${error.message || error}`);
             }
           }}
         >
