@@ -1,7 +1,7 @@
 // Test component for offline functionality
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Alert } from 'react-native';
-import { useNetworkStatus, isGoodConnection } from '../hooks/useNetworkStatus';
+import { useSimpleNetworkStatus } from '../hooks/useSimpleNetworkStatus';
 import { getOfflineQueueStatus } from '../lib/offlineQueue';
 import { addOfflineUpdate, addOfflineComment, addOfflineReaction } from '../lib/offlineQueue';
 import { useAuth } from '../lib/authContext';
@@ -9,12 +9,12 @@ import { useAuth } from '../lib/authContext';
 const OfflineTestScreen: React.FC = () => {
   console.log('OfflineTestScreen starting to render...');
   
-  // Step 3: Test useAuth + useNetworkStatus hooks
+  // Step 3: Test useAuth + useSimpleNetworkStatus hooks
   const { user } = useAuth();
   console.log('useAuth hook loaded, user:', user?.id);
   
-  const networkStatus = useNetworkStatus();
-  console.log('useNetworkStatus hook loaded:', networkStatus);
+  const networkStatus = useSimpleNetworkStatus();
+  console.log('useSimpleNetworkStatus hook loaded:', networkStatus);
   
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#f0f9ff' }}>
@@ -23,7 +23,7 @@ const OfflineTestScreen: React.FC = () => {
       </Text>
       
       <Text style={{ fontSize: 16, marginBottom: 20, textAlign: 'center', color: '#059669' }}>
-        ✅ useNetworkStatus hook works!
+        ✅ useSimpleNetworkStatus hook works!
       </Text>
       
       <Text style={{ fontSize: 14, marginBottom: 10, textAlign: 'center', color: '#6b7280' }}>
