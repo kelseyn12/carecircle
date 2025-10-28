@@ -58,6 +58,112 @@ const OfflineTestScreen: React.FC = () => {
       <Text style={{ fontSize: 14, marginBottom: 30, textAlign: 'center', color: '#6b7280' }}>
         🎉 Offline functionality is working!
       </Text>
+      
+      {/* Test Buttons */}
+      <View style={{ width: '100%', maxWidth: 300 }}>
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#10b981',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderRadius: 8,
+            marginBottom: 12,
+          }}
+          onPress={async () => {
+            if (!user) {
+              Alert.alert('Error', 'Please sign in first');
+              return;
+            }
+            try {
+              await addOfflineUpdate({
+                circleId: 'test-circle',
+                authorId: user.id,
+                text: `Test offline update - ${new Date().toLocaleTimeString()}`,
+              });
+              Alert.alert('Success', 'Test update added to offline queue!');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to add offline update');
+            }
+          }}
+        >
+          <Text style={{ color: '#ffffff', fontWeight: '600', textAlign: 'center' }}>
+            Test Offline Update
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#f59e0b',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderRadius: 8,
+            marginBottom: 12,
+          }}
+          onPress={async () => {
+            if (!user) {
+              Alert.alert('Error', 'Please sign in first');
+              return;
+            }
+            try {
+              await addOfflineReaction({
+                updateId: 'test-update',
+                userId: user.id,
+                emoji: '❤️',
+              });
+              Alert.alert('Success', 'Test reaction added to offline queue!');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to add offline reaction');
+            }
+          }}
+        >
+          <Text style={{ color: '#ffffff', fontWeight: '600', textAlign: 'center' }}>
+            Test Offline Reaction
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#3b82f6',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderRadius: 8,
+          }}
+          onPress={() => {
+            const status = getOfflineQueueStatus();
+            Alert.alert('Queue Status', `Queued operations: ${status.count}\nOperations: ${status.operations.map(op => op.type).join(', ') || 'None'}`);
+          }}
+        >
+          <Text style={{ color: '#ffffff', fontWeight: '600', textAlign: 'center' }}>
+            Check Queue Status
+          </Text>
+        </TouchableOpacity>
+      </View>
+      
+      {/* Instructions */}
+      <View style={{
+        backgroundColor: '#eff6ff',
+        borderRadius: 12,
+        padding: 16,
+        marginTop: 20,
+        borderWidth: 1,
+        borderColor: '#dbeafe',
+      }}>
+        <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8, color: '#1e40af' }}>
+          How to Test Offline:
+        </Text>
+        <Text style={{ fontSize: 14, color: '#1e3a8a', marginBottom: 4 }}>
+          1. Turn off WiFi/cellular data
+        </Text>
+        <Text style={{ fontSize: 14, color: '#1e3a8a', marginBottom: 4 }}>
+          2. Tap "Test Offline Update" or "Test Offline Reaction"
+        </Text>
+        <Text style={{ fontSize: 14, color: '#1e3a8a', marginBottom: 4 }}>
+          3. Check queue status to see queued operations
+        </Text>
+        <Text style={{ fontSize: 14, color: '#1e3a8a' }}>
+          4. Turn network back on - operations will sync automatically
+        </Text>
+      </View>
     </View>
   );
 };
