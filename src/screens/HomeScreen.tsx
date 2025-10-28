@@ -144,33 +144,6 @@ const HomeScreen: React.FC = () => {
             </TouchableOpacity>
             
             <TouchableOpacity
-              className="bg-blue-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
-              onPress={() => {
-                console.log('Navigating to OfflineTest...');
-                try {
-                  navigation.navigate('OfflineTest');
-                  console.log('Navigation successful');
-                } catch (error) {
-                  console.error('Navigation error:', error);
-                }
-              }}
-              style={{
-                backgroundColor: '#3b82f6',
-                borderRadius: 16,
-                width: 48,
-                height: 48,
-                justifyContent: 'center',
-                alignItems: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-                elevation: 5,
-              }}
-            >
-              <Text className="text-white text-lg font-bold" style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>🧪</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
               className="bg-gray-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
               onPress={handleSignOut}
               style={{

@@ -59,7 +59,6 @@ export class OfflineQueue {
     // Fetch initial state
     NetInfo.fetch().then(state => {
       this.isOnline = (state.isConnected && state.isInternetReachable === true);
-      console.log(`Initial network status for OfflineQueue: ${this.isOnline ? 'online' : 'offline'}`);
       if (this.isOnline && !this.processingQueue) {
         this.processQueue();
       }
@@ -69,11 +68,9 @@ export class OfflineQueue {
     this.unsubscribeNetInfo = NetInfo.addEventListener(state => {
       const wasOnline = this.isOnline;
       this.isOnline = (state.isConnected && state.isInternetReachable === true);
-      console.log(`Network status changed for OfflineQueue: ${this.isOnline ? 'online' : 'offline'}`);
 
       // If we just came online and are not already processing, try to process the queue
       if (!wasOnline && this.isOnline && !this.processingQueue) {
-        console.log('Came back online, processing queue automatically...');
         this.processQueue();
       }
     });
@@ -98,8 +95,6 @@ export class OfflineQueue {
 
     this.queue.push(queuedOperation);
     await this.saveQueue();
-    
-    console.log('Operation added to queue:', queuedOperation.id, 'Queue length:', this.queue.length);
 
     // If online, try to process immediately
     if (this.isOnline && !this.processingQueue) {
@@ -109,38 +104,23 @@ export class OfflineQueue {
 
   // Process all queued operations
   private async processQueue(): Promise<void> {
-    if (this.processingQueue) {
-      console.log('Queue processing skipped: already processing.');
-      return;
-    }
-    if (!this.isOnline) {
-      console.log('Queue processing skipped: currently offline.');
-      return;
-    }
-    if (this.queue.length === 0) {
-      console.log('Queue processing skipped: no operations to process.');
+    if (this.processingQueue || !this.isOnline || this.queue.length === 0) {
       return;
     }
 
     this.processingQueue = true;
-    console.log('Processing offline queue...');
-
     const operationsToProcess = [...this.queue];
     this.queue = [];
 
     for (const operation of operationsToProcess) {
       try {
         await this.executeOperation(operation);
-        console.log('Successfully processed offline operation:', operation.id);
       } catch (error) {
-        console.error('Failed to process offline operation:', operation.id, error);
-        
         // Increment retry count
         operation.retryCount++;
         
         // If retry count is exceeded, remove from queue
         if (operation.retryCount >= MAX_RETRY_COUNT) {
-          console.warn('Max retries exceeded for operation:', operation.id);
           continue;
         }
         
@@ -150,14 +130,13 @@ export class OfflineQueue {
     }
 
     await this.saveQueue();
+    this.processingQueue = false;
   }
 
   // Execute a single operation
   private async executeOperation(operation: QueuedOperation): Promise<void> {
-    // For now, just log the operation - we'll implement actual execution later
-    console.log('Would execute operation:', operation.type, operation.data);
-    
-    // Simulate successful execution for testing
+    // For now, just simulate successful execution
+    // In production, this would call the actual Firestore functions
     return Promise.resolve();
   }
 
@@ -175,9 +154,8 @@ export class OfflineQueue {
     await this.saveQueue();
   }
 
-  // Public method to manually process queue (for testing)
+  // Public method to manually process queue
   async processQueueManually(): Promise<void> {
-    console.log('Manually processing queue...');
     await this.processQueue();
   }
 }
