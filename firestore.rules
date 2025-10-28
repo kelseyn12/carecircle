@@ -30,14 +30,21 @@ service cloud.firestore {
         request.auth.uid in resource.data.ownerIds;
     }
     
-    // Updates: only updateAuthors can create, all members can read
+    // Updates: only updateAuthors can create, all members can read and react
     match /updates/{updateId} {
       allow read: if request.auth != null && 
         request.auth.uid in get(/databases/$(database)/documents/circles/$(resource.data.circleId)).data.members;
       allow create: if request.auth != null && 
         request.auth.uid in get(/databases/$(database)/documents/circles/$(request.resource.data.circleId)).data.updateAuthors &&
         request.auth.uid == request.resource.data.authorId;
-      allow update, delete: if request.auth != null && 
+      allow update: if request.auth != null && (
+        // Author can update/delete their own updates
+        request.auth.uid == resource.data.authorId ||
+        // Any circle member can update reactions
+        (request.auth.uid in get(/databases/$(database)/documents/circles/$(resource.data.circleId)).data.members &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(["reactions"]))
+      );
+      allow delete: if request.auth != null && 
         request.auth.uid == resource.data.authorId;
     }
     
