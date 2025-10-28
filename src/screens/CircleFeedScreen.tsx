@@ -7,6 +7,8 @@ import { RootStackParamList, Update } from '../types';
 import UpdateCard from '../components/UpdateCard';
 import { useAuth } from '../lib/authContext';
 import { subscribeToCircleUpdates, canUserPostUpdates, getUser, toggleReaction } from '../lib/firestoreUtils';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import OfflineIndicator from '../components/OfflineIndicator';
 
 type CircleFeedScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CircleFeed'>;
 type CircleFeedScreenRouteProp = RouteProp<RootStackParamList, 'CircleFeed'>;
@@ -270,6 +272,9 @@ const CircleFeedScreen: React.FC = () => {
           </View>
         </View>
       </View>
+
+      {/* Offline Indicator */}
+      <OfflineIndicator />
 
       {/* Updates List */}
       {updates.length === 0 ? (

@@ -16,6 +16,8 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Circle, Update, User, Comment } from '../types';
+import { handleError, retryOperation } from './errorHandler';
+import { addOfflineUpdate, addOfflineComment, addOfflineReaction } from './offlineQueue';
 
 // Collection references
 const circlesRef = collection(db, 'circles');
@@ -474,7 +476,7 @@ export const toggleCircleMute = async (
 // Update Management Functions
 
 /**
- * Create a new update
+ * Create a new update with offline support
  */
 export const createUpdate = async (updateData: {
   circleId: string;
@@ -500,11 +502,25 @@ export const createUpdate = async (updateData: {
       updateDoc.photoURL = updateData.photoURL;
     }
     
-    const docRef = await addDoc(updatesRef, updateDoc);
+    const docRef = await retryOperation(async () => {
+      return await addDoc(updatesRef, updateDoc);
+    });
     
     return docRef.id;
   } catch (error) {
     console.error('Error creating update:', error);
+    
+    // If it's a network error, queue for offline
+    if (error?.code === 'unavailable' || error?.message?.includes('network')) {
+      try {
+        await addOfflineUpdate(updateData);
+        throw new Error('Update queued for when you\'re back online');
+      } catch (queueError) {
+        console.error('Error queuing offline update:', queueError);
+      }
+    }
+    
+    handleError(error, 'Create Update');
     throw new Error('Failed to create update. Please try again.');
   }
 };
@@ -640,7 +656,7 @@ export const subscribeToCircleUpdates = (
 // Reaction Management Functions
 
 /**
- * Toggle a reaction on an update
+ * Toggle a reaction on an update with offline support
  */
 export const toggleReaction = async (
   updateId: string,
@@ -672,12 +688,26 @@ export const toggleReaction = async (
     }
     
     // Update the document
-    await firestoreUpdateDoc(updateRef, {
-      reactions: currentReactions,
+    await retryOperation(async () => {
+      await firestoreUpdateDoc(updateRef, {
+        reactions: currentReactions,
+      });
     });
     
   } catch (error) {
     console.error('Error toggling reaction:', error);
+    
+    // If it's a network error, queue for offline
+    if (error?.code === 'unavailable' || error?.message?.includes('network')) {
+      try {
+        await addOfflineReaction({ updateId, userId, emoji });
+        throw new Error('Reaction queued for when you\'re back online');
+      } catch (queueError) {
+        console.error('Error queuing offline reaction:', queueError);
+      }
+    }
+    
+    handleError(error, 'Toggle Reaction');
     throw new Error('Failed to update reaction. Please try again.');
   }
 };
@@ -685,7 +715,7 @@ export const toggleReaction = async (
 // Comment Management Functions
 
 /**
- * Create a new comment
+ * Create a new comment with offline support
  */
 export const createComment = async (commentData: {
   updateId: string;
@@ -697,14 +727,28 @@ export const createComment = async (commentData: {
   }
 
   try {
-    const docRef = await addDoc(commentsRef, {
-      ...commentData,
-      createdAt: serverTimestamp(),
+    const docRef = await retryOperation(async () => {
+      return await addDoc(commentsRef, {
+        ...commentData,
+        createdAt: serverTimestamp(),
+      });
     });
     
     return docRef.id;
   } catch (error) {
     console.error('Error creating comment:', error);
+    
+    // If it's a network error, queue for offline
+    if (error?.code === 'unavailable' || error?.message?.includes('network')) {
+      try {
+        await addOfflineComment(commentData);
+        throw new Error('Comment queued for when you\'re back online');
+      } catch (queueError) {
+        console.error('Error queuing offline comment:', queueError);
+      }
+    }
+    
+    handleError(error, 'Create Comment');
     throw new Error('Failed to create comment. Please try again.');
   }
 };
