@@ -69,11 +69,13 @@ export class OfflineQueue {
 
     this.queue.push(queuedOperation);
     await this.saveQueue();
+    
+    console.log('Operation added to queue:', queuedOperation.id, 'Queue length:', this.queue.length);
 
-    // If online, try to process immediately
-    if (this.isOnline) {
-      this.processQueue();
-    }
+    // Only process immediately if we're testing (for now, always queue)
+    // if (this.isOnline) {
+    //   this.processQueue();
+    // }
   }
 
   // Process all queued operations
@@ -128,6 +130,12 @@ export class OfflineQueue {
   async clearQueue(): Promise<void> {
     this.queue = [];
     await this.saveQueue();
+  }
+
+  // Public method to manually process queue (for testing)
+  async processQueueManually(): Promise<void> {
+    console.log('Manually processing queue...');
+    await this.processQueue();
   }
 }
 

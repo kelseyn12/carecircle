@@ -133,6 +133,7 @@ const OfflineTestScreen: React.FC = () => {
             paddingHorizontal: 16,
             paddingVertical: 12,
             borderRadius: 8,
+            marginBottom: 12,
           }}
           onPress={() => {
             const status = getOfflineQueueStatus();
@@ -141,6 +142,31 @@ const OfflineTestScreen: React.FC = () => {
         >
           <Text style={{ color: '#ffffff', fontWeight: '600', textAlign: 'center' }}>
             Check Queue Status
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#8b5cf6',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderRadius: 8,
+          }}
+          onPress={async () => {
+            try {
+              console.log('Manually processing queue...');
+              const { OfflineQueue } = await import('../lib/offlineQueue');
+              const queue = OfflineQueue.getInstance();
+              await queue.processQueueManually();
+              Alert.alert('Success', 'Queue processing completed! Check console for logs.');
+            } catch (error) {
+              console.error('Error processing queue:', error);
+              Alert.alert('Error', `Failed to process queue: ${error.message || error}`);
+            }
+          }}
+        >
+          <Text style={{ color: '#ffffff', fontWeight: '600', textAlign: 'center' }}>
+            Process Queue Now
           </Text>
         </TouchableOpacity>
       </View>
