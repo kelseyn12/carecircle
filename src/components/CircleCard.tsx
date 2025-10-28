@@ -2,6 +2,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Circle } from '../types';
+import { formatDate } from '../lib/utils';
+import { EMOJIS } from '../utils/emojiUtils';
 
 interface CircleCardProps {
   circle: Circle;
@@ -52,7 +54,7 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress }) => {
               alignItems: 'center',
               marginRight: 12,
             }}>
-              <Text style={{ fontSize: 18, color: '#ffffff', fontWeight: 'bold' }}>👥</Text>
+                <Text style={{ fontSize: 18, color: '#ffffff', fontWeight: 'bold' }}>{EMOJIS.PEOPLE}</Text>
             </View>
             <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1f2937', flex: 1 }}>
               {circle.title}
@@ -86,7 +88,7 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress }) => {
             justifyContent: 'center',
             alignItems: 'center',
           }}>
-            <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: 'bold' }}>→</Text>
+              <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: 'bold' }}>{EMOJIS.ARROW_RIGHT}</Text>
           </View>
         </View>
       </View>

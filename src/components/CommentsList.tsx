@@ -15,6 +15,7 @@ import { Comment, User } from '../types';
 import { subscribeToComments, createComment, getUser } from '../lib/firestoreUtils';
 import { useAuth } from '../lib/authContext';
 import { createCommentSchema } from '../validation/schemas';
+import { EMOJIS } from '../utils/emojiUtils';
 
 interface CommentsListProps {
   updateId: string;
@@ -72,7 +73,7 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
       });
 
       setNewComment('');
-      Toast.show('💬 Comment posted!', {
+      Toast.show(`${EMOJIS.COMMENT} Comment posted!`, {
         duration: Toast.durations.SHORT,
         position: Toast.positions.BOTTOM,
       });
@@ -150,13 +151,13 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
         ListEmptyComponent={
           <View className="flex-1 justify-center items-center py-12">
             <View className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center mb-4">
-              <Text className="text-2xl">💬</Text>
+              <Text className="text-2xl">{EMOJIS.COMMENT}</Text>
             </View>
             <Text className="text-gray-600 text-lg font-medium mb-2">
               No comments yet
             </Text>
             <Text className="text-gray-500 text-center leading-relaxed">
-              Leave some encouragement 💙
+              Leave some encouragement {EMOJIS.BLUE_HEART}
             </Text>
           </View>
         }

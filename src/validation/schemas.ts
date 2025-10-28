@@ -1,6 +1,7 @@
 // Zod validation schemas for form inputs and API data
 
 import { z } from 'zod';
+import { EMOJIS } from '../utils/emojiUtils';
 
 // User validation
 export const userSchema = z.object({
@@ -27,7 +28,7 @@ export const inviteSchema = z.object({
 
 // Reaction validation
 export const reactionSchema = z.object({
-  emoji: z.enum(['❤️', '🙏', '👍'], {
+  emoji: z.enum([EMOJIS.HEART, EMOJIS.PRAY, EMOJIS.THUMBS_UP], {
     errorMap: () => ({ message: 'Invalid reaction emoji' }),
   }),
 });

@@ -6,7 +6,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Update } from '../types';
 import UpdateCard from '../components/UpdateCard';
 import { useAuth } from '../lib/authContext';
-import { subscribeToCircleUpdates, canUserPostUpdates, getUser } from '../lib/firestoreUtils';
+import { subscribeToCircleUpdates, canUserPostUpdates, getUser, toggleReaction } from '../lib/firestoreUtils';
 
 type CircleFeedScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CircleFeed'>;
 type CircleFeedScreenRouteProp = RouteProp<RootStackParamList, 'CircleFeed'>;
@@ -94,9 +94,16 @@ const CircleFeedScreen: React.FC = () => {
     navigation.navigate('MemberManagement', { circleId });
   };
 
-  const handleReaction = (updateId: string, emoji: string) => {
-    // TODO: Implement reaction functionality
-    console.log('Reaction:', updateId, emoji);
+  const handleReaction = async (updateId: string, emoji: string) => {
+    if (!user) return;
+    
+    try {
+      await toggleReaction(updateId, user.id, emoji);
+      console.log('Reaction toggled:', updateId, emoji);
+    } catch (error) {
+      console.error('Error toggling reaction:', error);
+      Alert.alert('Error', 'Failed to update reaction. Please try again.');
+    }
   };
 
   const handleComment = (updateId: string) => {
@@ -110,6 +117,7 @@ const CircleFeedScreen: React.FC = () => {
       <UpdateCard
         update={item}
         authorName={authorName}
+        currentUserId={user?.id}
         onReaction={handleReaction}
         onComment={handleComment}
       />

@@ -7,6 +7,7 @@ import { RootStackParamList, Circle } from '../types';
 import CircleCard from '../components/CircleCard';
 import { useAuth } from '../lib/authContext';
 import { useCircles } from '../lib/useCircles';
+import { EMOJIS } from '../utils/emojiUtils';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -55,7 +56,7 @@ const HomeScreen: React.FC = () => {
   const renderEmptyState = () => (
     <View className="flex-1 justify-center items-center px-6">
       <View className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full items-center justify-center mb-8 shadow-xl">
-        <Text className="text-6xl">💙</Text>
+        <Text className="text-6xl">{EMOJIS.BLUE_HEART}</Text>
       </View>
       <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
         Welcome to Care Circle
@@ -84,7 +85,7 @@ const HomeScreen: React.FC = () => {
     return (
       <View className="flex-1 justify-center items-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <View className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full items-center justify-center mb-4">
-          <Text className="text-2xl">💙</Text>
+          <Text className="text-2xl">{EMOJIS.BLUE_HEART}</Text>
         </View>
         <Text className="text-gray-600 text-lg font-medium">Loading circles...</Text>
       </View>
@@ -95,7 +96,7 @@ const HomeScreen: React.FC = () => {
     return (
       <View className="flex-1 justify-center items-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-6">
         <View className="w-16 h-16 bg-red-100 rounded-full items-center justify-center mb-4">
-          <Text className="text-2xl">⚠️</Text>
+          <Text className="text-2xl">{EMOJIS.WARNING}</Text>
         </View>
         <Text className="text-red-600 text-center mb-6 text-lg font-medium">{error}</Text>
         <TouchableOpacity
@@ -118,7 +119,7 @@ const HomeScreen: React.FC = () => {
               My Circles
             </Text>
             <Text className="text-gray-600 text-base mt-2" style={{ marginTop: 4 }}>
-              Welcome, {user?.displayName || 'User'} 💙
+              Welcome, {user?.displayName || 'User'} {EMOJIS.BLUE_HEART}
             </Text>
           </View>
           <View className="flex-row space-x-3">

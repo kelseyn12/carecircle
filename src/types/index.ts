@@ -1,5 +1,7 @@
 // TypeScript type definitions for Care Circle app
 
+import { EMOJIS } from '../utils/emojiUtils';
+
 export interface User {
   id: string;
   displayName: string;
@@ -28,7 +30,7 @@ export interface Update {
   photoURL?: string;
   createdAt: Date;
   reactions?: {
-    [userId: string]: '❤️' | '🙏' | '👍';
+    [userId: string]: typeof EMOJIS.HEART | typeof EMOJIS.PRAY | typeof EMOJIS.THUMBS_UP;
   };
 }
 
@@ -42,7 +44,7 @@ export interface Invite {
 
 export interface Reaction {
   userId: string;
-  emoji: '❤️' | '🙏' | '👍';
+  emoji: typeof EMOJIS.HEART | typeof EMOJIS.PRAY | typeof EMOJIS.THUMBS_UP;
 }
 
 export interface Comment {

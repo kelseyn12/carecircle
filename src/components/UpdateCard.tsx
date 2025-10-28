@@ -2,10 +2,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Update } from '../types';
+import { formatRelativeTime } from '../lib/utils';
+import { EMOJIS, getReactionEmoji } from '../utils/emojiUtils';
 
 interface UpdateCardProps {
   update: Update;
   authorName?: string;
+  currentUserId?: string;
   onReaction?: (updateId: string, emoji: string) => void;
   onComment?: (updateId: string) => void;
 }
@@ -13,6 +16,7 @@ interface UpdateCardProps {
 const UpdateCard: React.FC<UpdateCardProps> = ({ 
   update, 
   authorName = 'Anonymous',
+  currentUserId,
   onReaction,
   onComment 
 }) => {
@@ -35,7 +39,14 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
 
   // Get reaction count for an emoji
   const getReactionCount = (emoji: string) => {
-    return update.reactions?.[emoji]?.length || 0;
+    if (!update.reactions) return 0;
+    return Object.values(update.reactions).filter(reactionEmoji => reactionEmoji === emoji).length;
+  };
+
+  // Check if current user has reacted with this emoji
+  const hasUserReacted = (emoji: string) => {
+    if (!currentUserId || !update.reactions) return false;
+    return update.reactions[currentUserId] === emoji;
   };
 
   return (
@@ -88,32 +99,59 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
       {/* Reactions */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f3f4f6', gap: 8, flexWrap: 'wrap' }}>
         <TouchableOpacity
-          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fef2f2', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 }}
-          onPress={() => onReaction?.(update.id, '❤️')}
+          style={{ 
+            flexDirection: 'row', 
+            alignItems: 'center', 
+            backgroundColor: hasUserReacted(EMOJIS.HEART) ? '#fecaca' : '#fef2f2', 
+            borderRadius: 20, 
+            paddingHorizontal: 12, 
+            paddingVertical: 8,
+            borderWidth: hasUserReacted(EMOJIS.HEART) ? 2 : 0,
+            borderColor: hasUserReacted(EMOJIS.HEART) ? '#dc2626' : 'transparent',
+          }}
+          onPress={() => onReaction?.(update.id, EMOJIS.HEART)}
         >
-          <Text style={{ fontSize: 16 }}>❤️</Text>
-          {getReactionCount('❤️') > 0 && (
-            <Text style={{ color: '#dc2626', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount('❤️')}</Text>
+          <Text style={{ fontSize: 16 }}>{EMOJIS.HEART}</Text>
+          {getReactionCount(EMOJIS.HEART) > 0 && (
+            <Text style={{ color: '#dc2626', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount(EMOJIS.HEART)}</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fefce8', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 }}
-          onPress={() => onReaction?.(update.id, '🙏')}
+          style={{ 
+            flexDirection: 'row', 
+            alignItems: 'center', 
+            backgroundColor: hasUserReacted(EMOJIS.PRAY) ? '#fde68a' : '#fefce8', 
+            borderRadius: 20, 
+            paddingHorizontal: 12, 
+            paddingVertical: 8,
+            borderWidth: hasUserReacted(EMOJIS.PRAY) ? 2 : 0,
+            borderColor: hasUserReacted(EMOJIS.PRAY) ? '#ca8a04' : 'transparent',
+          }}
+          onPress={() => onReaction?.(update.id, EMOJIS.PRAY)}
         >
-          <Text style={{ fontSize: 16 }}>🙏</Text>
-          {getReactionCount('🙏') > 0 && (
-            <Text style={{ color: '#ca8a04', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount('🙏')}</Text>
+          <Text style={{ fontSize: 16 }}>{EMOJIS.PRAY}</Text>
+          {getReactionCount(EMOJIS.PRAY) > 0 && (
+            <Text style={{ color: '#ca8a04', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount(EMOJIS.PRAY)}</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0fdf4', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 }}
-          onPress={() => onReaction?.(update.id, '👍')}
+          style={{ 
+            flexDirection: 'row', 
+            alignItems: 'center', 
+            backgroundColor: hasUserReacted(EMOJIS.THUMBS_UP) ? '#bbf7d0' : '#f0fdf4', 
+            borderRadius: 20, 
+            paddingHorizontal: 12, 
+            paddingVertical: 8,
+            borderWidth: hasUserReacted(EMOJIS.THUMBS_UP) ? 2 : 0,
+            borderColor: hasUserReacted(EMOJIS.THUMBS_UP) ? '#16a34a' : 'transparent',
+          }}
+          onPress={() => onReaction?.(update.id, EMOJIS.THUMBS_UP)}
         >
-          <Text style={{ fontSize: 16 }}>👍</Text>
-          {getReactionCount('👍') > 0 && (
-            <Text style={{ color: '#16a34a', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount('👍')}</Text>
+          <Text style={{ fontSize: 16 }}>{EMOJIS.THUMBS_UP}</Text>
+          {getReactionCount(EMOJIS.THUMBS_UP) > 0 && (
+            <Text style={{ color: '#16a34a', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount(EMOJIS.THUMBS_UP)}</Text>
           )}
         </TouchableOpacity>
 
@@ -121,7 +159,7 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
           style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#eff6ff', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 }}
           onPress={() => onComment?.(update.id)}
         >
-          <Text style={{ fontSize: 16 }}>💬</Text>
+          <Text style={{ fontSize: 16 }}>{EMOJIS.COMMENT}</Text>
           <Text style={{ color: '#2563eb', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>Comment</Text>
         </TouchableOpacity>
       </View>

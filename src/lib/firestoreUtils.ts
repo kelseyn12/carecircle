@@ -637,6 +637,51 @@ export const subscribeToCircleUpdates = (
   });
 };
 
+// Reaction Management Functions
+
+/**
+ * Toggle a reaction on an update
+ */
+export const toggleReaction = async (
+  updateId: string,
+  userId: string,
+  emoji: string
+): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const updateRef = doc(updatesRef, updateId);
+    const updateDoc = await getDoc(updateRef);
+    
+    if (!updateDoc.exists()) {
+      throw new Error('Update not found');
+    }
+    
+    const currentData = updateDoc.data();
+    const currentReactions = currentData.reactions || {};
+    
+    // Check if user already reacted with this emoji
+    if (currentReactions[userId] === emoji) {
+      // Remove the reaction
+      delete currentReactions[userId];
+    } else {
+      // Add or change the reaction
+      currentReactions[userId] = emoji;
+    }
+    
+    // Update the document
+    await updateDoc(updateRef, {
+      reactions: currentReactions,
+    });
+    
+  } catch (error) {
+    console.error('Error toggling reaction:', error);
+    throw new Error('Failed to update reaction. Please try again.');
+  }
+};
+
 // Comment Management Functions
 
 /**
