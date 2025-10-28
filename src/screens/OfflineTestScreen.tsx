@@ -11,6 +11,8 @@ const OfflineTestScreen: React.FC = () => {
   const { user } = useAuth();
   const [queueStatus, setQueueStatus] = useState(getOfflineQueueStatus());
 
+  console.log('OfflineTestScreen rendered');
+
   const refreshQueueStatus = () => {
     setQueueStatus(getOfflineQueueStatus());
   };
@@ -78,6 +80,10 @@ const OfflineTestScreen: React.FC = () => {
     <View style={{ flex: 1, padding: 20, backgroundColor: '#f9fafb' }}>
       <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' }}>
         Offline Functionality Test
+      </Text>
+      
+      <Text style={{ fontSize: 16, marginBottom: 20, textAlign: 'center', color: '#10b981' }}>
+        ✅ Screen loaded successfully!
       </Text>
 
       {/* Network Status */}

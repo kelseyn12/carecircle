@@ -145,7 +145,15 @@ const HomeScreen: React.FC = () => {
             
             <TouchableOpacity
               className="bg-blue-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
-              onPress={() => navigation.navigate('OfflineTest')}
+              onPress={() => {
+                console.log('Navigating to OfflineTest...');
+                try {
+                  navigation.navigate('OfflineTest');
+                  console.log('Navigation successful');
+                } catch (error) {
+                  console.error('Navigation error:', error);
+                }
+              }}
               style={{
                 backgroundColor: '#3b82f6',
                 borderRadius: 16,

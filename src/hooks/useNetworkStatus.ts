@@ -1,7 +1,7 @@
 // Network status hook for monitoring connectivity
 import { useState, useEffect } from 'react';
 import NetInfo from '@react-native-community/netinfo';
-import { setOnlineStatus } from './offlineQueue';
+import { setOnlineStatus } from '../lib/offlineQueue';
 
 export interface NetworkStatus {
   isConnected: boolean;
