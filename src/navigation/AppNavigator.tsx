@@ -15,6 +15,7 @@ import InviteScreen from '../screens/InviteScreen';
 import JoinScreen from '../screens/JoinScreen';
 import MemberManagementScreen from '../screens/MemberManagementScreen';
 import CommentsScreen from '../screens/CommentsScreen';
+import OfflineTestScreen from '../screens/OfflineTestScreen';
 
 // Import auth context
 import { useAuth } from '../lib/authContext';
@@ -98,6 +99,11 @@ const AppNavigator: React.FC = () => {
                 title: 'Comments',
                 presentation: 'modal'
               }}
+            />
+            <Stack.Screen 
+              name="OfflineTest" 
+              component={OfflineTestScreen}
+              options={{ title: 'Offline Test' }}
             />
           </>
         ) : (
