@@ -9,26 +9,37 @@ import { useAuth } from '../lib/authContext';
 const OfflineTestScreen: React.FC = () => {
   console.log('OfflineTestScreen starting to render...');
   
-  // Step 2: Test useAuth hook
+  // Step 3: Test useAuth + useNetworkStatus hooks
   const { user } = useAuth();
   console.log('useAuth hook loaded, user:', user?.id);
+  
+  const networkStatus = useNetworkStatus();
+  console.log('useNetworkStatus hook loaded:', networkStatus);
   
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#f0f9ff' }}>
       <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' }}>
-        Offline Test Screen - Step 2
+        Offline Test Screen - Step 3
       </Text>
       
       <Text style={{ fontSize: 16, marginBottom: 20, textAlign: 'center', color: '#059669' }}>
-        ✅ useAuth hook works!
+        ✅ useNetworkStatus hook works!
       </Text>
       
       <Text style={{ fontSize: 14, marginBottom: 10, textAlign: 'center', color: '#6b7280' }}>
         User ID: {user?.id || 'Not signed in'}
       </Text>
       
+      <Text style={{ fontSize: 14, marginBottom: 10, textAlign: 'center', color: '#6b7280' }}>
+        Connected: {networkStatus.isConnected ? 'Yes' : 'No'}
+      </Text>
+      
+      <Text style={{ fontSize: 14, marginBottom: 10, textAlign: 'center', color: '#6b7280' }}>
+        Type: {networkStatus.type || 'Unknown'}
+      </Text>
+      
       <Text style={{ fontSize: 14, marginBottom: 30, textAlign: 'center', color: '#6b7280' }}>
-        Next: testing useNetworkStatus hook...
+        Next: testing getOfflineQueueStatus...
       </Text>
     </View>
   );
