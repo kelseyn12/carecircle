@@ -3,7 +3,7 @@ import {
   collection, 
   doc, 
   addDoc, 
-  updateDoc, 
+  updateDoc as firestoreUpdateDoc, 
   deleteDoc, 
   getDoc, 
   getDocs, 
@@ -169,7 +169,7 @@ export const updateCircle = async (
 
   try {
     const circleDoc = doc(circlesRef, circleId);
-    await updateDoc(circleDoc, {
+    await firestoreUpdateDoc(circleDoc, {
       ...updates,
       updatedAt: serverTimestamp(),
     });
@@ -202,7 +202,7 @@ export const addMemberToCircle = async (
       throw new Error('User is already a member of this circle');
     }
 
-    await updateDoc(circleDoc, {
+    await firestoreUpdateDoc(circleDoc, {
       members: [...circle.members, userId],
       [`roles.${userId}`]: 'member', // Set as member role
       updatedAt: serverTimestamp(),
@@ -238,7 +238,7 @@ export const removeMemberFromCircle = async (
 
     const updatedMembers = circle.members.filter(id => id !== userId);
     
-    await updateDoc(circleDoc, {
+    await firestoreUpdateDoc(circleDoc, {
       members: updatedMembers,
       updatedAt: serverTimestamp(),
     });
@@ -350,7 +350,7 @@ export const promoteMemberToOwner = async (
     const circleDoc = doc(circlesRef, circleId);
     const updatedOwnerIds = [...(circle.ownerIds || []), userId];
     
-    await updateDoc(circleDoc, {
+    await firestoreUpdateDoc(circleDoc, {
       [`roles.${userId}`]: 'owner',
       ownerIds: updatedOwnerIds,
       updatedAt: serverTimestamp(),
@@ -381,7 +381,7 @@ export const demoteOwnerToMember = async (
     const circleDoc = doc(circlesRef, circleId);
     const updatedOwnerIds = (circle.ownerIds || []).filter(id => id !== userId);
     
-    await updateDoc(circleDoc, {
+    await firestoreUpdateDoc(circleDoc, {
       [`roles.${userId}`]: 'member',
       ownerIds: updatedOwnerIds,
       updatedAt: serverTimestamp(),
@@ -419,7 +419,7 @@ export const leaveCircle = async (
     delete updatedRoles[userId];
 
     const circleDoc = doc(circlesRef, circleId);
-    await updateDoc(circleDoc, {
+    await firestoreUpdateDoc(circleDoc, {
       members: updatedMembers,
       roles: updatedRoles,
       updatedAt: serverTimestamp(),
@@ -672,7 +672,7 @@ export const toggleReaction = async (
     }
     
     // Update the document
-    await updateDoc(updateRef, {
+    await firestoreUpdateDoc(updateRef, {
       reactions: currentReactions,
     });
     
@@ -822,7 +822,7 @@ export const migrateCircleMembership = async (circleId: string, userId: string):
         updates.updateAuthors = userId === data.ownerId ? [userId] : (data.ownerIds || [userId]);
       }
       
-      await updateDoc(doc(circlesRef, circleId), updates);
+      await firestoreUpdateDoc(doc(circlesRef, circleId), updates);
       console.log('Circle membership migrated successfully');
     }
   } catch (error) {
@@ -859,7 +859,7 @@ export const canUserPostUpdates = async (circleId: string, userId: string): Prom
     // If no updateAuthors field exists, migrate it now
     if (isOwner && !data.updateAuthors) {
       console.log('Migrating circle to updateAuthors system...');
-      await updateDoc(doc(circlesRef, circleId), {
+      await firestoreUpdateDoc(doc(circlesRef, circleId), {
         updateAuthors: userId === data.ownerId ? [userId] : (data.ownerIds || [userId]),
       });
       return true;
@@ -912,7 +912,7 @@ export const addUpdateAuthor = async (circleId: string, userId: string): Promise
       throw new Error('User is already an update author');
     }
     
-    await updateDoc(doc(circlesRef, circleId), {
+    await firestoreUpdateDoc(doc(circlesRef, circleId), {
       updateAuthors: [...updateAuthors, userId],
       updatedAt: serverTimestamp(),
     });
@@ -949,7 +949,7 @@ export const removeUpdateAuthor = async (circleId: string, userId: string): Prom
       throw new Error('Cannot remove circle owner from update authors');
     }
     
-    await updateDoc(doc(circlesRef, circleId), {
+    await firestoreUpdateDoc(doc(circlesRef, circleId), {
       updateAuthors: updateAuthors.filter(id => id !== userId),
       updatedAt: serverTimestamp(),
     });
