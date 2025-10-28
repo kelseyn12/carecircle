@@ -1,5 +1,6 @@
 // Offline queue system for storing operations when network is unavailable
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 import { Update, Comment } from '../types';
 
 export interface QueuedOperation {
@@ -17,6 +18,8 @@ export class OfflineQueue {
   private static instance: OfflineQueue;
   private queue: QueuedOperation[] = [];
   private isOnline: boolean = true;
+  private processingQueue: boolean = false;
+  private unsubscribeNetInfo: (() => void) | null = null;
 
   static getInstance(): OfflineQueue {
     if (!OfflineQueue.instance) {
@@ -27,6 +30,7 @@ export class OfflineQueue {
 
   private constructor() {
     this.loadQueue();
+    this.setupNetworkListener();
   }
 
   // Load queue from AsyncStorage
@@ -48,6 +52,31 @@ export class OfflineQueue {
     } catch (error) {
       console.error('Error saving offline queue:', error);
     }
+  }
+
+  // Setup network status listener
+  private setupNetworkListener(): void {
+    // Fetch initial state
+    NetInfo.fetch().then(state => {
+      this.isOnline = (state.isConnected && state.isInternetReachable === true);
+      console.log(`Initial network status for OfflineQueue: ${this.isOnline ? 'online' : 'offline'}`);
+      if (this.isOnline && !this.processingQueue) {
+        this.processQueue();
+      }
+    });
+
+    // Subscribe to network changes
+    this.unsubscribeNetInfo = NetInfo.addEventListener(state => {
+      const wasOnline = this.isOnline;
+      this.isOnline = (state.isConnected && state.isInternetReachable === true);
+      console.log(`Network status changed for OfflineQueue: ${this.isOnline ? 'online' : 'offline'}`);
+
+      // If we just came online and are not already processing, try to process the queue
+      if (!wasOnline && this.isOnline && !this.processingQueue) {
+        console.log('Came back online, processing queue automatically...');
+        this.processQueue();
+      }
+    });
   }
 
   // Set online/offline status
@@ -72,15 +101,29 @@ export class OfflineQueue {
     
     console.log('Operation added to queue:', queuedOperation.id, 'Queue length:', this.queue.length);
 
-    // Only process immediately if we're testing (for now, always queue)
-    // if (this.isOnline) {
-    //   this.processQueue();
-    // }
+    // If online, try to process immediately
+    if (this.isOnline && !this.processingQueue) {
+      this.processQueue();
+    }
   }
 
   // Process all queued operations
   private async processQueue(): Promise<void> {
-    if (!this.isOnline || this.queue.length === 0) return;
+    if (this.processingQueue) {
+      console.log('Queue processing skipped: already processing.');
+      return;
+    }
+    if (!this.isOnline) {
+      console.log('Queue processing skipped: currently offline.');
+      return;
+    }
+    if (this.queue.length === 0) {
+      console.log('Queue processing skipped: no operations to process.');
+      return;
+    }
+
+    this.processingQueue = true;
+    console.log('Processing offline queue...');
 
     const operationsToProcess = [...this.queue];
     this.queue = [];

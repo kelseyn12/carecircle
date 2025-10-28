@@ -1,6 +1,6 @@
 // Test component for offline functionality
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useSimpleNetworkStatus } from '../hooks/useSimpleNetworkStatus';
 import { getOfflineQueueStatus } from '../lib/offlineQueue';
 import { addOfflineUpdate, addOfflineComment, addOfflineReaction } from '../lib/offlineQueue';
@@ -30,7 +30,7 @@ const OfflineTestScreen: React.FC = () => {
   console.log('All hooks loaded successfully!');
   
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#f0f9ff' }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#f0f9ff' }} contentContainerStyle={{ padding: 20, justifyContent: 'center', alignItems: 'center', minHeight: '100%' }}>
       <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' }}>
         Offline Test Screen - Step 4
       </Text>
@@ -196,7 +196,7 @@ const OfflineTestScreen: React.FC = () => {
           4. Turn network back on - operations will sync automatically
         </Text>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
