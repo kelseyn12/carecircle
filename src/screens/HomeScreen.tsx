@@ -9,6 +9,7 @@ import { useAuth } from '../lib/authContext';
 import { useCircles } from '../lib/useCircles';
 import { EMOJIS } from '../utils/emojiUtils';
 import { initializeNotifications } from '../lib/notificationService';
+import SafeText from '../components/SafeText';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -208,25 +209,25 @@ const HomeScreen: React.FC = () => {
       <View className="bg-white px-6 pt-12 pb-4 border-b border-gray-100 shadow-sm">
         <View className="flex-row justify-between items-center">
           <View className="flex-1">
-            <Text className="text-3xl font-bold text-blue-600">
+            <SafeText className="text-3xl font-bold text-blue-600" maxFontSizeMultiplier={1.2}>
               My Circles
-            </Text>
-            <Text className="text-gray-600 text-base mt-1">
+            </SafeText>
+            <SafeText className="text-gray-600 text-base mt-1" maxFontSizeMultiplier={1.3}>
               Welcome, {user?.displayName || 'User'} {EMOJIS.BLUE_HEART}
-            </Text>
+            </SafeText>
           </View>
           <View className="flex-row gap-2 flex-shrink-0">
             <TouchableOpacity
               className="bg-blue-100 rounded-xl w-10 h-10 justify-center items-center shadow-sm"
               onPress={() => setShowJoinModal(true)}
             >
-              <Text className="text-base">👥</Text>
+              <SafeText className="text-base" maxFontSizeMultiplier={1.1}>👥</SafeText>
             </TouchableOpacity>
             <TouchableOpacity
               className="bg-emerald-100 rounded-xl w-10 h-10 justify-center items-center shadow-sm"
               onPress={handleCreateCircle}
             >
-              <Text className="text-base font-bold">+</Text>
+              <SafeText className="text-base font-bold" maxFontSizeMultiplier={1.1}>+</SafeText>
             </TouchableOpacity>
             <TouchableOpacity
               className="bg-purple-100 rounded-xl w-10 h-10 justify-center items-center shadow-sm"
@@ -253,13 +254,13 @@ const HomeScreen: React.FC = () => {
                 }
               }}
             >
-              <Text className="text-base">🔔</Text>
+              <SafeText className="text-base" maxFontSizeMultiplier={1.1}>🔔</SafeText>
             </TouchableOpacity>
             <TouchableOpacity
               className="bg-gray-200 rounded-xl w-10 h-10 justify-center items-center shadow-sm"
               onPress={handleSignOut}
             >
-              <Text className="text-base">🚪</Text>
+              <SafeText className="text-base" maxFontSizeMultiplier={1.1}>🚪</SafeText>
             </TouchableOpacity>
           </View>
         </View>
