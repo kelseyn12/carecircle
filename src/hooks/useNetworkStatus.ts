@@ -68,7 +68,16 @@ export const useNetworkStatus = (): NetworkStatus => {
 
 // Utility function to check if we have a good connection
 export const isGoodConnection = (status: NetworkStatus): boolean => {
-  return status.isConnected && status.isInternetReachable === true;
+  // If connected, assume good connection even if isInternetReachable is null (common on simulator)
+  // Only return false if explicitly disconnected or explicitly unreachable
+  if (!status.isConnected) {
+    return false;
+  }
+  // If isInternetReachable is null, assume connected (simulator/hotspot edge cases)
+  if (status.isInternetReachable === null) {
+    return true; // Assume connected if status is uncertain
+  }
+  return status.isInternetReachable === true;
 };
 
 // Utility function to get connection quality

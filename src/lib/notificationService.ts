@@ -208,14 +208,45 @@ export const openAppSettings = async (): Promise<void> => {
   }
 };
 
-// Handle notification received
-export const handleNotificationReceived = (notification: Notifications.Notification) => {
-  console.log('Notification received:', notification);
-  // You can add custom handling here
+// Setup notification listeners for foreground notifications
+export const setupNotificationListeners = () => {
+  // Listen for notifications received while app is in foreground
+  const receivedListener = Notifications.addNotificationReceivedListener((notification) => {
+    console.log('📬 Notification received (foreground):', notification.request.content.title);
+    console.log('Notification body:', notification.request.content.body);
+    console.log('Notification data:', notification.request.content.data);
+    
+    // The notification handler will automatically show it because shouldShowAlert: true
+    // But we can add additional logic here if needed
+  });
+
+  // Listen for notifications that the user taps
+  const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
+    console.log('👆 Notification tapped:', response.notification.request.content.title);
+    
+    const data = response.notification.request.content.data;
+    if (data?.circleId) {
+      console.log('Navigating to circle:', data.circleId);
+      // Navigation will be handled by the app's deep linking or navigation context
+    }
+  });
+
+  return {
+    receivedListener,
+    responseListener,
+    remove: () => {
+      receivedListener.remove();
+      responseListener.remove();
+    },
+  };
 };
 
-// Handle notification response (when user taps notification)
+// Handle notification received (deprecated, use setupNotificationListeners instead)
+export const handleNotificationReceived = (notification: Notifications.Notification) => {
+  console.log('Notification received:', notification);
+};
+
+// Handle notification response (deprecated, use setupNotificationListeners instead)
 export const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
   console.log('Notification response:', response);
-  // You can add navigation logic here
 };

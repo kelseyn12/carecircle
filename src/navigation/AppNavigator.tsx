@@ -1,9 +1,10 @@
 // Main navigation component for the Care Circle app
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, Text, ActivityIndicator } from 'react-native';
 import * as Linking from 'expo-linking';
+import { setupNotificationListeners } from '../lib/notificationService';
 
 // Import screens
 import SignInScreen from '../screens/SignInScreen';
@@ -32,6 +33,19 @@ const LoadingScreen: React.FC = () => (
 
 const AppNavigator: React.FC = () => {
   const { user, loading } = useAuth();
+  const notificationListenersRef = useRef<ReturnType<typeof setupNotificationListeners> | null>(null);
+
+  // Setup notification listeners when app loads
+  useEffect(() => {
+    console.log('🔔 Setting up notification listeners...');
+    const listeners = setupNotificationListeners();
+    notificationListenersRef.current = listeners;
+    
+    return () => {
+      console.log('🔕 Cleaning up notification listeners...');
+      listeners.remove();
+    };
+  }, []);
 
   // Configure deep linking
   const prefix = Linking.createURL('/');
