@@ -470,19 +470,30 @@ export const toggleCircleMute = async (
           circlesMuted: updatedMuted,
         });
       },
-      {
-        operation: 'toggleCircleMute',
-        maxRetries: 3,
-      }
+      3, // maxRetries
+      1000 // baseDelay
     );
-  } catch (error) {
-    handleError(error, {
-      operation: 'toggleCircleMute',
+  } catch (error: any) {
+    // Log the actual error for debugging
+    console.error('Error toggling circle mute:', {
+      error,
+      message: error?.message,
+      code: error?.code,
       userId,
       circleId,
       isMuted,
     });
-    throw new Error('Failed to update notification settings. Please try again.');
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to update notification settings. Please try again.';
+    if (error?.code === 'permission-denied') {
+      errorMessage = "You don't have permission to update notification settings.";
+    } else if (error?.code === 'unavailable' || error?.message?.includes('network')) {
+      errorMessage = 'Network error. Please check your connection and try again.';
+    }
+    
+    handleError(error, 'toggleCircleMute');
+    throw new Error(errorMessage);
   }
 };
 
