@@ -130,8 +130,9 @@ const MemberManagementScreen: React.FC = () => {
               await promoteMemberToOwner(circleId, memberId);
               await loadCircleData(); // Refresh data
               Alert.alert('Success', 'Member promoted to owner');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to promote member');
+            } catch (error: any) {
+              console.error('Error promoting member:', error);
+              Alert.alert('Error', error?.message || 'Failed to promote member');
             }
           },
         },
@@ -166,25 +167,31 @@ const MemberManagementScreen: React.FC = () => {
   const handleAddUpdateAuthor = async (memberId: string) => {
     if (!user) return;
 
-    Alert.alert(
-      'Grant Update Permission',
-      'This member will be able to post updates in this circle.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Grant Permission',
-          onPress: async () => {
-            try {
-              await addUpdateAuthor(circleId, memberId);
-              await loadCircleData(); // Refresh data
-              Alert.alert('Success', 'Member can now post updates');
-            } catch (error) {
-              Alert.alert('Error', error instanceof Error ? error.message : 'Failed to grant update permission');
-            }
+    try {
+      Alert.alert(
+        'Grant Update Permission',
+        'This member will be able to post updates in this circle.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Grant Permission',
+            onPress: async () => {
+              try {
+                await addUpdateAuthor(circleId, memberId);
+                await loadCircleData(); // Refresh data
+                Alert.alert('Success', 'Member can now post updates');
+              } catch (error: any) {
+                console.error('Error adding update author:', error);
+                Alert.alert('Error', error?.message || 'Failed to grant update permission');
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    } catch (error: any) {
+      console.error('Error in handleAddUpdateAuthor:', error);
+      Alert.alert('Error', 'Failed to show permission dialog');
+    }
   };
 
   const handleRemoveUpdateAuthor = async (memberId: string) => {
@@ -227,8 +234,9 @@ const MemberManagementScreen: React.FC = () => {
               await removeMemberFromCircle(circleId, memberId);
               await loadCircleData(); // Refresh data
               Alert.alert('Success', 'Member removed from circle');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to remove member');
+            } catch (error: any) {
+              console.error('Error removing member:', error);
+              Alert.alert('Error', error?.message || 'Failed to remove member');
             }
           },
         },
