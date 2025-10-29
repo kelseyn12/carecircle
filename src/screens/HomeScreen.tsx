@@ -209,28 +209,28 @@ const HomeScreen: React.FC = () => {
       <View className="bg-white px-6 pt-12 pb-4 border-b border-gray-100 shadow-sm">
         <View className="flex-row justify-between items-center">
           <View className="flex-1">
-            <SafeText className="text-3xl font-bold text-blue-600" maxFontSizeMultiplier={1.2}>
+            <SafeText className="text-3xl font-bold text-blue-600 mt-5" maxFontSizeMultiplier={1.2}>
               My Circles
             </SafeText>
             <SafeText className="text-gray-600 text-base mt-1" maxFontSizeMultiplier={1.3}>
               Welcome, {user?.displayName || 'User'} {EMOJIS.BLUE_HEART}
             </SafeText>
           </View>
-          <View className="flex-row gap-2 flex-shrink-0">
+          <View className="flex-row gap-2 mt-5 flex-shrink-0">
             <TouchableOpacity
-              className="bg-blue-100 rounded-xl w-10 h-10 justify-center items-center shadow-sm"
+              className="bg-blue-100 rounded-xl w-12 h-12 justify-center items-center shadow-sm"
               onPress={() => setShowJoinModal(true)}
             >
               <SafeText className="text-base" maxFontSizeMultiplier={1.1}>👥</SafeText>
             </TouchableOpacity>
             <TouchableOpacity
-              className="bg-emerald-100 rounded-xl w-10 h-10 justify-center items-center shadow-sm"
+              className="bg-emerald-100 rounded-xl w-12 h-12 justify-center items-center shadow-sm"
               onPress={handleCreateCircle}
             >
               <SafeText className="text-base font-bold" maxFontSizeMultiplier={1.1}>+</SafeText>
             </TouchableOpacity>
             <TouchableOpacity
-              className="bg-purple-100 rounded-xl w-10 h-10 justify-center items-center shadow-sm"
+              className="bg-purple-100 rounded-xl w-12 h-12 justify-center items-center shadow-sm"
               onPress={async () => {
                 if (user) {
                   Alert.alert(
@@ -257,7 +257,7 @@ const HomeScreen: React.FC = () => {
               <SafeText className="text-base" maxFontSizeMultiplier={1.1}>🔔</SafeText>
             </TouchableOpacity>
             <TouchableOpacity
-              className="bg-gray-200 rounded-xl w-10 h-10 justify-center items-center shadow-sm"
+              className="bg-gray-200 rounded-xl w-12 h-12 justify-center items-center shadow-sm"
               onPress={handleSignOut}
             >
               <SafeText className="text-base" maxFontSizeMultiplier={1.1}>🚪</SafeText>
