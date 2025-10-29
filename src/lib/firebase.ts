@@ -20,13 +20,15 @@ const firebaseConfig = {
 // Check if Firebase is properly configured
 const isFirebaseConfigured = firebaseConfig.apiKey !== 'demo-api-key';
 
-// Debug: Log Firebase configuration status
-console.log('Firebase Configuration Status:', {
-  isConfigured: isFirebaseConfigured,
-  projectId: firebaseConfig.projectId,
-  authDomain: firebaseConfig.authDomain,
-  hasApiKey: !!firebaseConfig.apiKey && firebaseConfig.apiKey !== 'demo-api-key'
-});
+// Debug: Log Firebase configuration status (only in dev)
+if (__DEV__) {
+  console.log('Firebase Configuration Status:', {
+    isConfigured: isFirebaseConfigured,
+    projectId: firebaseConfig.projectId,
+    authDomain: firebaseConfig.authDomain,
+    hasApiKey: !!firebaseConfig.apiKey && firebaseConfig.apiKey !== 'demo-api-key'
+  });
+}
 
 // Initialize Firebase (avoid duplicate initialization)
 let app;
