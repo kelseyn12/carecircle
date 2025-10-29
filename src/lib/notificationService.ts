@@ -1,7 +1,8 @@
 // Notification service for push notifications
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+import { Platform, Linking, Alert } from 'react-native';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -45,6 +46,23 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
     if (finalStatus !== 'granted') {
       console.warn('❌ Permission status is not granted:', finalStatus);
       console.warn('Please grant notification permissions in device Settings → App → Notifications');
+      
+      // Show helpful alert with option to open settings
+      Alert.alert(
+        'Notification Permissions Required',
+        finalStatus === 'denied' 
+          ? 'Notifications are currently disabled. Would you like to open Settings to enable them?'
+          : 'Please enable notification permissions in Settings to receive updates.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Open Settings', 
+            onPress: () => openAppSettings(),
+            style: 'default'
+          },
+        ]
+      );
+      
       return false;
     }
     
@@ -64,13 +82,36 @@ export const getExpoPushToken = async (): Promise<string | null> => {
       return null;
     }
 
-    const token = await Notifications.getExpoPushTokenAsync({
-      projectId: 'care-circle-15fd5', // Replace with your actual project ID
-    });
+    // For Expo Go, we don't need to pass projectId - Expo automatically detects it
+    // For production builds, it's in Constants.expoConfig.extra.eas.projectId
+    let projectId: string | undefined;
     
+    // Try to get from EAS config (production builds)
+    if (Constants.expoConfig?.extra?.eas?.projectId) {
+      projectId = Constants.expoConfig.extra.eas.projectId;
+      console.log('📦 Using EAS project ID');
+    }
+    // For Expo Go, don't pass projectId - let Expo auto-detect
+    // Only pass if we have a valid UUID project ID
+    
+    // Get the push token - Expo Go will auto-detect the project ID
+    const tokenOptions = projectId ? { projectId } : {};
+    console.log('📲 Requesting Expo push token...' + (projectId ? ' (with projectId)' : ' (auto-detect)'));
+    
+    const token = await Notifications.getExpoPushTokenAsync(tokenOptions);
+    
+    console.log('✅ Successfully got Expo push token');
     return token.data;
-  } catch (error) {
-    console.error('Error getting Expo push token:', error);
+  } catch (error: any) {
+    console.error('❌ Error getting Expo push token:', error);
+    console.error('Error details:', error?.message);
+    
+    // If project ID error, provide helpful guidance
+    if (error?.message?.includes('projectId') || error?.message?.includes('UUID')) {
+      console.warn('💡 Note: Make sure you have an Expo account and the project is linked');
+      console.warn('Run: npx expo login and npx expo prebuild if needed');
+    }
+    
     return null;
   }
 };
@@ -124,6 +165,27 @@ export const initializeNotifications = async (userId: string): Promise<boolean> 
     console.error('❌ Error initializing notifications:', error);
     console.error('Error details:', error?.message, error?.code);
     return false;
+  }
+};
+
+// Open device Settings for the app
+export const openAppSettings = async (): Promise<void> => {
+  try {
+    if (Platform.OS === 'ios') {
+      await Linking.openURL('app-settings:');
+    } else {
+      await Linking.openSettings();
+    }
+  } catch (error) {
+    console.error('Error opening settings:', error);
+    Alert.alert(
+      'Unable to Open Settings',
+      'Please manually open Settings → ' + 
+      (Platform.OS === 'ios' 
+        ? 'Care Circle → Notifications' 
+        : 'Apps → Care Circle → Notifications') +
+      ' and enable notifications.'
+    );
   }
 };
 
