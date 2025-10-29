@@ -83,7 +83,7 @@ const CreateCircleScreen: React.FC = () => {
               <Text style={{ color: '#374151', fontSize: 18, fontWeight: 'bold' }}>←</Text>
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#1f2937' }}>Create New Circle</Text>
+              <Text style={{ fontSize: 22, marginTop: 20, fontWeight: 'bold', color: '#1f2937' }}>Create New Circle</Text>
               <Text style={{ color: '#6b7280', marginTop: 4, fontSize: 15 }}>
                 Set up a private space to share updates with your loved ones
               </Text>
@@ -141,7 +141,7 @@ const CreateCircleScreen: React.FC = () => {
                 onPress={handleCreateCircle}
                 disabled={isLoading || !title.trim()}
                 style={{
-                  backgroundColor: isLoading || !title.trim() ? '#d1d5db' : '#3b82f6',
+                  backgroundColor: isLoading || !title.trim() ? '#5aa2f8' : '#3b82f6',
                   borderRadius: 16,
                   paddingVertical: 16,
                   paddingHorizontal: 24,

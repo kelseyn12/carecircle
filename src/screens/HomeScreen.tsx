@@ -187,7 +187,7 @@ const HomeScreen: React.FC = () => {
           <View style={{ backgroundColor: 'white', borderRadius: 20, padding: 24 }}>
             <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }}>Join Circle</Text>
             <Text style={{ fontSize: 16, color: '#6b7280', marginBottom: 20 }}>
-              Paste the invite link or enter the invite ID
+            Enter your invite link to join a Care Circle.
             </Text>
             
             <TextInput
@@ -222,13 +222,13 @@ const HomeScreen: React.FC = () => {
                   setInviteInput('');
                 }}
               >
-                <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Cancel</Text>
+                <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Back</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
                 style={{
                   flex: 1,
-                  backgroundColor: '#3b82f6',
+                  backgroundColor: '#5aa2f8',
                   borderRadius: 12,
                   padding: 14,
                   alignItems: 'center',
@@ -258,10 +258,10 @@ const HomeScreen: React.FC = () => {
               className="bg-blue-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
               onPress={() => setShowJoinModal(true)}
               style={{
-                backgroundColor: '#3b82f6',
+                backgroundColor: '#d1e2e6',
                 borderRadius: 16,
-                width: 48,
-                height: 48,
+                width: 38,
+                height: 38,
                 justifyContent: 'center',
                 alignItems: 'center',
                 shadowColor: '#000',
@@ -277,10 +277,10 @@ const HomeScreen: React.FC = () => {
               className="bg-emerald-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
               onPress={handleCreateCircle}
               style={{
-                backgroundColor: '#10b981',
+                backgroundColor: '#b7d2c3',
                 borderRadius: 16,
-                width: 48,
-                height: 48,
+                width: 38,
+                height: 38,
                 justifyContent: 'center',
                 alignItems: 'center',
                 shadowColor: '#000',
@@ -317,10 +317,10 @@ const HomeScreen: React.FC = () => {
                 }
               }}
               style={{
-                backgroundColor: '#a855f7',
+                backgroundColor: '#bab7d2',
                 borderRadius: 16,
-                width: 48,
-                height: 48,
+                width: 38,
+                height: 38,
                 justifyContent: 'center',
                 alignItems: 'center',
                 shadowColor: '#000',
@@ -336,10 +336,10 @@ const HomeScreen: React.FC = () => {
               className="bg-gray-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
               onPress={handleSignOut}
               style={{
-                backgroundColor: '#6b7280',
+                backgroundColor: '#afa8b3',
                 borderRadius: 16,
-                width: 48,
-                height: 48,
+                width: 38,
+                height: 38,
                 justifyContent: 'center',
                 alignItems: 'center',
                 shadowColor: '#000',
