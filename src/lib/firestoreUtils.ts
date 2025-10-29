@@ -464,11 +464,24 @@ export const toggleCircleMute = async (
       updatedMuted = circlesMuted.filter((id: string) => id !== circleId);
     }
 
-    await updateDoc(userDoc, {
-      circlesMuted: updatedMuted,
-    });
+    await retryOperation(
+      async () => {
+        await firestoreUpdateDoc(userDoc, {
+          circlesMuted: updatedMuted,
+        });
+      },
+      {
+        operation: 'toggleCircleMute',
+        maxRetries: 3,
+      }
+    );
   } catch (error) {
-    console.error('Error toggling circle mute:', error);
+    handleError(error, {
+      operation: 'toggleCircleMute',
+      userId,
+      circleId,
+      isMuted,
+    });
     throw new Error('Failed to update notification settings. Please try again.');
   }
 };

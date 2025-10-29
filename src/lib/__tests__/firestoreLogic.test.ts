@@ -133,4 +133,52 @@ describe('Firestore Operations Logic', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('toggleCircleMute logic', () => {
+    it('should add circle to muted list when muting', () => {
+      const currentMuted: string[] = [];
+      const circleId = 'test-circle-id';
+
+      const updatedMuted = currentMuted.includes(circleId)
+        ? currentMuted
+        : [...currentMuted, circleId];
+
+      expect(updatedMuted).toContain(circleId);
+      expect(updatedMuted).toHaveLength(1);
+    });
+
+    it('should not duplicate circle in muted list', () => {
+      const currentMuted = ['test-circle-id'];
+      const circleId = 'test-circle-id';
+
+      const updatedMuted = currentMuted.includes(circleId)
+        ? currentMuted
+        : [...currentMuted, circleId];
+
+      expect(updatedMuted).toContain(circleId);
+      expect(updatedMuted).toHaveLength(1);
+    });
+
+    it('should remove circle from muted list when unmuting', () => {
+      const currentMuted = ['circle-1', 'test-circle-id', 'circle-2'];
+      const circleId = 'test-circle-id';
+
+      const updatedMuted = currentMuted.filter((id: string) => id !== circleId);
+
+      expect(updatedMuted).not.toContain(circleId);
+      expect(updatedMuted).toHaveLength(2);
+      expect(updatedMuted).toContain('circle-1');
+      expect(updatedMuted).toContain('circle-2');
+    });
+
+    it('should handle empty muted list when unmuting', () => {
+      const currentMuted: string[] = [];
+      const circleId = 'test-circle-id';
+
+      const updatedMuted = currentMuted.filter((id: string) => id !== circleId);
+
+      expect(updatedMuted).not.toContain(circleId);
+      expect(updatedMuted).toHaveLength(0);
+    });
+  });
 });
