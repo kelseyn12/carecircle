@@ -25,6 +25,7 @@ import {
   addUpdateAuthor,
   removeUpdateAuthor,
   canUserPostUpdates,
+  deleteCircle,
 } from '../lib/firestoreUtils';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -244,6 +245,47 @@ const MemberManagementScreen: React.FC = () => {
     );
   };
 
+  const handleDeleteCircle = async () => {
+    if (!user) return;
+
+    Alert.alert(
+      'Delete Circle',
+      'Are you sure you want to delete this circle? This action cannot be undone. All updates, comments, and member data will be permanently removed.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            // Double confirmation for destructive action
+            Alert.alert(
+              'Final Confirmation',
+              'This will permanently delete the circle. Type "DELETE" to confirm.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete Forever',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await deleteCircle(circleId);
+                      Alert.alert('Success', 'Circle deleted successfully', [
+                        { text: 'OK', onPress: () => navigation.navigate('Home') }
+                      ]);
+                    } catch (error: any) {
+                      console.error('Error deleting circle:', error);
+                      Alert.alert('Error', error?.message || 'Failed to delete circle');
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
   const handleLeaveCircle = async () => {
     if (!user) return;
 
@@ -433,14 +475,38 @@ const MemberManagementScreen: React.FC = () => {
         />
       </View>
 
+      {/* Delete Circle Button (for owners only) */}
+      {userRole === 'owner' && (
+        <View className="px-4 pb-4">
+          <TouchableOpacity
+            className="bg-red-600 rounded-xl py-4"
+            onPress={handleDeleteCircle}
+            style={{
+              backgroundColor: '#dc2626',
+              borderRadius: 12,
+              paddingVertical: 14,
+            }}
+          >
+            <Text className="text-white text-center font-semibold" style={{ color: '#ffffff', fontWeight: '600', fontSize: 16 }}>
+              Delete Circle
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Leave Circle Button (for members only) */}
       {userRole === 'member' && (
         <View className="px-4 pb-4">
           <TouchableOpacity
             className="bg-red-500 rounded-xl py-4"
             onPress={handleLeaveCircle}
+            style={{
+              backgroundColor: '#ef4444',
+              borderRadius: 12,
+              paddingVertical: 14,
+            }}
           >
-            <Text className="text-white text-center font-semibold">
+            <Text className="text-white text-center font-semibold" style={{ color: '#ffffff', fontWeight: '600', fontSize: 16 }}>
               Leave Circle
             </Text>
           </TouchableOpacity>
