@@ -8,6 +8,7 @@ import CircleCard from '../components/CircleCard';
 import { useAuth } from '../lib/authContext';
 import { useCircles } from '../lib/useCircles';
 import { EMOJIS } from '../utils/emojiUtils';
+import { initializeNotifications } from '../lib/notificationService';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -291,12 +292,32 @@ const HomeScreen: React.FC = () => {
             >
               <Text className="text-white text-xl font-bold" style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>+</Text>
             </TouchableOpacity>
-            
             <TouchableOpacity
-              className="bg-gray-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
-              onPress={handleSignOut}
+              className="bg-purple-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              onPress={async () => {
+                if (user) {
+                  Alert.alert(
+                    'Enable Notifications',
+                    'This will request notification permissions for Expo Go. Make sure notifications are enabled in Settings → Expo Go → Notifications',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Enable',
+                        onPress: async () => {
+                          try {
+                            await initializeNotifications(user.id);
+                            Alert.alert('Success', 'Notifications enabled! You should receive notifications now.');
+                          } catch (error) {
+                            Alert.alert('Error', 'Failed to enable notifications. Please check Settings → Expo Go → Notifications');
+                          }
+                        },
+                      },
+                    ]
+                  );
+                }
+              }}
               style={{
-                backgroundColor: '#6b7280',
+                backgroundColor: '#a855f7',
                 borderRadius: 16,
                 width: 48,
                 height: 48,
