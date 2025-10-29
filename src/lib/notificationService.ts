@@ -16,23 +16,42 @@ Notifications.setNotificationHandler({
 
 // Request notification permissions
 export const requestNotificationPermissions = async (): Promise<boolean> => {
-  if (Device.isDevice) {
+  console.log('📱 Checking device type...');
+  console.log('Device.isDevice:', Device.isDevice);
+  
+  if (!Device.isDevice) {
+    console.warn('⚠️ Must use physical device for Push Notifications (simulator detected)');
+    return false;
+  }
+  
+  console.log('✅ Running on real device');
+  console.log('🔍 Checking existing notification permissions...');
+  
+  try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    console.log('Current permission status:', existingStatus);
+    
     let finalStatus = existingStatus;
     
     if (existingStatus !== 'granted') {
+      console.log('📲 Requesting notification permissions...');
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
+      console.log('Permission request result:', status);
+    } else {
+      console.log('✅ Permissions already granted');
     }
     
     if (finalStatus !== 'granted') {
-      console.warn('Failed to get push token for push notification!');
+      console.warn('❌ Permission status is not granted:', finalStatus);
+      console.warn('Please grant notification permissions in device Settings → App → Notifications');
       return false;
     }
     
+    console.log('✅ Notification permissions granted');
     return true;
-  } else {
-    console.warn('Must use physical device for Push Notifications');
+  } catch (error: any) {
+    console.error('❌ Error checking/requesting permissions:', error);
     return false;
   }
 };
@@ -77,25 +96,33 @@ export const savePushTokenToUser = async (userId: string, token: string): Promis
 // Initialize notifications for a user
 export const initializeNotifications = async (userId: string): Promise<boolean> => {
   try {
+    console.log('🔔 Initializing notifications for user:', userId);
+    
     // Request permissions
     const hasPermission = await requestNotificationPermissions();
     if (!hasPermission) {
+      console.error('❌ Notification permissions not granted');
       return false;
     }
+    console.log('✅ Notification permissions granted');
 
     // Get push token
     const token = await getExpoPushToken();
     if (!token) {
+      console.error('❌ Failed to get Expo push token');
+      console.log('Note: Push tokens only work on real devices, not simulators');
       return false;
     }
+    console.log('✅ Got Expo push token:', token.substring(0, 30) + '...');
 
     // Save token to user document
     await savePushTokenToUser(userId, token);
     
-    console.log('Notifications initialized successfully');
+    console.log('✅ Notifications initialized successfully');
     return true;
-  } catch (error) {
-    console.error('Error initializing notifications:', error);
+  } catch (error: any) {
+    console.error('❌ Error initializing notifications:', error);
+    console.error('Error details:', error?.message, error?.code);
     return false;
   }
 };
