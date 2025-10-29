@@ -245,7 +245,7 @@ const HomeScreen: React.FC = () => {
       {/* Header */}
       <View className="bg-white px-6 py-4 border-b border-gray-100 shadow-sm" style={{ paddingTop: 50 }}>
         <View className="flex-row justify-between items-center">
-          <View className="flex-1">
+          <View className="flex-1" style={{ flex: 1 }}>
             <Text className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               My Circles
             </Text>
@@ -253,7 +253,7 @@ const HomeScreen: React.FC = () => {
               Welcome, {user?.displayName || 'User'} {EMOJIS.BLUE_HEART}
             </Text>
           </View>
-          <View className="flex-row space-x-3" style={{ gap: 8 }}>
+          <View className="flex-row" style={{ gap: 8, flexShrink: 0 }}>
             <TouchableOpacity
               className="bg-blue-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
               onPress={() => setShowJoinModal(true)}
@@ -330,7 +330,26 @@ const HomeScreen: React.FC = () => {
                 elevation: 5,
               }}
             >
-              <Text className="text-white text-lg" style={{ color: 'white', fontSize: 18 }}>↪</Text>
+              <Text className="text-white text-lg" style={{ color: 'white', fontSize: 18 }}>🔔</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-gray-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              onPress={handleSignOut}
+              style={{
+                backgroundColor: '#6b7280',
+                borderRadius: 16,
+                width: 48,
+                height: 48,
+                justifyContent: 'center',
+                alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 4,
+                elevation: 5,
+              }}
+            >
+              <Text className="text-white" style={{ color: 'white', fontSize: 18 }}>🚪</Text>
             </TouchableOpacity>
           </View>
         </View>
