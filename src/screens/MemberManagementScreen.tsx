@@ -262,15 +262,20 @@ const MemberManagementScreen: React.FC = () => {
     );
   };
 
-  const handleToggleMute = async (value: boolean) => {
+  const handleToggleMute = async (switchValue: boolean) => {
     if (!user) return;
 
+    // Switch value is inverted: switchValue=true means notifications enabled (not muted)
+    // But toggleCircleMute expects: isMuted=true means mute, isMuted=false means unmute
+    // So we need to invert: isMuted = !switchValue
+    const isMuted = !switchValue;
+
     try {
-      await toggleCircleMute(user.id, circleId, value);
-      setIsMuted(value);
+      await toggleCircleMute(user.id, circleId, isMuted);
+      setIsMuted(isMuted);
       Alert.alert(
         'Notifications',
-        value ? 'Notifications muted for this circle' : 'Notifications enabled for this circle'
+        isMuted ? 'Notifications muted for this circle' : 'Notifications enabled for this circle'
       );
     } catch (error) {
       Alert.alert('Error', 'Failed to update notification settings');
