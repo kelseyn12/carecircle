@@ -215,9 +215,29 @@ export const setupNotificationListeners = () => {
     console.log('📬 Notification received (foreground):', notification.request.content.title);
     console.log('Notification body:', notification.request.content.body);
     console.log('Notification data:', notification.request.content.data);
+    console.log('Full notification:', JSON.stringify(notification, null, 2));
     
-    // The notification handler will automatically show it because shouldShowAlert: true
-    // But we can add additional logic here if needed
+    // For Expo Go, we need to manually show alerts in foreground
+    // The handler should work, but let's also try showing an Alert as fallback
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      Alert.alert(
+        notification.request.content.title || 'New Update',
+        notification.request.content.body || 'You have a new update in your circle',
+        [
+          { text: 'OK', style: 'default' },
+          {
+            text: 'View',
+            onPress: () => {
+              const data = notification.request.content.data;
+              if (data?.circleId) {
+                console.log('Would navigate to circle:', data.circleId);
+                // Navigation would happen via deep linking
+              }
+            },
+          },
+        ]
+      );
+    }
   });
 
   // Listen for notifications that the user taps
