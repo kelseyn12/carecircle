@@ -19,7 +19,8 @@ const SafeText: React.FC<SafeTextProps> = ({
 }) => {
   return (
     <Text 
-      style={StyleSheet.fl馮atten([{ maxFontSizeMultiplier }, style])}
+      maxFontSizeMultiplier={maxFontSizeMultiplier}
+      style={style}
       {...props}
     >
       {children}
