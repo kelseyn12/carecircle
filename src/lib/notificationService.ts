@@ -82,26 +82,45 @@ export const getExpoPushToken = async (): Promise<string | null> => {
       return null;
     }
 
-    // For Expo Go, we don't need to pass projectId - Expo automatically detects it
-    // For production builds, it's in Constants.expoConfig.extra.eas.projectId
+    // Get Expo project ID from various sources
     let projectId: string | undefined;
     
-    // Try to get from EAS config (production builds)
-    if (Constants.expoConfig?.extra?.eas?.projectId) {
+    // Known Expo project ID for this app (@kelseyn12/care-circle)
+    const EXPO_PROJECT_ID = 'fe31d812-0085-4a97-acdb-202ae5eea8db';
+    
+    // Try different sources for project ID
+    if (Constants.expoConfig?.projectId) {
+      projectId = Constants.expoConfig.projectId;
+      console.log('📦 Found project ID in expoConfig:', projectId);
+    } else if (Constants.manifest?.extra?.expo?.projectId) {
+      projectId = Constants.manifest.extra.expo.projectId;
+      console.log('📦 Found project ID in manifest.extra:', projectId);
+    } else if (Constants.expoConfig?.extra?.eas?.projectId) {
       projectId = Constants.expoConfig.extra.eas.projectId;
-      console.log('📦 Using EAS project ID');
+      console.log('📦 Found project ID in EAS config:', projectId);
+    } else {
+      // Fallback to known project ID
+      projectId = EXPO_PROJECT_ID;
+      console.log('📦 Using known Expo project ID:', projectId.substring(0, 8) + '...');
     }
-    // For Expo Go, don't pass projectId - let Expo auto-detect
-    // Only pass if we have a valid UUID project ID
     
-    // Get the push token - Expo Go will auto-detect the project ID
+    // For Expo Go, if no projectId found, try without it (should work if project is linked)
     const tokenOptions = projectId ? { projectId } : {};
-    console.log('📲 Requesting Expo push token...' + (projectId ? ' (with projectId)' : ' (auto-detect)'));
+    console.log('📲 Requesting Expo push token...' + (projectId ? ' (with projectId: ' + projectId.substring(0, 8) + '...)' : ' (auto-detect - may require published project)'));
     
-    const token = await Notifications.getExpoPushTokenAsync(tokenOptions);
-    
-    console.log('✅ Successfully got Expo push token');
-    return token.data;
+    try {
+      const token = await Notifications.getExpoPushTokenAsync(tokenOptions);
+      console.log('✅ Successfully got Expo push token');
+      return token.data;
+    } catch (tokenError: any) {
+      // If auto-detect failed and we tried without projectId, suggest publishing
+      if (!projectId && tokenError?.message?.includes('projectId')) {
+        console.error('❌ Push token failed - project needs to be initialized on Expo');
+        console.error('💡 Solution: Run "eas build:configure" or "eas update" to initialize project');
+        console.error('💡 Or manually create project at: https://expo.dev');
+      }
+      throw tokenError;
+    }
   } catch (error: any) {
     console.error('❌ Error getting Expo push token:', error);
     console.error('Error details:', error?.message);
