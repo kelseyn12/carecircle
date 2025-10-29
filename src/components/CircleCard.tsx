@@ -2,7 +2,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Circle } from '../types';
-import { formatDate } from '../lib/utils';
 import { EMOJIS } from '../utils/emojiUtils';
 
 interface CircleCardProps {
@@ -28,77 +27,44 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress }) => {
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
-      style={{
-        backgroundColor: '#ffffff',
-        borderRadius: 20,
-        padding: 16,
-        marginBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 3,
-        borderWidth: 1,
-        borderColor: '#f3f4f6',
-      }}
+      className="bg-white rounded-2xl p-4 mb-4 border border-gray-200 shadow-sm"
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-            <View style={{
-              width: 44,
-              height: 44,
-              backgroundColor: '#3b82f6',
-              borderRadius: 12,
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginRight: 12,
-            }}>
-                <Text style={{ fontSize: 18, color: '#ffffff', fontWeight: 'bold' }}>{EMOJIS.PEOPLE}</Text>
+      <View className="flex-row items-center justify-between">
+        <View className="flex-1">
+          <View className="flex-row items-center mb-3">
+            <View className="w-11 h-11 bg-blue-500 rounded-xl justify-center items-center mr-3">
+              <Text className="text-lg text-white font-bold">{EMOJIS.PEOPLE}</Text>
             </View>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1f2937', flex: 1 }}>
+            <Text className="text-lg font-bold text-gray-800 flex-1">
               {circle.title}
             </Text>
           </View>
           
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <View style={{
-              backgroundColor: '#dbeafe',
-              borderRadius: 12,
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              marginRight: 8,
-            }}>
-              <Text style={{ color: '#1e40af', fontSize: 13, fontWeight: '600' }}>
+          <View className="flex-row items-center mb-2">
+            <View className="bg-blue-100 rounded-xl px-2.5 py-1 mr-2">
+              <Text className="text-blue-800 text-sm font-semibold">
                 {memberCount} member{memberCount !== 1 ? 's' : ''}
               </Text>
             </View>
-            <Text style={{ color: '#6b7280', fontSize: 13 }}>
+            <Text className="text-gray-500 text-sm">
               {formatDate(circle.createdAt)}
             </Text>
           </View>
         </View>
 
-        <View style={{ marginLeft: 12 }}>
-          <View style={{
-            width: 40,
-            height: 40,
-            backgroundColor: '#3b82f6',
-            borderRadius: 12,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
-              <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: 'bold' }}>{EMOJIS.ARROW_RIGHT}</Text>
+        <View className="ml-3">
+          <View className="w-10 h-10 bg-blue-500 rounded-xl justify-center items-center">
+            <Text className="text-white text-lg font-bold">{EMOJIS.ARROW_RIGHT}</Text>
           </View>
         </View>
       </View>
 
-      <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f3f4f6' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={{ color: '#2563eb', fontSize: 14, fontWeight: '600' }}>
+      <View className="mt-3 pt-3 border-t border-gray-200">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-blue-600 text-sm font-semibold">
             View updates
           </Text>
-          <View style={{ width: 8, height: 8, backgroundColor: '#3b82f6', borderRadius: 4 }} />
+          <View className="w-2 h-2 bg-blue-500 rounded-full" />
         </View>
       </View>
     </TouchableOpacity>

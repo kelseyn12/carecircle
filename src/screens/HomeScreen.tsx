@@ -72,7 +72,6 @@ const HomeScreen: React.FC = () => {
     if (/^[a-zA-Z0-9_-]{15,}$/.test(trimmed)) {
       return trimmed;
     }
-    
     return null;
   };
 
@@ -94,7 +93,7 @@ const HomeScreen: React.FC = () => {
 
   const renderEmptyState = () => (
     <View className="flex-1 justify-center items-center px-6">
-      <View className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full items-center justify-center mb-8 shadow-xl">
+      <View className="w-32 h-32 bg-blue-500 rounded-full items-center justify-center mb-8 shadow-xl">
         <Text className="text-6xl">{EMOJIS.BLUE_HEART}</Text>
       </View>
       <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
@@ -104,36 +103,19 @@ const HomeScreen: React.FC = () => {
         Create your first circle to start sharing updates with family and friends. 
         Stay connected with those who matter most.
       </Text>
-      <View style={{ width: '100%', gap: 12 }}>
+      <View className="w-full gap-3">
         <TouchableOpacity
-          className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl px-8 py-4 shadow-lg"
+          className="bg-blue-500 rounded-2xl px-8 py-4 shadow-lg items-center"
           onPress={handleCreateCircle}
-          style={{
-            backgroundColor: '#3b82f6',
-            borderRadius: 16,
-            padding: 16,
-            alignItems: 'center',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 4,
-            elevation: 5,
-          }}
         >
-          <Text className="text-white font-bold text-lg" style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>Create Your First Circle</Text>
+          <Text className="text-white font-bold text-lg">Create Your First Circle</Text>
         </TouchableOpacity>
         
         <TouchableOpacity
-          className="bg-gray-200 rounded-2xl px-8 py-4 shadow-lg"
+          className="bg-gray-200 rounded-2xl px-8 py-4 items-center"
           onPress={() => setShowJoinModal(true)}
-          style={{
-            backgroundColor: '#e5e7eb',
-            borderRadius: 16,
-            padding: 16,
-            alignItems: 'center',
-          }}
         >
-          <Text className="text-gray-700 font-semibold text-lg" style={{ color: '#374151', fontWeight: '600', fontSize: 18 }}>Join Existing Circle</Text>
+          <Text className="text-gray-700 font-semibold text-lg">Join Existing Circle</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -148,8 +130,8 @@ const HomeScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <View className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full items-center justify-center mb-4">
+      <View className="flex-1 justify-center items-center bg-blue-50">
+        <View className="w-16 h-16 bg-blue-500 rounded-full items-center justify-center mb-4">
           <Text className="text-2xl">{EMOJIS.BLUE_HEART}</Text>
         </View>
         <Text className="text-gray-600 text-lg font-medium">Loading circles...</Text>
@@ -159,13 +141,13 @@ const HomeScreen: React.FC = () => {
 
   if (error) {
     return (
-      <View className="flex-1 justify-center items-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-6">
+      <View className="flex-1 justify-center items-center bg-blue-50 px-6">
         <View className="w-16 h-16 bg-red-100 rounded-full items-center justify-center mb-4">
           <Text className="text-2xl">{EMOJIS.WARNING}</Text>
         </View>
         <Text className="text-red-600 text-center mb-6 text-lg font-medium">{error}</Text>
         <TouchableOpacity
-          className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl px-6 py-3 shadow-lg"
+          className="bg-blue-500 rounded-2xl px-6 py-3 shadow-lg items-center"
           onPress={handleRefresh}
         >
           <Text className="text-white font-bold text-base">Try Again</Text>
@@ -175,7 +157,7 @@ const HomeScreen: React.FC = () => {
   }
 
   return (
-    <View className="flex-1 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <View className="flex-1 bg-blue-50">
       {/* Join Circle Modal */}
       <Modal
         visible={showJoinModal}
@@ -183,23 +165,15 @@ const HomeScreen: React.FC = () => {
         animationType="slide"
         onRequestClose={() => setShowJoinModal(false)}
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
-          <View style={{ backgroundColor: 'white', borderRadius: 20, padding: 24 }}>
-            <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }}>Join Circle</Text>
-            <Text style={{ fontSize: 16, color: '#6b7280', marginBottom: 20 }}>
-            Enter your invite link to join a Care Circle.
+        <View className="flex-1 bg-black/50 justify-center px-5">
+          <View className="bg-white rounded-3xl p-6">
+            <Text className="text-2xl font-bold mb-2">Join Circle</Text>
+            <Text className="text-gray-600 text-base mb-5">
+              Enter your invite link to join a Care Circle.
             </Text>
             
             <TextInput
-              style={{
-                borderWidth: 1,
-                borderColor: '#d1d5db',
-                borderRadius: 12,
-                padding: 12,
-                fontSize: 16,
-                marginBottom: 16,
-                backgroundColor: '#f9fafb',
-              }}
+              className="border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base mb-4 bg-gray-50"
               placeholder="https://care-circle-15fd5.web.app/inviteRedirect/..."
               value={inviteInput}
               onChangeText={setInviteInput}
@@ -208,34 +182,22 @@ const HomeScreen: React.FC = () => {
               multiline
             />
             
-            <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View className="flex-row gap-3">
               <TouchableOpacity
-                style={{
-                  flex: 1,
-                  backgroundColor: '#6b7280',
-                  borderRadius: 12,
-                  padding: 14,
-                  alignItems: 'center',
-                }}
+                className="flex-1 bg-gray-500 rounded-xl py-3.5 items-center"
                 onPress={() => {
                   setShowJoinModal(false);
                   setInviteInput('');
                 }}
               >
-                <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Back</Text>
+                <Text className="text-white font-semibold text-base">Back</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={{
-                  flex: 1,
-                  backgroundColor: '#5aa2f8',
-                  borderRadius: 12,
-                  padding: 14,
-                  alignItems: 'center',
-                }}
+                className="flex-1 bg-blue-500 rounded-xl py-3.5 items-center"
                 onPress={handleJoinByInvite}
               >
-                <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Join</Text>
+                <Text className="text-white font-semibold text-base">Join</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -243,57 +205,31 @@ const HomeScreen: React.FC = () => {
       </Modal>
 
       {/* Header */}
-      <View className="bg-white px-6 py-4 border-b border-gray-100 shadow-sm" style={{ paddingTop: 50 }}>
+      <View className="bg-white px-6 pt-12 pb-4 border-b border-gray-100 shadow-sm">
         <View className="flex-row justify-between items-center">
-          <View className="flex-1" style={{ flex: 1 }}>
-            <Text className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <View className="flex-1">
+            <Text className="text-3xl font-bold text-blue-600">
               My Circles
             </Text>
-            <Text className="text-gray-600 text-base mt-2" style={{ marginTop: 4 }}>
+            <Text className="text-gray-600 text-base mt-1">
               Welcome, {user?.displayName || 'User'} {EMOJIS.BLUE_HEART}
             </Text>
           </View>
-          <View className="flex-row" style={{ gap: 8, flexShrink: 0 }}>
+          <View className="flex-row gap-2 flex-shrink-0">
             <TouchableOpacity
-              className="bg-blue-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              className="bg-blue-100 rounded-xl w-10 h-10 justify-center items-center shadow-sm"
               onPress={() => setShowJoinModal(true)}
-              style={{
-                backgroundColor: '#d1e2e6',
-                borderRadius: 16,
-                width: 38,
-                height: 38,
-                justifyContent: 'center',
-                alignItems: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-                elevation: 5,
-              }}
             >
-              <Text className="text-white" style={{ color: 'white', fontSize: 18 }}>👥</Text>
+              <Text className="text-base">👥</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="bg-emerald-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              className="bg-emerald-100 rounded-xl w-10 h-10 justify-center items-center shadow-sm"
               onPress={handleCreateCircle}
-              style={{
-                backgroundColor: '#b7d2c3',
-                borderRadius: 16,
-                width: 38,
-                height: 38,
-                justifyContent: 'center',
-                alignItems: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-                elevation: 5,
-              }}
             >
-              <Text className="text-white text-xl font-bold" style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>+</Text>
+              <Text className="text-base font-bold">+</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="bg-purple-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              className="bg-purple-100 rounded-xl w-10 h-10 justify-center items-center shadow-sm"
               onPress={async () => {
                 if (user) {
                   Alert.alert(
@@ -316,40 +252,14 @@ const HomeScreen: React.FC = () => {
                   );
                 }
               }}
-              style={{
-                backgroundColor: '#bab7d2',
-                borderRadius: 16,
-                width: 38,
-                height: 38,
-                justifyContent: 'center',
-                alignItems: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-                elevation: 5,
-              }}
             >
-              <Text className="text-white text-lg" style={{ color: 'white', fontSize: 18 }}>🔔</Text>
+              <Text className="text-base">🔔</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="bg-gray-500 rounded-2xl w-12 h-12 justify-center items-center shadow-lg"
+              className="bg-gray-200 rounded-xl w-10 h-10 justify-center items-center shadow-sm"
               onPress={handleSignOut}
-              style={{
-                backgroundColor: '#afa8b3',
-                borderRadius: 16,
-                width: 38,
-                height: 38,
-                justifyContent: 'center',
-                alignItems: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-                elevation: 5,
-              }}
             >
-              <Text className="text-white" style={{ color: 'white', fontSize: 18 }}>🚪</Text>
+              <Text className="text-base">🚪</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -363,7 +273,7 @@ const HomeScreen: React.FC = () => {
           data={circles}
           renderItem={renderCircle}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 20 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
           refreshControl={
             <RefreshControl
               refreshing={loading}
