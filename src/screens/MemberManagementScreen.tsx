@@ -260,7 +260,7 @@ const MemberManagementScreen: React.FC = () => {
             // Double confirmation for destructive action
             Alert.alert(
               'Final Confirmation',
-              'This will permanently delete the circle. Type "DELETE" to confirm.',
+              'This will permanently delete the circle and all its content. This cannot be undone. Are you absolutely sure?',
               [
                 { text: 'Cancel', style: 'cancel' },
                 {
