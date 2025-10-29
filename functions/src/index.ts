@@ -206,7 +206,6 @@ export const onUpdateCreated = onDocumentCreated(
           
           // Skip if user has muted this circle
           if (circlesMuted.includes(circleId)) {
-            console.log(`🔕 Skipping user ${memberId}: Circle ${circleId} is muted`);
             return null;
           }
 
@@ -219,13 +218,9 @@ export const onUpdateCreated = onDocumentCreated(
 
       const users = (await Promise.all(userPromises)).filter(Boolean);
       
-      console.log(`📢 Processing notification for update in circle: ${circleId}`);
-      console.log(`👥 Found ${users.length} eligible users to notify (excluding author and muted)`);
-      
       // Send push notifications
       const notificationPromises = users.map(async (user) => {
         if (!user?.expoPushToken) {
-          console.log(`⏭️ Skipping user ${user.id} (${user.displayName}): No push token`);
           return;
         }
 
@@ -237,13 +232,10 @@ export const onUpdateCreated = onDocumentCreated(
           type: 'update',
         };
 
-        console.log(`📤 Sending notification to: ${user.displayName} (${user.expoPushToken.substring(0, 30)}...)`);
         await sendPushNotification(user.expoPushToken, title, body, data);
-        console.log(`✅ Notification sent successfully to: ${user.displayName}`);
       });
 
       await Promise.all(notificationPromises);
-      console.log(`✅ Finished processing notifications for circle: ${circleId}`);
     } catch (error) {
       console.error('Error in onUpdateCreated:', error);
     }

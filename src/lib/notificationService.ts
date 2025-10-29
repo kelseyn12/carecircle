@@ -17,35 +17,20 @@ Notifications.setNotificationHandler({
 
 // Request notification permissions
 export const requestNotificationPermissions = async (): Promise<boolean> => {
-  console.log('📱 Checking device type...');
-  console.log('Device.isDevice:', Device.isDevice);
-  
   if (!Device.isDevice) {
-    console.warn('⚠️ Must use physical device for Push Notifications (simulator detected)');
     return false;
   }
   
-  console.log('✅ Running on real device');
-  console.log('🔍 Checking existing notification permissions...');
-  
   try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    console.log('Current permission status:', existingStatus);
-    
     let finalStatus = existingStatus;
     
     if (existingStatus !== 'granted') {
-      console.log('📲 Requesting notification permissions...');
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
-      console.log('Permission request result:', status);
-    } else {
-      console.log('✅ Permissions already granted');
     }
     
     if (finalStatus !== 'granted') {
-      console.warn('❌ Permission status is not granted:', finalStatus);
-      console.warn('Please grant notification permissions in device Settings → App → Notifications');
       
       // Show helpful alert with option to open settings
       Alert.alert(
@@ -66,10 +51,9 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
       return false;
     }
     
-    console.log('✅ Notification permissions granted');
     return true;
   } catch (error: any) {
-    console.error('❌ Error checking/requesting permissions:', error);
+    console.error('Error requesting notification permissions:', error);
     return false;
   }
 };
@@ -78,7 +62,6 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
 export const getExpoPushToken = async (): Promise<string | null> => {
   try {
     if (!Device.isDevice) {
-      console.warn('Must use physical device for Push Notifications');
       return null;
     }
 
@@ -91,46 +74,21 @@ export const getExpoPushToken = async (): Promise<string | null> => {
     // Try different sources for project ID
     if (Constants.expoConfig?.projectId) {
       projectId = Constants.expoConfig.projectId;
-      console.log('📦 Found project ID in expoConfig:', projectId);
     } else if (Constants.manifest?.extra?.expo?.projectId) {
       projectId = Constants.manifest.extra.expo.projectId;
-      console.log('📦 Found project ID in manifest.extra:', projectId);
     } else if (Constants.expoConfig?.extra?.eas?.projectId) {
       projectId = Constants.expoConfig.extra.eas.projectId;
-      console.log('📦 Found project ID in EAS config:', projectId);
     } else {
       // Fallback to known project ID
       projectId = EXPO_PROJECT_ID;
-      console.log('📦 Using known Expo project ID:', projectId.substring(0, 8) + '...');
     }
     
-    // For Expo Go, if no projectId found, try without it (should work if project is linked)
     const tokenOptions = projectId ? { projectId } : {};
-    console.log('📲 Requesting Expo push token...' + (projectId ? ' (with projectId: ' + projectId.substring(0, 8) + '...)' : ' (auto-detect - may require published project)'));
+    const token = await Notifications.getExpoPushTokenAsync(tokenOptions);
     
-    try {
-      const token = await Notifications.getExpoPushTokenAsync(tokenOptions);
-      console.log('✅ Successfully got Expo push token');
-      return token.data;
-    } catch (tokenError: any) {
-      // If auto-detect failed and we tried without projectId, suggest publishing
-      if (!projectId && tokenError?.message?.includes('projectId')) {
-        console.error('❌ Push token failed - project needs to be initialized on Expo');
-        console.error('💡 Solution: Run "eas build:configure" or "eas update" to initialize project');
-        console.error('💡 Or manually create project at: https://expo.dev');
-      }
-      throw tokenError;
-    }
+    return token.data;
   } catch (error: any) {
-    console.error('❌ Error getting Expo push token:', error);
-    console.error('Error details:', error?.message);
-    
-    // If project ID error, provide helpful guidance
-    if (error?.message?.includes('projectId') || error?.message?.includes('UUID')) {
-      console.warn('💡 Note: Make sure you have an Expo account and the project is linked');
-      console.warn('Run: npx expo login and npx expo prebuild if needed');
-    }
-    
+    console.error('Error getting Expo push token:', error);
     return null;
   }
 };
@@ -138,7 +96,6 @@ export const getExpoPushToken = async (): Promise<string | null> => {
 // Save push token to user document
 export const savePushTokenToUser = async (userId: string, token: string): Promise<void> => {
   if (!db) {
-    console.warn('Firestore not initialized');
     return;
   }
 
@@ -147,7 +104,6 @@ export const savePushTokenToUser = async (userId: string, token: string): Promis
     await updateDoc(userRef, {
       expoPushToken: token,
     });
-    console.log('Push token saved to user document');
   } catch (error) {
     console.error('Error saving push token:', error);
   }
@@ -156,33 +112,24 @@ export const savePushTokenToUser = async (userId: string, token: string): Promis
 // Initialize notifications for a user
 export const initializeNotifications = async (userId: string): Promise<boolean> => {
   try {
-    console.log('🔔 Initializing notifications for user:', userId);
-    
     // Request permissions
     const hasPermission = await requestNotificationPermissions();
     if (!hasPermission) {
-      console.error('❌ Notification permissions not granted');
       return false;
     }
-    console.log('✅ Notification permissions granted');
 
     // Get push token
     const token = await getExpoPushToken();
     if (!token) {
-      console.error('❌ Failed to get Expo push token');
-      console.log('Note: Push tokens only work on real devices, not simulators');
       return false;
     }
-    console.log('✅ Got Expo push token:', token.substring(0, 30) + '...');
 
     // Save token to user document
     await savePushTokenToUser(userId, token);
     
-    console.log('✅ Notifications initialized successfully');
     return true;
   } catch (error: any) {
-    console.error('❌ Error initializing notifications:', error);
-    console.error('Error details:', error?.message, error?.code);
+    console.error('Error initializing notifications:', error);
     return false;
   }
 };
@@ -212,13 +159,7 @@ export const openAppSettings = async (): Promise<void> => {
 export const setupNotificationListeners = () => {
   // Listen for notifications received while app is in foreground
   const receivedListener = Notifications.addNotificationReceivedListener((notification) => {
-    console.log('📬 Notification received (foreground):', notification.request.content.title);
-    console.log('Notification body:', notification.request.content.body);
-    console.log('Notification data:', notification.request.content.data);
-    console.log('Full notification:', JSON.stringify(notification, null, 2));
-    
-    // For Expo Go, we need to manually show alerts in foreground
-    // The handler should work, but let's also try showing an Alert as fallback
+    // For Expo Go, manually show alerts in foreground
     if (Platform.OS === 'ios' || Platform.OS === 'android') {
       Alert.alert(
         notification.request.content.title || 'New Update',
@@ -230,7 +171,6 @@ export const setupNotificationListeners = () => {
             onPress: () => {
               const data = notification.request.content.data;
               if (data?.circleId) {
-                console.log('Would navigate to circle:', data.circleId);
                 // Navigation would happen via deep linking
               }
             },
@@ -242,11 +182,8 @@ export const setupNotificationListeners = () => {
 
   // Listen for notifications that the user taps
   const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
-    console.log('👆 Notification tapped:', response.notification.request.content.title);
-    
     const data = response.notification.request.content.data;
     if (data?.circleId) {
-      console.log('Navigating to circle:', data.circleId);
       // Navigation will be handled by the app's deep linking or navigation context
     }
   });
@@ -263,10 +200,10 @@ export const setupNotificationListeners = () => {
 
 // Handle notification received (deprecated, use setupNotificationListeners instead)
 export const handleNotificationReceived = (notification: Notifications.Notification) => {
-  console.log('Notification received:', notification);
+  // Deprecated - use setupNotificationListeners instead
 };
 
 // Handle notification response (deprecated, use setupNotificationListeners instead)
 export const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
-  console.log('Notification response:', response);
+  // Deprecated - use setupNotificationListeners instead
 };

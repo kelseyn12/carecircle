@@ -37,12 +37,10 @@ const AppNavigator: React.FC = () => {
 
   // Setup notification listeners when app loads
   useEffect(() => {
-    console.log('🔔 Setting up notification listeners...');
     const listeners = setupNotificationListeners();
     notificationListenersRef.current = listeners;
     
     return () => {
-      console.log('🔕 Cleaning up notification listeners...');
       listeners.remove();
     };
   }, []);
