@@ -352,9 +352,16 @@ export const promoteMemberToOwner = async (
     const circleDoc = doc(circlesRef, circleId);
     const updatedOwnerIds = [...(circle.ownerIds || []), userId];
     
+    // Ensure owner is in updateAuthors array (owners should always be able to post)
+    const updateAuthors = circle.updateAuthors || [];
+    const updatedUpdateAuthors = updateAuthors.includes(userId) 
+      ? updateAuthors 
+      : [...updateAuthors, userId];
+    
     await firestoreUpdateDoc(circleDoc, {
       [`roles.${userId}`]: 'owner',
       ownerIds: updatedOwnerIds,
+      updateAuthors: updatedUpdateAuthors,
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
@@ -383,9 +390,15 @@ export const demoteOwnerToMember = async (
     const circleDoc = doc(circlesRef, circleId);
     const updatedOwnerIds = (circle.ownerIds || []).filter(id => id !== userId);
     
+    // When demoting, remove from updateAuthors unless they were explicitly granted permission
+    // (We keep them if they were manually added, but typically demoting removes update permission)
+    const updateAuthors = circle.updateAuthors || [];
+    const updatedUpdateAuthors = updateAuthors.filter(id => id !== userId);
+    
     await firestoreUpdateDoc(circleDoc, {
       [`roles.${userId}`]: 'member',
       ownerIds: updatedOwnerIds,
+      updateAuthors: updatedUpdateAuthors,
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
@@ -916,24 +929,28 @@ export const canUserPostUpdates = async (circleId: string, userId: string): Prom
     
     const data = circleDoc.data();
     
-    // Check if updateAuthors field exists
+    // Check if user is an owner (owners always have permission to post)
+    const isOwner = data.ownerId === userId || (data.ownerIds && data.ownerIds.includes(userId));
+    
+    // If owner, ensure they're in updateAuthors and return true
+    if (isOwner) {
+      const updateAuthors = data.updateAuthors || [];
+      if (!updateAuthors.includes(userId)) {
+        // Add owner to updateAuthors if not already there
+        await firestoreUpdateDoc(doc(circlesRef, circleId), {
+          updateAuthors: [...updateAuthors, userId],
+        });
+      }
+      return true;
+    }
+    
+    // For non-owners, check updateAuthors array
     if (data.updateAuthors) {
       return data.updateAuthors.includes(userId);
     }
     
-    // Fallback for old circles: check if user is owner or in ownerIds
-    const isOwner = data.ownerId === userId || (data.ownerIds && data.ownerIds.includes(userId));
-    
-    // If no updateAuthors field exists, migrate it now
-    if (isOwner && !data.updateAuthors) {
-      console.log('Migrating circle to updateAuthors system...');
-      await firestoreUpdateDoc(doc(circlesRef, circleId), {
-        updateAuthors: userId === data.ownerId ? [userId] : (data.ownerIds || [userId]),
-      });
-      return true;
-    }
-    
-    return isOwner;
+    // Fallback for old circles without updateAuthors
+    return false;
   } catch (error) {
     console.error('Error checking update permissions:', error);
     
