@@ -1126,8 +1126,8 @@ export const getPendingJoinRequests = async (circleId: string): Promise<JoinRequ
       createdAt: d.createdAt ? new Date(d.createdAt._seconds ? d.createdAt._seconds * 1000 : d.createdAt) : new Date(),
     }));
   } catch (error) {
-    console.error('Error fetching join requests:', error);
-    throw new Error('Failed to load join requests.');
+    // Silently fall back to no pending requests (e.g., non-owner or transient errors)
+    return [];
   }
 };
 
