@@ -9,6 +9,7 @@ export interface User {
   expoPushToken?: string;
   createdAt: Date;
   circlesMuted?: string[]; // Array of circle IDs where user has muted notifications
+  lastViewedCircles?: Record<string, Date>; // circleId -> last viewed timestamp
 }
 
 export interface Circle {
@@ -20,6 +21,7 @@ export interface Circle {
   updateAuthors: string[]; // New: array of user IDs who can post updates
   roles: Record<string, 'owner' | 'member'>;
   createdAt: Date;
+  lastUpdateAt?: Date;
 }
 
 export interface Update {

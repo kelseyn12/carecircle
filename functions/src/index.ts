@@ -18,6 +18,18 @@ interface AcceptInviteData {
   inviteId: string;
 }
 
+interface SubmitJoinRequestData {
+  circleId: string;
+  displayName: string;
+  relation: string;
+  inviteId?: string;
+}
+
+interface OwnerJoinRequestActionData {
+  circleId: string;
+  requestId: string;
+}
+
 interface UpdateData {
   circleId: string;
   authorId: string;
@@ -153,6 +165,161 @@ export const getInviteInfo = onCall(async (request) => {
   }
 });
 
+// Cloud Function: Submit Join Request (authenticated users only)
+export const submitJoinRequest = onCall(async (request) => {
+  try {
+    const { circleId, displayName, relation, inviteId } = request.data as SubmitJoinRequestData;
+    const userId = request.auth?.uid;
+    if (!userId) {
+      throw new Error('User must be authenticated');
+    }
+    if (!circleId || !displayName || !relation) {
+      throw new Error('Missing required fields');
+    }
+
+    const circleDoc = await db.collection('circles').doc(circleId).get();
+    if (!circleDoc.exists) {
+      throw new Error('Circle not found');
+    }
+
+    // Prevent duplicate requests
+    const existing = await db
+      .collection('circles')
+      .doc(circleId)
+      .collection('joinRequests')
+      .where('userId', '==', userId)
+      .limit(1)
+      .get();
+    if (!existing.empty) {
+      return { success: true, duplicate: true };
+    }
+
+    const ref = await db
+      .collection('circles')
+      .doc(circleId)
+      .collection('joinRequests')
+      .add({
+        userId,
+        displayName,
+        relation,
+        status: 'pending',
+        inviteId: inviteId || null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+    // Notify owners via push
+    try {
+      const owners: string[] = (circleDoc.data()!.ownerIds || [circleDoc.data()!.ownerId]).filter(Boolean);
+      const ownerDocs = await Promise.all(owners.map((id) => db.collection('users').doc(id).get()));
+      const notifications = ownerDocs
+        .map((d) => ({ id: d.id, token: (d.data() || {}).expoPushToken }))
+        .filter((u) => !!u.token);
+
+      const title = 'New Join Request';
+      const body = `${displayName} requested to join your circle`;
+      const data = { type: 'join_request', circleId, requestId: ref.id };
+      for (const n of notifications) {
+        await sendPushNotification(n.token as string, title, body, data);
+      }
+    } catch (notifyErr) {
+      console.error('Error notifying owners of join request:', notifyErr);
+    }
+
+    return { success: true, requestId: ref.id };
+  } catch (error) {
+    console.error('Error submitting join request:', error);
+    throw error;
+  }
+});
+
+// Cloud Function: List Pending Join Requests (owners only)
+export const listJoinRequests = onCall(async (request) => {
+  try {
+    const { circleId } = request.data as { circleId: string };
+    const userId = request.auth?.uid;
+    if (!userId) throw new Error('User must be authenticated');
+    if (!circleId) throw new Error('Circle ID is required');
+
+    const circleDoc = await db.collection('circles').doc(circleId).get();
+    if (!circleDoc.exists) throw new Error('Circle not found');
+    const circleData = circleDoc.data()!;
+    const isOwner = (circleData.ownerIds || [circleData.ownerId]).includes(userId);
+    if (!isOwner) throw new Error('Only owners can view join requests');
+
+    const snap = await db
+      .collection('circles')
+      .doc(circleId)
+      .collection('joinRequests')
+      .where('status', '==', 'pending')
+      .get();
+
+    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return { requests: items };
+  } catch (error) {
+    console.error('Error listing join requests:', error);
+    throw error;
+  }
+});
+
+// Cloud Function: Approve Join Request (owners only)
+export const ownerApproveJoinRequest = onCall(async (request) => {
+  try {
+    const { circleId, requestId } = request.data as OwnerJoinRequestActionData;
+    const userId = request.auth?.uid;
+    if (!userId) throw new Error('User must be authenticated');
+    if (!circleId || !requestId) throw new Error('Missing required fields');
+
+    const circleRef = db.collection('circles').doc(circleId);
+    const circleSnap = await circleRef.get();
+    if (!circleSnap.exists) throw new Error('Circle not found');
+    const circleData = circleSnap.data()!;
+    const isOwner = (circleData.ownerIds || [circleData.ownerId]).includes(userId);
+    if (!isOwner) throw new Error('Only owners can approve requests');
+
+    const reqRef = circleRef.collection('joinRequests').doc(requestId);
+    const reqSnap = await reqRef.get();
+    if (!reqSnap.exists) throw new Error('Request not found');
+    const reqData = reqSnap.data() as any;
+
+    // Add member and role
+    await circleRef.update({
+      members: admin.firestore.FieldValue.arrayUnion(reqData.userId),
+      [`roles.${reqData.userId}`]: 'member',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    await reqRef.delete();
+    return { success: true };
+  } catch (error) {
+    console.error('Error approving join request:', error);
+    throw error;
+  }
+});
+
+// Cloud Function: Decline Join Request (owners only)
+export const ownerDeclineJoinRequest = onCall(async (request) => {
+  try {
+    const { circleId, requestId } = request.data as OwnerJoinRequestActionData;
+    const userId = request.auth?.uid;
+    if (!userId) throw new Error('User must be authenticated');
+    if (!circleId || !requestId) throw new Error('Missing required fields');
+
+    const circleRef = db.collection('circles').doc(circleId);
+    const circleSnap = await circleRef.get();
+    if (!circleSnap.exists) throw new Error('Circle not found');
+    const circleData = circleSnap.data()!;
+    const isOwner = (circleData.ownerIds || [circleData.ownerId]).includes(userId);
+    if (!isOwner) throw new Error('Only owners can decline requests');
+
+    const reqRef = circleRef.collection('joinRequests').doc(requestId);
+    await reqRef.delete();
+    return { success: true };
+  } catch (error) {
+    console.error('Error declining join request:', error);
+    throw error;
+  }
+});
+
 // Cloud Function: Accept Invite
 export const acceptInvite = onCall(async (request) => {
   try {
@@ -253,6 +420,15 @@ export const onUpdateCreated = onDocumentCreated(
 
       const users = (await Promise.all(userPromises)).filter(Boolean);
       
+      // Update circle lastUpdateAt for unread indicators
+      try {
+        await db.collection('circles').doc(circleId).update({
+          lastUpdateAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        console.error('Failed to update circle lastUpdateAt:', e);
+      }
+
       // Send push notifications
       const notificationPromises = users.map(async (user) => {
         if (!user?.expoPushToken) {

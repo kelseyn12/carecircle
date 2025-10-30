@@ -115,6 +115,9 @@ export const getUser = async (userId: string): Promise<User | null> => {
       expoPushToken: data.expoPushToken,
       createdAt: data.createdAt?.toDate() || new Date(),
       circlesMuted: data.circlesMuted || [],
+      lastViewedCircles: Object.fromEntries(
+        Object.entries(data.lastViewedCircles || {}).map(([k, v]: any) => [k, v?.toDate ? v.toDate() : new Date(v)])
+      ),
     };
   } catch (error) {
     console.error('Error getting user:', error);
@@ -150,6 +153,7 @@ export const getUserCircles = async (userId: string): Promise<Circle[]> => {
         updateAuthors: data.updateAuthors || [data.ownerId],
         roles: data.roles || {},
         createdAt: data.createdAt?.toDate() || new Date(),
+        lastUpdateAt: data.lastUpdateAt?.toDate ? data.lastUpdateAt.toDate() : undefined,
       });
     });
 
@@ -515,6 +519,24 @@ export const toggleCircleMute = async (
   }
 };
 
+// Track last viewed timestamp per user per circle
+export const setCircleLastViewed = async (
+  userId: string,
+  circleId: string
+): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+  try {
+    const userDocRef = doc(usersRef, userId);
+    await firestoreUpdateDoc(userDocRef, {
+      [`lastViewedCircles.${circleId}`]: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error setting last viewed:', error);
+  }
+};
+
 // Update Management Functions
 
 /**
@@ -641,6 +663,7 @@ export const subscribeToUserCircles = (
         updateAuthors: data.updateAuthors || [data.ownerId],
         roles: data.roles || {},
         createdAt: data.createdAt?.toDate() || new Date(),
+        lastUpdateAt: data.lastUpdateAt?.toDate ? data.lastUpdateAt.toDate() : undefined,
       });
     });
 
@@ -1065,20 +1088,20 @@ export const createJoinRequest = async (
   circleId: string,
   request: { userId: string; displayName: string; relation: string; inviteId?: string }
 ): Promise<string> => {
-  if (!db) {
-    throw new Error('Firestore not initialized');
+  if (!functions) {
+    throw new Error('Firebase functions not initialized');
   }
 
   try {
-    const docRef = await addDoc(joinRequestsSubcollection(circleId), {
-      userId: request.userId,
+    const callable = httpsCallable(functions, 'submitJoinRequest');
+    const result = await callable({
+      circleId,
       displayName: request.displayName,
       relation: request.relation,
-      status: 'pending',
-      inviteId: request.inviteId || null,
-      createdAt: serverTimestamp(),
+      inviteId: request.inviteId,
     });
-    return docRef.id;
+    const data = result.data as any;
+    return data?.requestId || '';
   } catch (error) {
     console.error('Error creating join request:', error);
     throw new Error('Failed to submit join request. Please try again.');
@@ -1086,27 +1109,22 @@ export const createJoinRequest = async (
 };
 
 export const getPendingJoinRequests = async (circleId: string): Promise<JoinRequest[]> => {
-  if (!db) {
-    throw new Error('Firestore not initialized');
+  if (!functions) {
+    throw new Error('Firebase functions not initialized');
   }
-
   try {
-    const q = query(joinRequestsSubcollection(circleId), where('status', '==', 'pending'));
-    const snapshot = await getDocs(q);
-    const requests: JoinRequest[] = [];
-    snapshot.forEach((d) => {
-      const data = d.data() as any;
-      requests.push({
-        id: d.id,
-        userId: data.userId,
-        displayName: data.displayName,
-        relation: data.relation,
-        status: data.status,
-        inviteId: data.inviteId || undefined,
-        createdAt: data.createdAt?.toDate() || new Date(),
-      });
-    });
-    return requests;
+    const callable = httpsCallable(functions, 'listJoinRequests');
+    const result = await callable({ circleId });
+    const data = (result.data as any)?.requests || [];
+    return data.map((d: any) => ({
+      id: d.id,
+      userId: d.userId,
+      displayName: d.displayName,
+      relation: d.relation,
+      status: d.status,
+      inviteId: d.inviteId || undefined,
+      createdAt: d.createdAt ? new Date(d.createdAt._seconds ? d.createdAt._seconds * 1000 : d.createdAt) : new Date(),
+    }));
   } catch (error) {
     console.error('Error fetching join requests:', error);
     throw new Error('Failed to load join requests.');
@@ -1118,17 +1136,12 @@ export const approveJoinRequest = async (
   requestId: string,
   requesterUserId: string
 ): Promise<void> => {
-  if (!db) {
-    throw new Error('Firestore not initialized');
+  if (!functions) {
+    throw new Error('Firebase functions not initialized');
   }
-
   try {
-    // Add member
-    await addMemberToCircle(circleId, requesterUserId);
-    // Mark request approved then delete
-    const reqRef = doc(joinRequestsSubcollection(circleId), requestId);
-    await firestoreUpdateDoc(reqRef, { status: 'approved' });
-    await deleteDoc(reqRef);
+    const callable = httpsCallable(functions, 'ownerApproveJoinRequest');
+    await callable({ circleId, requestId });
   } catch (error) {
     console.error('Error approving join request:', error);
     throw new Error('Failed to approve request.');
@@ -1139,14 +1152,12 @@ export const declineJoinRequest = async (
   circleId: string,
   requestId: string
 ): Promise<void> => {
-  if (!db) {
-    throw new Error('Firestore not initialized');
+  if (!functions) {
+    throw new Error('Firebase functions not initialized');
   }
-
   try {
-    const reqRef = doc(joinRequestsSubcollection(circleId), requestId);
-    await firestoreUpdateDoc(reqRef, { status: 'declined' });
-    await deleteDoc(reqRef);
+    const callable = httpsCallable(functions, 'ownerDeclineJoinRequest');
+    await callable({ circleId, requestId });
   } catch (error) {
     console.error('Error declining join request:', error);
     throw new Error('Failed to decline request.');

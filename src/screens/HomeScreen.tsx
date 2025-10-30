@@ -1,5 +1,5 @@
 // Home screen showing user's circles
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert, TextInput, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -7,6 +7,7 @@ import { RootStackParamList, Circle } from '../types';
 import CircleCard from '../components/CircleCard';
 import { useAuth } from '../lib/authContext';
 import { useCircles } from '../lib/useCircles';
+import { getUser } from '../lib/firestoreUtils';
 import { EMOJIS } from '../utils/emojiUtils';
 import { initializeNotifications } from '../lib/notificationService';
 import { createJoinRequest, getInviteInfo } from '../lib/firestoreUtils';
@@ -22,6 +23,15 @@ const HomeScreen: React.FC = () => {
   const [inviteInput, setInviteInput] = useState('');
   const [requestName, setRequestName] = useState('');
   const [requestRelation, setRequestRelation] = useState('');
+  const [lastViewedMap, setLastViewedMap] = useState<Record<string, Date>>({});
+
+  useEffect(() => {
+    (async () => {
+      if (!user) return;
+      const u = await getUser(user.id);
+      setLastViewedMap(u?.lastViewedCircles || {});
+    })();
+  }, [user]);
 
   const handleCreateCircle = () => {
     navigation.navigate('CreateCircle');
@@ -172,12 +182,17 @@ const HomeScreen: React.FC = () => {
     </View>
   );
 
-  const renderCircle = ({ item }: { item: Circle }) => (
-    <CircleCard
-      circle={item}
-      onPress={() => handleCirclePress(item.id)}
-    />
-  );
+  const renderCircle = ({ item }: { item: Circle }) => {
+    const lastViewed = lastViewedMap[item.id];
+    const hasNew = item.lastUpdateAt && (!lastViewed || (lastViewed < (item.lastUpdateAt as Date)));
+    return (
+      <CircleCard
+        circle={item}
+        hasNew={!!hasNew}
+        onPress={() => handleCirclePress(item.id)}
+      />
+    );
+  };
 
   if (loading) {
     return (

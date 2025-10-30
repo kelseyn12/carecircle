@@ -6,7 +6,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Update } from '../types';
 import UpdateCard from '../components/UpdateCard';
 import { useAuth } from '../lib/authContext';
-import { subscribeToCircleUpdates, canUserPostUpdates, getUser, toggleReaction } from '../lib/firestoreUtils';
+import { subscribeToCircleUpdates, canUserPostUpdates, getUser, toggleReaction, getPendingJoinRequests, setCircleLastViewed } from '../lib/firestoreUtils';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import OfflineIndicator from '../components/OfflineIndicator';
 
@@ -25,6 +25,7 @@ const CircleFeedScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [canPostUpdates, setCanPostUpdates] = useState(true); // Set to true by default for now
   const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const [pendingCount, setPendingCount] = useState(0);
 
   // Check if user can post updates
   useEffect(() => {
@@ -77,6 +78,24 @@ const CircleFeedScreen: React.FC = () => {
     });
 
     return unsubscribe;
+  }, [circleId]);
+
+  // Mark as viewed
+  useEffect(() => {
+    if (!user) return;
+    setCircleLastViewed(user.id, circleId).catch(() => {});
+  }, [user, circleId]);
+
+  // Load pending join requests count (owners only; CF handles auth/permission)
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await getPendingJoinRequests(circleId);
+        setPendingCount(list.length);
+      } catch (e) {
+        // ignore if not owner or no requests
+      }
+    })();
   }, [circleId]);
 
   const handleRefresh = async () => {
@@ -230,6 +249,23 @@ const CircleFeedScreen: React.FC = () => {
               onPress={handleManageMembers}
             >
               <Text className="text-white" style={{ fontSize: 20 }}>⚙️</Text>
+              {pendingCount > 0 && (
+                <View style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -4,
+                  backgroundColor: '#ef4444',
+                  borderRadius: 9999,
+                  width: 16,
+                  height: 16,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderWidth: 2,
+                  borderColor: '#374151',
+                }}>
+                  <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{pendingCount > 9 ? '9+' : pendingCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               style={{

@@ -7,9 +7,10 @@ import { EMOJIS } from '../utils/emojiUtils';
 interface CircleCardProps {
   circle: Circle;
   onPress: () => void;
+  hasNew?: boolean;
 }
 
-const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress }) => {
+const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress, hasNew }) => {
   const memberCount = circle.members.length;
   
   // Format creation date
@@ -38,6 +39,7 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress }) => {
             <Text className="text-lg font-bold text-gray-800 flex-1">
               {circle.title}
             </Text>
+            {hasNew && <View className="w-2 h-2 bg-red-500 rounded-full ml-2" />}
           </View>
           
           <View className="flex-row items-center mb-2">
