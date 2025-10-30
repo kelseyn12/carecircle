@@ -26,6 +26,9 @@ import {
   removeUpdateAuthor,
   canUserPostUpdates,
   deleteCircle,
+  getPendingJoinRequests,
+  approveJoinRequest,
+  declineJoinRequest,
 } from '../lib/firestoreUtils';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -52,6 +55,12 @@ const MemberManagementScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<'owner' | 'member' | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<{
+    id: string;
+    userId: string;
+    displayName: string;
+    relation: string;
+  }[]>([]);
 
   useEffect(() => {
     loadCircleData();
@@ -107,12 +116,52 @@ const MemberManagementScreen: React.FC = () => {
       const userData = userDoc.data();
       const circlesMuted = userData?.circlesMuted || [];
       setIsMuted(circlesMuted.includes(circleId));
+
+      // Load pending join requests for owners
+      if (role === 'owner') {
+        try {
+          const requests = await getPendingJoinRequests(circleId);
+          setPendingRequests(
+            requests.map((r) => ({
+              id: r.id,
+              userId: r.userId,
+              displayName: r.displayName,
+              relation: r.relation,
+            }))
+          );
+        } catch (e) {
+          // Non-blocking: just log
+          console.error('Error loading join requests', e);
+        }
+      } else {
+        setPendingRequests([]);
+      }
       
     } catch (error) {
       console.error('Error loading circle data:', error);
       Alert.alert('Error', 'Failed to load circle data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApproveRequest = async (requestId: string, requesterUserId: string) => {
+    try {
+      await approveJoinRequest(circleId, requestId, requesterUserId);
+      await loadCircleData();
+      Alert.alert('Approved', 'Join request approved.');
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to approve request');
+    }
+  };
+
+  const handleDeclineRequest = async (requestId: string) => {
+    try {
+      await declineJoinRequest(circleId, requestId);
+      await loadCircleData();
+      Alert.alert('Declined', 'Join request declined.');
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to decline request');
     }
   };
 
@@ -446,6 +495,33 @@ const MemberManagementScreen: React.FC = () => {
           </Text>
         )}
       </View>
+
+      {/* Pending Join Requests (Owners only) */}
+      {userRole === 'owner' && pendingRequests.length > 0 && (
+        <View className="bg-white mx-4 mt-4 rounded-xl p-4 shadow-sm border border-gray-100">
+          <Text className="font-semibold text-gray-800 mb-3">Pending Join Requests</Text>
+          {pendingRequests.map((req) => (
+            <View key={req.id} className="border border-gray-100 rounded-lg p-3 mb-2">
+              <Text className="text-gray-900 font-medium">{req.displayName}</Text>
+              <Text className="text-gray-600 text-sm mt-0.5">Relation: {req.relation}</Text>
+              <View className="flex-row gap-2 mt-3">
+                <TouchableOpacity
+                  className="bg-green-600 rounded-lg px-4 py-2"
+                  onPress={() => handleApproveRequest(req.id, req.userId)}
+                >
+                  <Text className="text-white font-semibold text-sm">Approve</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className="bg-gray-300 rounded-lg px-4 py-2"
+                  onPress={() => handleDeclineRequest(req.id)}
+                >
+                  <Text className="text-gray-800 font-semibold text-sm">Decline</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Notification Settings */}
       <View className="bg-white mx-4 mt-4 rounded-xl p-4 shadow-sm border border-gray-100">
