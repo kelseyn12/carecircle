@@ -1170,7 +1170,14 @@ export const getInviteInfo = async (
       circleId: data.circleId,
       expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
     };
-  } catch (error) {
+  } catch (error: any) {
+    // Fallback: treat code as a potential circleId for owner-shared codes
+    try {
+      const circleSnap = await getDoc(doc(circlesRef, inviteId));
+      if (circleSnap.exists()) {
+        return { circleId: circleSnap.id };
+      }
+    } catch {}
     console.error('Error reading invite:', error);
     throw new Error('Failed to read invite.');
   }
