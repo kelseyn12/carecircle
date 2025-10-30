@@ -219,8 +219,12 @@ const HomeScreen: React.FC = () => {
         <View className="flex-1 bg-black/50 justify-center px-5">
           <View className="bg-white rounded-3xl p-6">
             <Text className="text-2xl font-bold mb-2">Join Circle</Text>
-            <Text className="text-gray-600 text-base mb-5">
+            <Text className="text-gray-600 text-base mb-2">
               Enter your invite link to join a Care Circle.
+            </Text>
+            <Text className="text-gray-500 text-sm mb-4">
+              You can paste the full link or just the code after <Text className="font-semibold">inviteRedirect/</Text>.
+              Example: <Text className="font-semibold">ABC123...</Text>
             </Text>
             
             <TextInput
