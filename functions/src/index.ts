@@ -132,14 +132,21 @@ export const getInviteInfo = onCall(async (request) => {
     }
 
     const inviteDoc = await db.collection('invites').doc(inviteId).get();
-    if (!inviteDoc.exists) {
-      throw new Error('Invite not found');
+    if (inviteDoc.exists) {
+      const data = inviteDoc.data()!;
+      return {
+        circleId: data.circleId,
+        expiresAt: data.expiresAt ? data.expiresAt.toDate().toISOString() : null,
+      };
     }
-    const data = inviteDoc.data()!;
-    return {
-      circleId: data.circleId,
-      expiresAt: data.expiresAt ? data.expiresAt.toDate().toISOString() : null,
-    };
+
+    // Fallback: treat code as a potential circle ID so self-invite can still proceed
+    const circleDoc = await db.collection('circles').doc(inviteId).get();
+    if (circleDoc.exists) {
+      return { circleId: circleDoc.id, expiresAt: null };
+    }
+
+    throw new Error('Invite not found');
   } catch (error) {
     console.error('Error reading invite info:', error);
     throw error;
