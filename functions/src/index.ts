@@ -118,6 +118,34 @@ export const createInvite = onCall(async (request) => {
   }
 });
 
+// Cloud Function: Get Invite Info (for client to validate invite and resolve circleId)
+export const getInviteInfo = onCall(async (request) => {
+  try {
+    const { inviteId } = request.data as { inviteId: string };
+    // Optional: require auth but do not require membership
+    const userId = request.auth?.uid;
+    if (!userId) {
+      throw new Error('User must be authenticated');
+    }
+    if (!inviteId) {
+      throw new Error('Invite ID is required');
+    }
+
+    const inviteDoc = await db.collection('invites').doc(inviteId).get();
+    if (!inviteDoc.exists) {
+      throw new Error('Invite not found');
+    }
+    const data = inviteDoc.data()!;
+    return {
+      circleId: data.circleId,
+      expiresAt: data.expiresAt ? data.expiresAt.toDate().toISOString() : null,
+    };
+  } catch (error) {
+    console.error('Error reading invite info:', error);
+    throw error;
+  }
+});
+
 // Cloud Function: Accept Invite
 export const acceptInvite = onCall(async (request) => {
   try {

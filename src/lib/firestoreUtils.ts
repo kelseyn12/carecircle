@@ -14,7 +14,8 @@ import {
   serverTimestamp,
   Timestamp 
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, functions } from './firebase';
+import { httpsCallable } from 'firebase/functions';
 import { Circle, Update, User, Comment } from '../types';
 import { handleError, retryOperation } from './errorHandler';
 import { addOfflineUpdate, addOfflineComment, addOfflineReaction } from './offlineQueue';
@@ -23,7 +24,7 @@ import { addOfflineUpdate, addOfflineComment, addOfflineReaction } from './offli
 const circlesRef = collection(db, 'circles');
 const updatesRef = collection(db, 'updates');
 const usersRef = collection(db, 'users');
-const invitesRef = collection(db, 'invites');
+// Note: invites are read via callable function due to security rules
 
 // Subcollections
 const joinRequestsSubcollection = (circleId: string) => collection(doc(circlesRef, circleId), 'joinRequests');
@@ -1157,19 +1158,17 @@ export const declineJoinRequest = async (
 export const getInviteInfo = async (
   inviteId: string
 ): Promise<{ circleId: string; expiresAt?: Date } | null> => {
-  if (!db) {
-    throw new Error('Firestore not initialized');
+  if (!functions) {
+    throw new Error('Firebase functions not initialized');
   }
-
   try {
-    const snap = await getDoc(doc(invitesRef, inviteId));
-    if (!snap.exists()) {
-      return null;
-    }
-    const data: any = snap.data();
+    const callable = httpsCallable(functions, 'getInviteInfo');
+    const result = await callable({ inviteId });
+    const data = result.data as any;
+    if (!data?.circleId) return null;
     return {
       circleId: data.circleId,
-      expiresAt: data.expiresAt?.toDate?.() || undefined,
+      expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
     };
   } catch (error) {
     console.error('Error reading invite:', error);
