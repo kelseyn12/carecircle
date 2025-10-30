@@ -9,6 +9,7 @@ import { useAuth } from '../lib/authContext';
 import { useCircles } from '../lib/useCircles';
 import { EMOJIS } from '../utils/emojiUtils';
 import { initializeNotifications } from '../lib/notificationService';
+import { createJoinRequest, getInviteInfo } from '../lib/firestoreUtils';
 import SafeText from '../components/SafeText';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
@@ -19,6 +20,8 @@ const HomeScreen: React.FC = () => {
   const { circles, loading, error, refreshCircles } = useCircles();
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [inviteInput, setInviteInput] = useState('');
+  const [requestName, setRequestName] = useState('');
+  const [requestRelation, setRequestRelation] = useState('');
 
   const handleCreateCircle = () => {
     navigation.navigate('CreateCircle');
@@ -87,9 +90,56 @@ const HomeScreen: React.FC = () => {
       return;
     }
 
-    setShowJoinModal(false);
-    setInviteInput('');
-    navigation.navigate('Join', { inviteId });
+    // Validate extra fields
+    const nameToUse = requestName.trim() || user?.displayName || '';
+    if (!nameToUse) {
+      Alert.alert('Name required', 'Please provide your name.');
+      return;
+    }
+    if (!requestRelation.trim()) {
+      Alert.alert('Relation required', 'Please describe your relation to the person.');
+      return;
+    }
+
+    // Submit join request flow
+    (async () => {
+      try {
+        const invite = await getInviteInfo(inviteId);
+        if (!invite) {
+          Alert.alert('Invalid Invite', 'Invite not found or has expired.');
+          return;
+        }
+        if (invite.expiresAt && invite.expiresAt.getTime() < Date.now()) {
+          Alert.alert('Invite Expired', 'This invite has expired. Please request a new one.');
+          return;
+        }
+        if (!user) {
+          Alert.alert('Authentication Required', 'Please sign in to request to join.');
+          navigation.navigate('SignIn');
+          return;
+        }
+
+        await createJoinRequest(invite.circleId, {
+          userId: user.id,
+          displayName: nameToUse,
+          relation: requestRelation.trim(),
+          inviteId,
+        });
+
+        setShowJoinModal(false);
+        setInviteInput('');
+        setRequestName('');
+        setRequestRelation('');
+
+        Alert.alert(
+          'Request Sent',
+          'Your request to join has been sent. You will be notified once the owners approve your request.'
+        );
+      } catch (err:any) {
+        console.error('Join request error:', err);
+        Alert.alert('Error', err?.message || 'Failed to submit request. Please try again.');
+      }
+    })();
   };
 
   const renderEmptyState = () => (
@@ -181,6 +231,26 @@ const HomeScreen: React.FC = () => {
               autoCapitalize="none"
               autoCorrect={false}
               multiline
+            />
+
+            <Text className="text-gray-700 mb-2">Your name</Text>
+            <TextInput
+              className="border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base mb-4 bg-gray-50"
+              placeholder={user?.displayName ? `${user.displayName}` : 'Full name'}
+              value={requestName}
+              onChangeText={setRequestName}
+              autoCapitalize="words"
+              autoCorrect={false}
+            />
+
+            <Text className="text-gray-700 mb-2">Relation to the person</Text>
+            <TextInput
+              className="border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base mb-5 bg-gray-50"
+              placeholder="e.g., Daughter, Friend, Neighbor"
+              value={requestRelation}
+              onChangeText={setRequestRelation}
+              autoCapitalize="sentences"
+              autoCorrect
             />
             
             <View className="flex-row gap-3">

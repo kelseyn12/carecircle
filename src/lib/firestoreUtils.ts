@@ -23,6 +23,10 @@ import { addOfflineUpdate, addOfflineComment, addOfflineReaction } from './offli
 const circlesRef = collection(db, 'circles');
 const updatesRef = collection(db, 'updates');
 const usersRef = collection(db, 'users');
+const invitesRef = collection(db, 'invites');
+
+// Subcollections
+const joinRequestsSubcollection = (circleId: string) => collection(doc(circlesRef, circleId), 'joinRequests');
 const commentsRef = collection(db, 'comments');
 
 // Circle Management Functions
@@ -1041,5 +1045,134 @@ export const removeUpdateAuthor = async (circleId: string, userId: string): Prom
   } catch (error) {
     console.error('Error removing update author:', error);
     throw error;
+  }
+};
+
+// Join Request Management
+
+export interface JoinRequest {
+  id: string;
+  userId: string;
+  displayName: string;
+  relation: string;
+  status: 'pending' | 'approved' | 'declined';
+  inviteId?: string;
+  createdAt: Date;
+}
+
+export const createJoinRequest = async (
+  circleId: string,
+  request: { userId: string; displayName: string; relation: string; inviteId?: string }
+): Promise<string> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const docRef = await addDoc(joinRequestsSubcollection(circleId), {
+      userId: request.userId,
+      displayName: request.displayName,
+      relation: request.relation,
+      status: 'pending',
+      inviteId: request.inviteId || null,
+      createdAt: serverTimestamp(),
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating join request:', error);
+    throw new Error('Failed to submit join request. Please try again.');
+  }
+};
+
+export const getPendingJoinRequests = async (circleId: string): Promise<JoinRequest[]> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const q = query(joinRequestsSubcollection(circleId), where('status', '==', 'pending'));
+    const snapshot = await getDocs(q);
+    const requests: JoinRequest[] = [];
+    snapshot.forEach((d) => {
+      const data = d.data() as any;
+      requests.push({
+        id: d.id,
+        userId: data.userId,
+        displayName: data.displayName,
+        relation: data.relation,
+        status: data.status,
+        inviteId: data.inviteId || undefined,
+        createdAt: data.createdAt?.toDate() || new Date(),
+      });
+    });
+    return requests;
+  } catch (error) {
+    console.error('Error fetching join requests:', error);
+    throw new Error('Failed to load join requests.');
+  }
+};
+
+export const approveJoinRequest = async (
+  circleId: string,
+  requestId: string,
+  requesterUserId: string
+): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    // Add member
+    await addMemberToCircle(circleId, requesterUserId);
+    // Mark request approved then delete
+    const reqRef = doc(joinRequestsSubcollection(circleId), requestId);
+    await firestoreUpdateDoc(reqRef, { status: 'approved' });
+    await deleteDoc(reqRef);
+  } catch (error) {
+    console.error('Error approving join request:', error);
+    throw new Error('Failed to approve request.');
+  }
+};
+
+export const declineJoinRequest = async (
+  circleId: string,
+  requestId: string
+): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const reqRef = doc(joinRequestsSubcollection(circleId), requestId);
+    await firestoreUpdateDoc(reqRef, { status: 'declined' });
+    await deleteDoc(reqRef);
+  } catch (error) {
+    console.error('Error declining join request:', error);
+    throw new Error('Failed to decline request.');
+  }
+};
+
+// Invite helpers
+
+export const getInviteInfo = async (
+  inviteId: string
+): Promise<{ circleId: string; expiresAt?: Date } | null> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const snap = await getDoc(doc(invitesRef, inviteId));
+    if (!snap.exists()) {
+      return null;
+    }
+    const data: any = snap.data();
+    return {
+      circleId: data.circleId,
+      expiresAt: data.expiresAt?.toDate?.() || undefined,
+    };
+  } catch (error) {
+    console.error('Error reading invite:', error);
+    throw new Error('Failed to read invite.');
   }
 };
