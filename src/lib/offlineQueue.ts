@@ -58,7 +58,13 @@ export class OfflineQueue {
   private setupNetworkListener(): void {
     // Fetch initial state
     NetInfo.fetch().then(state => {
-      this.isOnline = (state.isConnected && state.isInternetReachable === true);
+      // If connected and on Wi-Fi, assume online (Wi-Fi usually means internet)
+      // This prevents false positives when isInternetReachable check is slow
+      if (state.type === 'wifi' && state.isConnected) {
+        this.isOnline = true;
+      } else {
+        this.isOnline = (state.isConnected && (state.isInternetReachable === true || state.isInternetReachable === null));
+      }
       if (this.isOnline && !this.processingQueue) {
         this.processQueue();
       }
@@ -67,7 +73,14 @@ export class OfflineQueue {
     // Subscribe to network changes
     this.unsubscribeNetInfo = NetInfo.addEventListener(state => {
       const wasOnline = this.isOnline;
-      this.isOnline = (state.isConnected && state.isInternetReachable === true);
+      
+      // If connected and on Wi-Fi, assume online (Wi-Fi usually means internet)
+      if (state.type === 'wifi' && state.isConnected) {
+        this.isOnline = true;
+      } else {
+        // For other types, use isInternetReachable, but treat null as online (uncertain but likely connected)
+        this.isOnline = (state.isConnected && (state.isInternetReachable === true || state.isInternetReachable === null));
+      }
 
       // If we just came online and are not already processing, try to process the queue
       if (!wasOnline && this.isOnline && !this.processingQueue) {
