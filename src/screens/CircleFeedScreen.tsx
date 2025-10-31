@@ -277,7 +277,7 @@ const CircleFeedScreen: React.FC = () => {
   return (
     <View className="flex-1 bg-blue-50">
       {/* Header */}
-      <View className="bg-white px-6 py-4 border-b border-gray-100 shadow-sm" style={{ paddingTop: 50 }}>
+      <View className="bg-white px-6 py-4 border-b border-gray-100 shadow-sm" style={{ paddingTop: 60, paddingBottom: 16 }}>
         <View className="flex-row justify-between items-center">
           <View className="flex-row items-center flex-1">
             <TouchableOpacity
@@ -306,7 +306,7 @@ const CircleFeedScreen: React.FC = () => {
           <View className="flex-row" style={{ gap: 8 }}>
             <TouchableOpacity
               style={{
-                backgroundColor: '#374151',
+                backgroundColor: '#e5e7eb',
                 borderRadius: 12,
                 width: 44,
                 height: 44,
@@ -320,7 +320,7 @@ const CircleFeedScreen: React.FC = () => {
               }}
               onPress={handleManageMembers}
             >
-              <Text className="text-white" style={{ fontSize: 20 }}>⚙️</Text>
+              <Text className="text-gray-700" style={{ fontSize: 20 }}>⚙️</Text>
               {pendingCount > 0 && (
                 <View style={{
                   position: 'absolute',
@@ -333,7 +333,7 @@ const CircleFeedScreen: React.FC = () => {
                   justifyContent: 'center',
                   alignItems: 'center',
                   borderWidth: 2,
-                  borderColor: '#374151',
+                  borderColor: '#e5e7eb',
                 }}>
                   <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{pendingCount > 9 ? '9+' : pendingCount}</Text>
                 </View>
@@ -341,7 +341,7 @@ const CircleFeedScreen: React.FC = () => {
             </TouchableOpacity>
             <TouchableOpacity
               style={{
-                backgroundColor: '#10b981',
+                backgroundColor: '#dbeafe',
                 borderRadius: 12,
                 width: 44,
                 height: 44,
@@ -355,27 +355,32 @@ const CircleFeedScreen: React.FC = () => {
               }}
               onPress={handleInviteMembers}
             >
-              <Text className="text-white" style={{ fontSize: 20 }}>👥</Text>
+              <Text className="text-blue-700" style={{ fontSize: 20 }}>👥</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              onPress={handleCreateUpdate}
               style={{
-                backgroundColor: '#ffffff',
-                borderWidth: 2,
-                borderColor: '#3b82f6',
-                borderRadius: 12,
-                width: 44,
-                height: 44,
-                justifyContent: 'center',
-                alignItems: 'center',
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.1,
                 shadowRadius: 4,
                 elevation: 3,
               }}
-              onPress={handleCreateUpdate}
             >
-              <Text className="text-blue-600" style={{ fontSize: 24, fontWeight: 'bold' }}>+</Text>
+              <LinearGradient
+                colors={['#60a5fa', '#a78bfa']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  borderRadius: 12,
+                  width: 44,
+                  height: 44,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ color: '#ffffff', fontSize: 24, fontWeight: 'bold' }}>+</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>

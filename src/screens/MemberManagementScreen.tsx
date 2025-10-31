@@ -425,51 +425,107 @@ const MemberManagementScreen: React.FC = () => {
       </View>
       
       {userRole === 'owner' && !item.isCurrentUser && (
-        <View style={{ gap: 8 }}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ gap: 12, marginTop: 8 }}>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
             {item.role === 'member' ? (
               <TouchableOpacity
-                style={{ backgroundColor: '#10b981', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, flex: 1 }}
+                style={{
+                  backgroundColor: '#10b981',
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  flex: 1,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
                 onPress={() => handlePromoteMember(item.id)}
               >
-                <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Promote</Text>
+                <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>Promote</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={{ backgroundColor: '#eab308', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, flex: 1 }}
+                style={{
+                  backgroundColor: '#eab308',
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  flex: 1,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
                 onPress={() => handleDemoteOwner(item.id)}
               >
-                <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Demote</Text>
+                <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>Demote</Text>
               </TouchableOpacity>
             )}
             {circle?.updateAuthors?.includes(item.id) ? (
               <TouchableOpacity
-                style={{ backgroundColor: '#f97316', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, flex: 1 }}
+                style={{
+                  backgroundColor: '#f97316',
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  flex: 1,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
                 onPress={() => handleRemoveUpdateAuthor(item.id)}
               >
-                <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '600', textAlign: 'center' }}>Revoke Updates</Text>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Revoke Updates</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 onPress={() => handleAddUpdateAuthor(item.id)}
-                style={{ flex: 1, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, overflow: 'hidden' }}
+                style={{
+                  flex: 1,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
               >
                 <LinearGradient
                   colors={['#60a5fa', '#a78bfa']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={{ flex: 1, paddingHorizontal: 14, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' }}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
                 >
-                  <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '600', textAlign: 'center' }}>Allow Updates</Text>
+                  <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Allow Updates</Text>
                 </LinearGradient>
               </TouchableOpacity>
             )}
           </View>
           <TouchableOpacity
-            style={{ backgroundColor: '#ef4444', borderRadius: 8, paddingVertical: 10 }}
+            style={{
+              backgroundColor: '#ef4444',
+              borderRadius: 12,
+              paddingVertical: 12,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}
             onPress={() => handleRemoveMember(item.id, item.displayName)}
           >
-            <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Remove from Circle</Text>
+            <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>Remove from Circle</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -488,21 +544,26 @@ const MemberManagementScreen: React.FC = () => {
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
-      <View className="bg-white px-6 py-6 border-b border-gray-200">
-        <View className="flex-row justify-between items-center">
+      <View className="bg-white border-b border-gray-200" style={{ paddingHorizontal: 24, paddingTop: 60, paddingBottom: 20 }}>
+        <View className="flex-row justify-between items-center mb-3">
           <TouchableOpacity
-            className="bg-gray-100 rounded-xl px-4 py-3 mt-4"
             onPress={() => navigation.navigate('CircleFeed', { circleId })}
+            style={{
+              backgroundColor: '#f3f4f6',
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+            }}
           >
-            <Text className="text-gray-700 font-semibold">Back</Text>
+            <Text className="text-gray-700 font-semibold" style={{ fontSize: 15 }}>Back</Text>
           </TouchableOpacity>
           
-          <Text className="text-xl font-semibold text-gray-800">Members</Text>
+          <Text className="text-xl font-bold text-gray-900" style={{ fontSize: 20 }}>Members</Text>
           
-          <View className="w-16" />
+          <View style={{ width: 60 }} />
         </View>
         {circle && (
-          <Text className="text-gray-600 text-center mt-2">
+          <Text className="text-gray-600 text-center" style={{ fontSize: 14, marginTop: 4 }}>
             {circle.title} • {members.length} member{members.length !== 1 ? 's' : ''}
           </Text>
         )}
@@ -565,17 +626,21 @@ const MemberManagementScreen: React.FC = () => {
 
       {/* Delete Circle Button (for owners only) */}
       {userRole === 'owner' && (
-        <View className="px-4 pb-4">
+        <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 }}>
           <TouchableOpacity
-            className="bg-red-600 rounded-xl py-4"
             onPress={handleDeleteCircle}
             style={{
               backgroundColor: '#dc2626',
-              borderRadius: 12,
-              paddingVertical: 14,
+              borderRadius: 16,
+              paddingVertical: 16,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
             }}
           >
-            <Text className="text-white text-center font-semibold" style={{ color: '#ffffff', fontWeight: '600', fontSize: 16 }}>
+            <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 16, textAlign: 'center' }}>
               Delete Circle
             </Text>
           </TouchableOpacity>
@@ -584,17 +649,21 @@ const MemberManagementScreen: React.FC = () => {
 
       {/* Leave Circle Button (for members only) */}
       {userRole === 'member' && (
-        <View className="px-4 pb-4">
+        <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 }}>
           <TouchableOpacity
-            className="bg-red-500 rounded-xl py-4"
             onPress={handleLeaveCircle}
             style={{
               backgroundColor: '#ef4444',
-              borderRadius: 12,
-              paddingVertical: 14,
+              borderRadius: 16,
+              paddingVertical: 16,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
             }}
           >
-            <Text className="text-white text-center font-semibold" style={{ color: '#ffffff', fontWeight: '600', fontSize: 16 }}>
+            <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 16, textAlign: 'center' }}>
               Leave Circle
             </Text>
           </TouchableOpacity>

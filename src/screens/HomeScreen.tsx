@@ -1,6 +1,7 @@
 // Home screen showing user's circles
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert, TextInput, Modal } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Circle } from '../types';
@@ -160,9 +161,26 @@ const HomeScreen: React.FC = () => {
 
   const renderEmptyState = () => (
     <View className="flex-1 justify-center items-center px-6">
-      <View className="w-32 h-32 bg-blue-500 rounded-full items-center justify-center mb-8 shadow-xl">
+      <LinearGradient
+        colors={['#93c5fd', '#c4b5fd']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          width: 128,
+          height: 128,
+          borderRadius: 64,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 32,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 8,
+          elevation: 8,
+        }}
+      >
         <Text className="text-6xl">{EMOJIS.BLUE_HEART}</Text>
-      </View>
+      </LinearGradient>
       <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
         Welcome to Care Circle
       </Text>
@@ -172,10 +190,31 @@ const HomeScreen: React.FC = () => {
       </Text>
       <View className="w-full gap-3">
         <TouchableOpacity
-          className="bg-blue-500 rounded-2xl px-8 py-4 shadow-lg items-center"
           onPress={handleCreateCircle}
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 5,
+          }}
         >
-          <Text className="text-white font-bold text-lg">Create Your First Circle</Text>
+          <LinearGradient
+            colors={['#60a5fa', '#a78bfa']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              borderRadius: 16,
+              paddingHorizontal: 32,
+              paddingVertical: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>
+              Create Your First Circle
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -203,9 +242,21 @@ const HomeScreen: React.FC = () => {
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-blue-50">
-        <View className="w-16 h-16 bg-blue-500 rounded-full items-center justify-center mb-4">
+        <LinearGradient
+          colors={['#93c5fd', '#c4b5fd']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 16,
+          }}
+        >
           <Text className="text-2xl">{EMOJIS.BLUE_HEART}</Text>
-        </View>
+        </LinearGradient>
         <Text className="text-gray-600 text-lg font-medium">Loading circles...</Text>
       </View>
     );
@@ -219,10 +270,31 @@ const HomeScreen: React.FC = () => {
         </View>
         <Text className="text-red-600 text-center mb-6 text-lg font-medium">{error}</Text>
         <TouchableOpacity
-          className="bg-blue-500 rounded-2xl px-6 py-3 shadow-lg items-center"
           onPress={handleRefresh}
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 5,
+          }}
         >
-          <Text className="text-white font-bold text-base">Try Again</Text>
+          <LinearGradient
+            colors={['#60a5fa', '#a78bfa']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              borderRadius: 16,
+              paddingHorizontal: 24,
+              paddingVertical: 12,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
+              Try Again
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     );
@@ -290,10 +362,31 @@ const HomeScreen: React.FC = () => {
               </TouchableOpacity>
               
               <TouchableOpacity
-                className="flex-1 bg-blue-500 rounded-xl py-3.5 items-center"
                 onPress={handleJoinByInvite}
+                style={{
+                  flex: 1,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
               >
-                <Text className="text-white font-semibold text-base">Join</Text>
+                <LinearGradient
+                  colors={['#60a5fa', '#a78bfa']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    borderRadius: 12,
+                    paddingVertical: 14,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 16, textAlign: 'center' }}>
+                    Join
+                  </Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
@@ -301,38 +394,97 @@ const HomeScreen: React.FC = () => {
       </Modal>
 
       {/* Header */}
-      <View className="bg-white px-6 pt-12 pb-4 border-b border-gray-100 shadow-sm">
+      <LinearGradient
+        colors={['#ffffff', '#eff6ff']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{
+          paddingHorizontal: 24,
+          paddingTop: 48,
+          paddingBottom: 16,
+          borderBottomWidth: 1,
+          borderBottomColor: '#e5e7eb',
+        }}
+      >
         <View className="flex-row justify-between items-center">
           <View className="flex-1">
-            <SafeText className="text-3xl font-bold text-blue-600 mt-5" maxFontSizeMultiplier={1.2}>
+            <SafeText className="text-3xl font-bold mt-5" style={{ color: '#3b82f6' }} maxFontSizeMultiplier={1.2}>
               My Circles
             </SafeText>
-            <SafeText className="text-gray-600 text-base mt-1" maxFontSizeMultiplier={1.3}>
+            <SafeText className="text-base mt-1" style={{ color: '#64748b' }} maxFontSizeMultiplier={1.3}>
               Welcome, {user?.displayName || 'User'} {EMOJIS.BLUE_HEART}
             </SafeText>
           </View>
           <View className="flex-row gap-2 mt-5 flex-shrink-0">
             <TouchableOpacity
-              className="bg-blue-100 rounded-xl w-12 h-12 justify-center items-center shadow-sm"
               onPress={() => setShowJoinModal(true)}
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3,
+                backgroundColor: '#dbeafe',
+                borderRadius: 12,
+                width: 48,
+                height: 48,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
             >
               <SafeText className="text-base" maxFontSizeMultiplier={1.1}>👥</SafeText>
             </TouchableOpacity>
             <TouchableOpacity
-              className="bg-emerald-100 rounded-xl w-12 h-12 justify-center items-center shadow-sm"
               onPress={handleCreateCircle}
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
             >
-              <SafeText className="text-base font-bold" maxFontSizeMultiplier={1.1}>+</SafeText>
+              <LinearGradient
+                colors={['#60a5fa', '#a78bfa']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  borderRadius: 12,
+                  width: 48,
+                  height: 48,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <SafeText className="text-base font-bold" style={{ color: '#ffffff' }} maxFontSizeMultiplier={1.1}>+</SafeText>
+              </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity
-              className="bg-gray-200 rounded-xl w-12 h-12 justify-center items-center shadow-sm"
               onPress={handleSignOut}
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
             >
-              <SafeText className="text-base" maxFontSizeMultiplier={1.1}>🚪</SafeText>
+              <View
+                style={{
+                  backgroundColor: '#e5e7eb',
+                  borderRadius: 12,
+                  width: 48,
+                  height: 48,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <SafeText className="text-base" maxFontSizeMultiplier={1.1}>🚪</SafeText>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </LinearGradient>
 
       {/* Content */}
       {circles.length === 0 ? (

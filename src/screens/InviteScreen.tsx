@@ -7,8 +7,11 @@ import {
   Share,
   ActivityIndicator,
   TextInput,
-  Platform
+  Platform,
+  ScrollView,
+  KeyboardAvoidingView
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -122,7 +125,10 @@ const InviteScreen: React.FC = () => {
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <KeyboardAvoidingView 
+      className="flex-1 bg-gray-50"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       {/* Hidden TextInput (for iOS clipboard sanitization) */}
       <TextInput
         ref={inputRef}
@@ -138,22 +144,32 @@ const InviteScreen: React.FC = () => {
       />
 
       {/* Header */}
-      <View className="bg-white px-6 py-6 border-b border-gray-200">
+      <View className="bg-white border-b border-gray-200" style={{ paddingHorizontal: 24, paddingTop: 60, paddingBottom: 20 }}>
         <View className="flex-row justify-between items-center">
           <TouchableOpacity
-            className="bg-gray-100 rounded-xl px-4 py-3 mt-4"
             onPress={() => navigation.navigate('CircleFeed', { circleId })}
+            style={{
+              backgroundColor: '#f3f4f6',
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+            }}
           >
-            <Text className="text-gray-700 font-semibold">Back</Text>
+            <Text className="text-gray-700 font-semibold" style={{ fontSize: 15 }}>Back</Text>
           </TouchableOpacity>
 
-          <Text className="text-xl font-semibold text-gray-800">Invite Members</Text>
+          <Text className="text-xl font-bold text-gray-900" style={{ fontSize: 20 }}>Invite Members</Text>
 
-          <View className="w-16" />
+          <View style={{ width: 60 }} />
         </View>
       </View>
 
-      <View className="flex-1 px-6 py-6">
+      <ScrollView 
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 24, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {!inviteLink ? (
           // Create invite section
           <View className="bg-white rounded-2xl p-6 shadow-sm">
@@ -169,21 +185,48 @@ const InviteScreen: React.FC = () => {
             </View>
 
             <TouchableOpacity
-              className={`rounded-xl py-4 ${
-                isCreating ? 'bg-gray-300' : 'bg-blue-500'
-              }`}
               onPress={handleCreateInvite}
               disabled={isCreating}
+              style={{
+                opacity: isCreating ? 0.7 : 1,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 5,
+              }}
             >
               {isCreating ? (
-                <View className="flex-row items-center justify-center">
-                  <ActivityIndicator color="white" size="small" />
-                  <Text className="text-white font-semibold ml-2">Creating Invite...</Text>
+                <View style={{
+                  backgroundColor: '#d1d5db',
+                  borderRadius: 16,
+                  paddingVertical: 16,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <ActivityIndicator color="white" size="small" />
+                    <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 18, marginLeft: 8 }}>
+                      Creating Invite...
+                    </Text>
+                  </View>
                 </View>
               ) : (
-                <Text className="text-white text-center font-semibold text-lg">
-                  Create Invite Link
-                </Text>
+                <LinearGradient
+                  colors={['#60a5fa', '#a78bfa']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    borderRadius: 16,
+                    paddingVertical: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 18, textAlign: 'center' }}>
+                    Create Invite Link
+                  </Text>
+                </LinearGradient>
               )}
             </TouchableOpacity>
 
@@ -218,12 +261,30 @@ const InviteScreen: React.FC = () => {
 
             <View className="space-y-3">
               <TouchableOpacity
-                className="bg-blue-500 rounded-xl py-4"
                 onPress={handleShareLink}
+                style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 8,
+                  elevation: 5,
+                }}
               >
-                <Text className="text-white text-center font-semibold text-lg">
-                  Share Link
-                </Text>
+                <LinearGradient
+                  colors={['#60a5fa', '#a78bfa']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    borderRadius: 12,
+                    paddingVertical: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 18, textAlign: 'center' }}>
+                    Share Link
+                  </Text>
+                </LinearGradient>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -244,8 +305,8 @@ const InviteScreen: React.FC = () => {
             </View>
           </View>
         )}
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 

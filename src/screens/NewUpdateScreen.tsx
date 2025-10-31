@@ -173,29 +173,43 @@ const NewUpdateScreen: React.FC = () => {
         keyboardShouldPersistTaps="handled"
       >
         {/* Header */}
-        <View className="bg-white px-6 py-6 border-b border-gray-200">
+        <View className="bg-white border-b border-gray-200" style={{ paddingHorizontal: 24, paddingTop: 60, paddingBottom: 16 }}>
           <View className="flex-row justify-between items-center">
             <TouchableOpacity
-              className="bg-gray-100 rounded-xl px-4 py-3 mt-2"
               onPress={() => navigation.navigate('CircleFeed', { circleId })}
               disabled={isLoading}
+              style={{
+                backgroundColor: '#f3f4f6',
+                borderRadius: 12,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+              }}
             >
-              <Text className="text-gray-700 font-semibold">Cancel</Text>
+              <Text className="text-gray-700 font-semibold" style={{ fontSize: 15 }}>Cancel</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
               onPress={handleSubmit}
               disabled={isLoading || !text.trim() || !canPost}
-              style={{ opacity: isLoading || !text.trim() || !canPost ? 0.7 : 1 }}
+              style={{
+                opacity: isLoading || !text.trim() || !canPost ? 0.7 : 1,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
             >
               {isLoading || !text.trim() || !canPost ? (
                 <View style={{
                   backgroundColor: '#d1d5db',
                   borderRadius: 12,
                   paddingHorizontal: 16,
-                  paddingVertical: 8,
+                  paddingVertical: 10,
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}>
-                  <Text style={{ color: '#ffffff', fontWeight: '600' }}>
+                  <Text style={{ color: '#6b7280', fontWeight: '600', fontSize: 15 }}>
                     {isLoading ? 'Posting...' : 'Post'}
                   </Text>
                 </View>
@@ -207,12 +221,12 @@ const NewUpdateScreen: React.FC = () => {
                   style={{
                     borderRadius: 12,
                     paddingHorizontal: 16,
-                    paddingVertical: 8,
+                    paddingVertical: 10,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ color: '#ffffff', fontWeight: '600' }}>
+                  <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 15 }}>
                     Post
                   </Text>
                 </LinearGradient>

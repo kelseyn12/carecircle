@@ -33,8 +33,18 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress, hasNew }) => {
       <View className="flex-row items-center justify-between">
         <View className="flex-1">
           <View className="flex-row items-center mb-3">
-            <View className="w-11 h-11 bg-blue-500 rounded-xl justify-center items-center mr-3">
-              <Text className="text-lg text-white font-bold">{EMOJIS.PEOPLE}</Text>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                backgroundColor: '#dbeafe',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 12,
+              }}
+            >
+              <Text className="text-lg text-blue-700 font-bold">{EMOJIS.PEOPLE}</Text>
             </View>
             <Text className="text-lg font-bold text-gray-800 flex-1">
               {circle.title}
@@ -55,7 +65,16 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress, hasNew }) => {
         </View>
 
         <View className="ml-3">
-          <View className="w-10 h-10 bg-blue-500 rounded-xl justify-center items-center">
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              backgroundColor: '#3b82f6',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
             <Text className="text-white text-lg font-bold">{EMOJIS.ARROW_RIGHT}</Text>
           </View>
         </View>
@@ -66,7 +85,14 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress, hasNew }) => {
           <Text className="text-blue-600 text-sm font-semibold">
             View updates
           </Text>
-          <View className="w-2 h-2 bg-blue-500 rounded-full" />
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: '#60a5fa',
+            }}
+          />
         </View>
       </View>
     </TouchableOpacity>

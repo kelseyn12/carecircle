@@ -1,9 +1,10 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Updates photos: only authenticated users can upload/read their own photos
+    // Updates photos: authenticated users can read (shared in circles), only owner can write
     match /updates/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
     
     // Profile photos: users can upload/read their own profile photos

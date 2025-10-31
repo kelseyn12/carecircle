@@ -272,6 +272,35 @@ A React Native (Expo, TypeScript) app that lets Care Leads create Circles, invit
   - [ ] Add build automation
   - [ ] Create deployment scripts
 
+### Phase 17: Future Enhancements
+- [ ] **QR Code Invite System**
+  - [ ] Generate QR codes for circle invites
+  - [ ] Display QR code in app for circle members to share
+  - [ ] Implement QR code scanner for joining circles
+  - [ ] QR code join requests still require owner approval
+  - [ ] Store QR code invite data in Firestore
+  - [ ] Add QR code expiration handling
+
+- [ ] **SMS Text Alert System**
+  - [ ] Integrate SMS service (Twilio or similar)
+  - [ ] Create initial SMS with notification preferences
+  - [ ] Allow users to choose: "Receive all notifications" or "Only owner notifications"
+  - [ ] Implement "Take me to app" link in SMS
+  - [ ] Enable notifications via SMS without requiring app download
+  - [ ] Add SMS notification preference management
+  - [ ] Create Cloud Function for SMS sending
+  - [ ] Handle SMS opt-out functionality
+
+- [ ] **App Encryption**
+  - [ ] Implement end-to-end encryption for sensitive data
+  - [ ] Encrypt updates and media at rest
+  - [ ] Add encryption for Firestore data
+  - [ ] Implement encrypted communication channels
+  - [ ] Add key management system
+  - [ ] Encrypt local storage and AsyncStorage
+  - [ ] Add encryption for photo uploads
+  - [ ] Implement encrypted invite links
+
 ## 🔧 Technical Implementation Notes
 
 ### Security Requirements

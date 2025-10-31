@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform 
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-root-toast';
 import { Comment, User } from '../types';
 import { subscribeToComments, createComment, getUser } from '../lib/firestoreUtils';
@@ -100,14 +101,14 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
 
   const renderComment = ({ item }: { item: Comment }) => (
     <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
-      <View className="flex-row items-start space-x-3">
-        <View className="w-8 h-8 bg-blue-500 rounded-full items-center justify-center">
+      <View className="flex-row items-start" style={{ gap: 12 }}>
+        <View className="w-10 h-10 bg-blue-500 rounded-full items-center justify-center" style={{ backgroundColor: '#3b82f6' }}>
           <Text className="text-white font-bold text-sm">
-            {users[item.authorId]?.displayName?.charAt(0) || '?'}
+            {users[item.authorId]?.displayName?.charAt(0).toUpperCase() || '?'}
           </Text>
         </View>
         <View className="flex-1">
-          <View className="flex-row items-center space-x-2 mb-1">
+          <View className="flex-row items-center mb-1" style={{ gap: 8 }}>
             <Text className="font-semibold text-gray-900">
               {users[item.authorId]?.displayName || 'Unknown User'}
             </Text>
@@ -165,7 +166,7 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
 
       {/* Comment Input */}
       <View className="bg-white border-t border-gray-200 px-6 py-4">
-        <View className="flex-row items-end space-x-3">
+        <View className="flex-row items-start" style={{ gap: 12 }}>
           <View className="flex-1">
             <TextInput
               className="bg-gray-100 rounded-2xl px-4 py-3 text-gray-900 text-base"
@@ -181,21 +182,50 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
             </Text>
           </View>
           <TouchableOpacity
-            className={`rounded-2xl px-6 py-3 ${
-              newComment.trim() && !loading
-                ? 'bg-blue-500'
-                : 'bg-gray-300'
-            }`}
             onPress={handleSubmitComment}
             disabled={!newComment.trim() || loading}
+            style={{
+              opacity: (!newComment.trim() || loading) ? 0.7 : 1,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}
           >
-            <Text
-              className={`font-semibold ${
-                newComment.trim() && !loading ? 'text-white' : 'text-gray-500'
-              }`}
-            >
-              {loading ? 'Posting...' : 'Post'}
-            </Text>
+            {newComment.trim() && !loading ? (
+              <LinearGradient
+                colors={['#60a5fa', '#a78bfa']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{
+                  borderRadius: 16,
+                  paddingHorizontal: 24,
+                  paddingVertical: 12,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 15 }}>
+                  {loading ? 'Posting...' : 'Post'}
+                </Text>
+              </LinearGradient>
+            ) : (
+              <View
+                style={{
+                  backgroundColor: '#d1d5db',
+                  borderRadius: 16,
+                  paddingHorizontal: 24,
+                  paddingVertical: 12,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ color: '#6b7280', fontWeight: '600', fontSize: 15 }}>
+                  {loading ? 'Posting...' : 'Post'}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
