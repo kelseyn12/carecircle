@@ -46,12 +46,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     }
 
-    // Initialize notifications for the user
-    try {
-      await initializeNotifications(firebaseUser.uid);
-    } catch (error) {
-      console.warn('Error initializing notifications:', error);
-    }
+    // Note: We no longer request notification permissions on login.
+    // Permissions will be requested contextually when user creates/joins a circle.
 
     return {
       id: firebaseUser.uid,

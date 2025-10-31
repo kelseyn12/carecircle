@@ -1,6 +1,7 @@
 // Circle feed screen showing updates for a specific circle
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Update } from '../types';
@@ -147,10 +148,27 @@ const CircleFeedScreen: React.FC = () => {
 
   const renderEmptyState = () => (
     <View className="flex-1 justify-center items-center px-6">
-      <View className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full items-center justify-center mb-8 shadow-xl">
-        <Text className="text-6xl">💙</Text>
-      </View>
-      <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
+      <LinearGradient
+        colors={['#93c5fd', '#c4b5fd']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          width: 128,
+          height: 128,
+          borderRadius: 64,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 8,
+          elevation: 8,
+        }}
+      >
+        <Text className="text-4xl">💙</Text>
+      </LinearGradient>
+      <Text className="text-4xl font-bold text-gray-800 mb-3 text-center">
         No updates yet
       </Text>
       <Text className="text-gray-600 text-center mb-8 leading-relaxed text-base">
@@ -158,10 +176,31 @@ const CircleFeedScreen: React.FC = () => {
       </Text>
       {canPostUpdates && (
         <TouchableOpacity
-          className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl px-8 py-4 shadow-lg"
           onPress={handleCreateUpdate}
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 5,
+          }}
         >
-          <Text className="text-white font-bold text-lg">Share Update</Text>
+          <LinearGradient
+            colors={['#60a5fa', '#a78bfa']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              borderRadius: 16,
+              paddingHorizontal: 32,
+              paddingVertical: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>
+              Share Update
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
       )}
       {!canPostUpdates && (
@@ -176,10 +215,22 @@ const CircleFeedScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <View className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full items-center justify-center mb-4">
+      <View className="flex-1 justify-center items-center bg-blue-50">
+        <LinearGradient
+          colors={['#93c5fd', '#c4b5fd']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 16,
+          }}
+        >
           <Text className="text-2xl">💙</Text>
-        </View>
+        </LinearGradient>
         <Text className="text-gray-600 text-lg font-medium">Loading updates...</Text>
       </View>
     );
@@ -187,23 +238,44 @@ const CircleFeedScreen: React.FC = () => {
 
   if (error) {
     return (
-      <View className="flex-1 justify-center items-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-6">
+      <View className="flex-1 justify-center items-center bg-blue-50 px-6">
         <View className="w-16 h-16 bg-red-100 rounded-full items-center justify-center mb-4">
           <Text className="text-2xl">⚠️</Text>
         </View>
         <Text className="text-red-600 text-center mb-6 text-lg font-medium">{error}</Text>
         <TouchableOpacity
-          className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl px-6 py-3 shadow-lg"
           onPress={handleRefresh}
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 5,
+          }}
         >
-          <Text className="text-white font-bold text-base">Try Again</Text>
+          <LinearGradient
+            colors={['#60a5fa', '#a78bfa']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              borderRadius: 16,
+              paddingHorizontal: 24,
+              paddingVertical: 12,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
+              Try Again
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <View className="flex-1 bg-blue-50">
       {/* Header */}
       <View className="bg-white px-6 py-4 border-b border-gray-100 shadow-sm" style={{ paddingTop: 50 }}>
         <View className="flex-row justify-between items-center">
@@ -223,7 +295,7 @@ const CircleFeedScreen: React.FC = () => {
               <Text className="text-gray-700 text-lg font-bold" style={{ fontSize: 18 }}>←</Text>
             </TouchableOpacity>
             <View className="flex-1">
-              <Text className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <Text className="text-2xl font-bold text-blue-600">
                 Circle Updates
               </Text>
               <Text className="text-gray-600 text-base" style={{ marginTop: 4 }}>

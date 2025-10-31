@@ -1,17 +1,21 @@
 // Create Circle screen for setting up new care circles
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { createCircleSchema } from '../validation/schemas';
 import { useCircles } from '../lib/useCircles';
+import { useAuth } from '../lib/authContext';
+import { initializeNotifications } from '../lib/notificationService';
 
 type CreateCircleScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CreateCircle'>;
 
 const CreateCircleScreen: React.FC = () => {
   const navigation = useNavigation<CreateCircleScreenNavigationProp>();
   const { createNewCircle } = useCircles();
+  const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,6 +28,15 @@ const CreateCircleScreen: React.FC = () => {
       
       // Create circle in Firestore
       const circleId = await createNewCircle(validatedData.title);
+      
+      // Request notification permissions contextually after creating circle
+      if (user) {
+        // This will show a contextual message and request permissions if not already granted
+        await initializeNotifications(
+          user.id,
+          'Stay connected! Get notified when family members post updates in your circle.'
+        );
+      }
       
       Alert.alert(
         'Circle Created!',
@@ -56,7 +69,7 @@ const CreateCircleScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView 
-      className="flex-1 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" 
+      className="flex-1 bg-blue-50" 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView 
@@ -141,21 +154,30 @@ const CreateCircleScreen: React.FC = () => {
                 onPress={handleCreateCircle}
                 disabled={isLoading || !title.trim()}
                 style={{
-                  backgroundColor: isLoading || !title.trim() ? '#5aa2f8' : '#3b82f6',
-                  borderRadius: 16,
-                  paddingVertical: 16,
-                  paddingHorizontal: 24,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 3,
                   opacity: isLoading || !title.trim() ? 0.7 : 1,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 8,
+                  elevation: 5,
                 }}
               >
-                <Text style={{ color: '#ffffff', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
-                  {isLoading ? 'Creating Circle...' : 'Create Circle'}
-                </Text>
+                <LinearGradient
+                  colors={isLoading || !title.trim() ? ['#93c5fd', '#c4b5fd'] : ['#60a5fa', '#a78bfa']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    borderRadius: 16,
+                    paddingVertical: 16,
+                    paddingHorizontal: 24,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#ffffff', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
+                    {isLoading ? 'Creating Circle...' : 'Create Circle'}
+                  </Text>
+                </LinearGradient>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -186,17 +208,21 @@ const CreateCircleScreen: React.FC = () => {
             borderColor: '#dbeafe',
           }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-              <View style={{
-                width: 32,
-                height: 32,
-                backgroundColor: '#3b82f6',
-                borderRadius: 16,
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginRight: 12,
-              }}>
+              <LinearGradient
+                colors={['#93c5fd', '#c4b5fd']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginRight: 12,
+                }}
+              >
                 <Text style={{ color: '#ffffff', fontSize: 16 }}>💡</Text>
-              </View>
+              </LinearGradient>
               <Text style={{ color: '#1e40af', fontWeight: 'bold', fontSize: 16 }}>Tips for a great circle name:</Text>
             </View>
             <View style={{ gap: 8 }}>

@@ -1,6 +1,7 @@
 // Update card component for displaying individual updates
 import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Update } from '../types';
 import { formatRelativeTime } from '../lib/utils';
 import { EMOJIS, getReactionEmoji } from '../utils/emojiUtils';
@@ -66,11 +67,23 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
       {/* Header with author and time */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <View className="flex-row items-center flex-1">
-          <View className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl items-center justify-center mr-4">
-            <Text className="text-white font-bold text-lg">
+          <LinearGradient
+            colors={['#93c5fd', '#c4b5fd']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 16,
+            }}
+          >
+            <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 18 }}>
               {authorName.charAt(0).toUpperCase()}
             </Text>
-          </View>
+          </LinearGradient>
           <View className="flex-1">
             <Text className="font-bold text-gray-800 text-lg">{authorName}</Text>
             <Text className="text-gray-500 text-sm">

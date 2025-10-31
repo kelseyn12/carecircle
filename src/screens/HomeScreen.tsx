@@ -136,6 +136,12 @@ const HomeScreen: React.FC = () => {
           inviteId,
         });
 
+        // Request notification permissions contextually after joining
+        await initializeNotifications(
+          user.id,
+          'Stay connected! Get notified when there are new updates in this circle and when your join request is approved.'
+        );
+
         setShowJoinModal(false);
         setInviteInput('');
         setRequestName('');
@@ -317,33 +323,6 @@ const HomeScreen: React.FC = () => {
               onPress={handleCreateCircle}
             >
               <SafeText className="text-base font-bold" maxFontSizeMultiplier={1.1}>+</SafeText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="bg-purple-100 rounded-xl w-12 h-12 justify-center items-center shadow-sm"
-              onPress={async () => {
-                if (user) {
-                  Alert.alert(
-                    'Enable Notifications',
-                    'This will request notification permissions for Expo Go. Make sure notifications are enabled in Settings → Expo Go → Notifications',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Enable',
-                        onPress: async () => {
-                          try {
-                            await initializeNotifications(user.id);
-                            Alert.alert('Success', 'Notifications enabled! You should receive notifications now.');
-                          } catch (error) {
-                            Alert.alert('Error', 'Failed to enable notifications. Please check Settings → Expo Go → Notifications');
-                          }
-                        },
-                      },
-                    ]
-                  );
-                }
-              }}
-            >
-              <SafeText className="text-base" maxFontSizeMultiplier={1.1}>🔔</SafeText>
             </TouchableOpacity>
             <TouchableOpacity
               className="bg-gray-200 rounded-xl w-12 h-12 justify-center items-center shadow-sm"

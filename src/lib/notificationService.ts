@@ -109,10 +109,59 @@ export const savePushTokenToUser = async (userId: string, token: string): Promis
   }
 };
 
-// Initialize notifications for a user
-export const initializeNotifications = async (userId: string): Promise<boolean> => {
+// Initialize notifications for a user (request permissions and save token)
+export const initializeNotifications = async (userId: string, contextualMessage?: string): Promise<boolean> => {
   try {
-    // Request permissions
+    // Check existing permissions first
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    
+    // If already granted, just ensure token is saved
+    if (existingStatus === 'granted') {
+      const token = await getExpoPushToken();
+      if (token) {
+        await savePushTokenToUser(userId, token);
+      }
+      return true;
+    }
+
+    // Show contextual explanation before requesting
+    if (contextualMessage) {
+      const userEnabled = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          'Enable Notifications',
+          contextualMessage,
+          [
+            { 
+              text: 'Not Now', 
+              style: 'cancel',
+              onPress: () => resolve(false)
+            },
+            { 
+              text: 'Enable', 
+              onPress: async () => {
+                const hasPermission = await requestNotificationPermissions();
+                if (hasPermission) {
+                  const token = await getExpoPushToken();
+                  if (token) {
+                    await savePushTokenToUser(userId, token);
+                  }
+                }
+                resolve(hasPermission);
+              }
+            },
+          ]
+        );
+      });
+      
+      // Check final permission status
+      if (userEnabled) {
+        const { status } = await Notifications.getPermissionsAsync();
+        return status === 'granted';
+      }
+      return false;
+    }
+
+    // Request permissions without contextual message
     const hasPermission = await requestNotificationPermissions();
     if (!hasPermission) {
       return false;

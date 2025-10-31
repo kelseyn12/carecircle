@@ -1,7 +1,7 @@
 // Main navigation component for the Care Circle app
 import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import { View, Text, ActivityIndicator } from 'react-native';
 import * as Linking from 'expo-linking';
 import { setupNotificationListeners } from '../lib/notificationService';
@@ -21,7 +21,7 @@ import CommentsScreen from '../screens/CommentsScreen';
 import { useAuth } from '../lib/authContext';
 import { RootStackParamList } from '../types';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Stack = createStackNavigator<RootStackParamList>();
 
 // Loading component
 const LoadingScreen: React.FC = () => (

@@ -11,6 +11,7 @@ import {
   ScrollView,
   Image 
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import * as ImagePicker from 'expo-image-picker';
@@ -183,17 +184,39 @@ const NewUpdateScreen: React.FC = () => {
             </TouchableOpacity>
             
             <TouchableOpacity
-              className={`rounded-xl px-4 py-2 ${
-                isLoading || !text.trim() || !canPost
-                  ? 'bg-gray-300' 
-                  : 'bg-blue-500'
-              }`}
               onPress={handleSubmit}
               disabled={isLoading || !text.trim() || !canPost}
+              style={{ opacity: isLoading || !text.trim() || !canPost ? 0.7 : 1 }}
             >
-              <Text className="text-white font-semibold">
-                {isLoading ? 'Posting...' : 'Post'}
-              </Text>
+              {isLoading || !text.trim() || !canPost ? (
+                <View style={{
+                  backgroundColor: '#d1d5db',
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                }}>
+                  <Text style={{ color: '#ffffff', fontWeight: '600' }}>
+                    {isLoading ? 'Posting...' : 'Post'}
+                  </Text>
+                </View>
+              ) : (
+                <LinearGradient
+                  colors={['#60a5fa', '#a78bfa']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#ffffff', fontWeight: '600' }}>
+                    Post
+                  </Text>
+                </LinearGradient>
+              )}
             </TouchableOpacity>
           </View>
         </View>

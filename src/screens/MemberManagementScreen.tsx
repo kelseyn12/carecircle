@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Switch 
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Circle, User } from '../types';
@@ -396,19 +397,23 @@ const MemberManagementScreen: React.FC = () => {
       borderColor: '#f3f4f6',
     }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: userRole === 'owner' && !item.isCurrentUser ? 12 : 0 }}>
-        <View style={{
-          width: 44,
-          height: 44,
-          backgroundColor: '#3b82f6',
-          borderRadius: 22,
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginRight: 12,
-        }}>
+        <LinearGradient
+          colors={['#93c5fd', '#c4b5fd']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginRight: 12,
+          }}
+        >
           <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '600' }}>
             {item.displayName.charAt(0).toUpperCase()}
           </Text>
-        </View>
+        </LinearGradient>
         <View style={{ flex: 1 }}>
           <Text style={{ fontWeight: '600', color: '#1f2937', fontSize: 15 }}>
             {item.displayName} {item.isCurrentUser && '(You)'}
@@ -446,10 +451,17 @@ const MemberManagementScreen: React.FC = () => {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={{ backgroundColor: '#3b82f6', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, flex: 1 }}
                 onPress={() => handleAddUpdateAuthor(item.id)}
+                style={{ flex: 1, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, overflow: 'hidden' }}
               >
-                <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '600', textAlign: 'center' }}>Allow Updates</Text>
+                <LinearGradient
+                  colors={['#60a5fa', '#a78bfa']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ flex: 1, paddingHorizontal: 14, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '600', textAlign: 'center' }}>Allow Updates</Text>
+                </LinearGradient>
               </TouchableOpacity>
             )}
           </View>

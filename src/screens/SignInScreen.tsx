@@ -1,6 +1,7 @@
 // Sign-in screen for user authentication
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
@@ -73,7 +74,7 @@ const SignInScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView 
-      className="flex-1 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" 
+      className="flex-1 bg-blue-50" 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView 
@@ -85,10 +86,27 @@ const SignInScreen: React.FC = () => {
         <View className="px-6 py-8">
           {/* Header */}
           <View className="items-center mb-12">
-            <View className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl items-center justify-center mb-6 shadow-xl">
+            <LinearGradient
+              colors={['#93c5fd', '#c4b5fd']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: 24,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 24,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 8,
+              }}
+            >
               <Text className="text-4xl">💙</Text>
-            </View>
-            <Text className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-center">
+            </LinearGradient>
+            <Text className="text-4xl font-bold text-blue-600 text-center">
               Care Circle
             </Text>
             <Text className="text-lg text-gray-600 text-center mt-3 leading-relaxed">
@@ -148,17 +166,36 @@ const SignInScreen: React.FC = () => {
               </View>
 
               <TouchableOpacity
-                className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl py-5 mt-8 shadow-lg"
                 onPress={isSignUp ? handleSignUp : handleSignIn}
                 disabled={isLoading}
-                style={{ opacity: isLoading ? 0.7 : 1 }}
+                style={{ 
+                  opacity: isLoading ? 0.7 : 1,
+                  marginTop: 32,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 8,
+                  elevation: 5,
+                }}
               >
-                <Text className="text-white text-center font-bold text-lg">
-                  {isLoading 
-                    ? (isSignUp ? 'Creating Account...' : 'Signing in...') 
-                    : (isSignUp ? 'Create Account' : 'Sign In')
-                  }
-                </Text>
+                <LinearGradient
+                  colors={['#60a5fa', '#a78bfa']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    borderRadius: 16,
+                    paddingVertical: 20,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text className="text-white text-center font-bold text-lg">
+                    {isLoading 
+                      ? (isSignUp ? 'Creating Account...' : 'Signing in...') 
+                      : (isSignUp ? 'Create Account' : 'Sign In')
+                    }
+                  </Text>
+                </LinearGradient>
               </TouchableOpacity>
 
               <TouchableOpacity
