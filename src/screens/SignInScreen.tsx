@@ -1,6 +1,7 @@
 // Sign-in screen for user authentication
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -18,9 +19,44 @@ const signInSchema = z.object({
 
 const signUpSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
   displayName: z.string().min(1, 'Display name is required').max(50, 'Display name too long'),
 });
+
+// Real-time email validation
+const validateEmail = (email: string): string => {
+  if (!email) return '';
+  try {
+    z.string().email().parse(email);
+    return '';
+  } catch {
+    return 'Please enter a valid email address';
+  }
+};
+
+// Real-time password validation
+const validatePassword = (password: string, isSignUp: boolean): string => {
+  if (!password) return '';
+  if (!isSignUp) return '';
+  
+  if (password.length < 8) {
+    return 'Password must be at least 8 characters';
+  }
+  if (!/[A-Z]/.test(password)) {
+    return 'Password must contain at least one uppercase letter';
+  }
+  if (!/[a-z]/.test(password)) {
+    return 'Password must contain at least one lowercase letter';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'Password must contain at least one number';
+  }
+  return '';
+};
 
 const SignInScreen: React.FC = () => {
   const navigation = useNavigation<SignInScreenNavigationProp>();
@@ -31,6 +67,9 @@ const SignInScreen: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   // Handle sign in
   const handleSignIn = async () => {
@@ -136,33 +175,61 @@ const SignInScreen: React.FC = () => {
 
               <View>
                 <Text className="text-gray-700 font-semibold mb-3 text-base">Email</Text>
-                <View className="bg-gray-50 rounded-2xl border border-gray-100">
+                <View className={`bg-gray-50 rounded-2xl border ${emailError ? 'border-red-300' : 'border-gray-100'}`}>
                   <TextInput
                     className="px-5 py-4 text-gray-800 text-base"
                     placeholder="Enter your email"
                     placeholderTextColor="#9CA3AF"
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(text) => {
+                      setEmail(text);
+                      setEmailError(validateEmail(text));
+                    }}
+                    onBlur={() => setEmailError(validateEmail(email))}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoComplete="email"
                   />
                 </View>
+                {emailError ? (
+                  <Text className="text-red-500 text-sm mt-1 ml-1">{emailError}</Text>
+                ) : null}
               </View>
 
               <View>
                 <Text className="text-gray-700 font-semibold mb-3 text-base">Password</Text>
-                <View className="bg-gray-50 rounded-2xl border border-gray-100">
+                <View className={`bg-gray-50 rounded-2xl border ${passwordError ? 'border-red-300' : 'border-gray-100'} flex-row items-center`}>
                   <TextInput
-                    className="px-5 py-4 text-gray-800 text-base"
+                    className="flex-1 px-5 py-4 text-gray-800 text-base"
                     placeholder="Enter your password"
                     placeholderTextColor="#9CA3AF"
                     value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      setPasswordError(validatePassword(text, isSignUp));
+                    }}
+                    onBlur={() => setPasswordError(validatePassword(password, isSignUp))}
+                    secureTextEntry={!showPassword}
                     autoComplete="password"
                   />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    className="px-4 py-4"
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons 
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+                      size={20} 
+                      color="#6b7280" 
+                    />
+                  </TouchableOpacity>
                 </View>
+                {passwordError ? (
+                  <Text className="text-red-500 text-sm mt-1 ml-1">{passwordError}</Text>
+                ) : null}
+                {isSignUp && !passwordError && password.length > 0 ? (
+                  <Text className="text-green-600 text-sm mt-1 ml-1">✓ Password meets requirements</Text>
+                ) : null}
               </View>
 
               <TouchableOpacity
@@ -226,12 +293,15 @@ const SignInScreen: React.FC = () => {
                 {/* Google Sign In Button */}
                 <TouchableOpacity
                   disabled={isLoading}
-                  onPress={() => {
-                    Alert.alert(
-                      'Coming Soon',
-                      'Google Sign In will be available soon. Please use email/password for now.',
-                      [{ text: 'OK' }]
-                    );
+                  onPress={async () => {
+                    try {
+                      setIsLoading(true);
+                      await signInWithGoogle();
+                    } catch (error) {
+                      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign in with Google.');
+                    } finally {
+                      setIsLoading(false);
+                    }
                   }}
                   style={{
                     backgroundColor: '#ffffff',
@@ -284,12 +354,15 @@ const SignInScreen: React.FC = () => {
                 {/* Apple Sign In Button */}
                 <TouchableOpacity
                   disabled={isLoading}
-                  onPress={() => {
-                    Alert.alert(
-                      'Coming Soon',
-                      'Apple Sign In will be available soon. Please use email/password for now.',
-                      [{ text: 'OK' }]
-                    );
+                  onPress={async () => {
+                    try {
+                      setIsLoading(true);
+                      await signInWithApple();
+                    } catch (error) {
+                      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign in with Apple.');
+                    } finally {
+                      setIsLoading(false);
+                    }
                   }}
                   style={{
                     backgroundColor: '#000000',

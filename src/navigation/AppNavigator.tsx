@@ -16,6 +16,7 @@ import InviteScreen from '../screens/InviteScreen';
 import JoinScreen from '../screens/JoinScreen';
 import MemberManagementScreen from '../screens/MemberManagementScreen';
 import CommentsScreen from '../screens/CommentsScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 // Import auth context
 import { useAuth } from '../lib/authContext';
@@ -110,6 +111,11 @@ const AppNavigator: React.FC = () => {
                 title: 'Comments',
                 presentation: 'modal'
               }}
+            />
+            <Stack.Screen 
+              name="Settings" 
+              component={SettingsScreen}
+              options={{ title: 'Settings' }}
             />
           </>
         ) : (

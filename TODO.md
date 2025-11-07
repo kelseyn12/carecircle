@@ -261,17 +261,31 @@ A React Native (Expo, TypeScript) app that lets Care Leads create Circles, invit
   - [x] Manual testing checklist
 
 ### Phase 16: Build & Deployment
+- [x] **Build Configuration** ✅ COMPLETED
+  - [x] Configure EAS Build (eas.json)
+  - [x] Set up development build profiles
+  - [x] Set up preview build profiles
+  - [x] Set up production build profiles
+  - [x] Add build scripts to package.json
+  - [x] Create build guide documentation
+
 - [ ] **Device Testing**
+  - [ ] Create development build for iOS
+  - [ ] Create development build for Android
   - [ ] Test on iOS devices
   - [ ] Test on Android devices
-  - [ ] Add device-specific optimizations
   - [ ] Test push notifications on devices
+  - [ ] Test QR code scanning on devices
+  - [ ] Add device-specific optimizations
 
-- [ ] **Build Configuration**
-  - [ ] Configure production builds
-  - [ ] Set up app store preparation
-  - [ ] Add build automation
-  - [ ] Create deployment scripts
+- [x] **App Store Preparation** ✅ IN PROGRESS
+  - [x] Create app metadata guide (APP_STORE_METADATA.md)
+  - [x] Document required assets and descriptions
+  - [ ] Prepare app screenshots
+  - [ ] Set up App Store Connect (iOS)
+  - [ ] Set up Google Play Console (Android)
+  - [ ] Create production builds
+  - [ ] Submit to app stores
 
 ### Phase 17: Future Enhancements
 - [x] **QR Code Invite System** ✅ COMPLETED

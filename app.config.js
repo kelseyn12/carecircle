@@ -51,6 +51,9 @@ export default {
     },
 
     extra: {
+      eas: {
+        projectId: 'fe31d812-0085-4a97-acdb-202ae5eea8db',
+      },
       firebase: {
         apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
         authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -66,6 +69,7 @@ export default {
     scheme: 'carecircle',
 
     plugins: [
+      'expo-dev-client',
       'expo-notifications',
       'expo-image-picker',
       [
@@ -74,6 +78,7 @@ export default {
           cameraPermission: 'Allow Care Circle to access your camera to scan QR codes for joining circles.',
         },
       ],
+      'expo-apple-authentication',
       [
         'expo-build-properties',
         {

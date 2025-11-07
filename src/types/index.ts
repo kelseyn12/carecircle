@@ -68,6 +68,7 @@ export type RootStackParamList = {
   Join: { inviteId: string };
   MemberManagement: { circleId: string };
   Comments: { updateId: string; circleId?: string };
+  Settings: undefined;
 };
 
 // Form validation types

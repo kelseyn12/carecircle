@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert, TextInput, Modal, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Circle } from '../types';
@@ -612,7 +613,7 @@ const HomeScreen: React.FC = () => {
               </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={handleSignOut}
+              onPress={() => navigation.navigate('Settings')}
               style={{
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 2 },
@@ -631,7 +632,7 @@ const HomeScreen: React.FC = () => {
                   alignItems: 'center',
                 }}
               >
-                <SafeText className="text-base" maxFontSizeMultiplier={1.1}>🚪</SafeText>
+                <Ionicons name="settings-outline" size={24} color="#3b82f6" />
               </View>
             </TouchableOpacity>
           </View>
