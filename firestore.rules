@@ -11,6 +11,7 @@ service cloud.firestore {
     }
     
     // Circles: role-based permissions
+    // Members can read circle data including encryptionKey (needed for decrypting messages)
     match /circles/{circleId} {
       allow read: if request.auth != null && (
         request.auth.uid in resource.data.members ||

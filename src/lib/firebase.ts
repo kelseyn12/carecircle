@@ -100,7 +100,11 @@ export const getCurrentUser = () => {
 };
 
 // Photo upload utility
-export const uploadPhoto = async (uri: string, path: string): Promise<string> => {
+export const uploadPhoto = async (
+  uri: string,
+  path: string,
+  encryptionKey?: string | null
+): Promise<string> => {
   if (!storage) {
     throw new Error('Firebase Storage not initialized');
   }
@@ -108,7 +112,20 @@ export const uploadPhoto = async (uri: string, path: string): Promise<string> =>
   try {
     // Convert URI to blob
     const response = await fetch(uri);
-    const blob = await response.blob();
+    let blob = await response.blob();
+    
+    // Encrypt blob if encryption key is provided
+    if (encryptionKey) {
+      try {
+        const { encryptBlob } = await import('./encryption');
+        blob = await encryptBlob(blob, encryptionKey);
+        // Add .encrypted extension to path to indicate encrypted file
+        path = path.replace(/\.[^.]+$/, '.encrypted$&');
+      } catch (encryptionError) {
+        console.error('Error encrypting photo:', encryptionError);
+        // Fall back to unencrypted upload
+      }
+    }
     
     // Create storage reference
     const storageRef = ref(storage, path);

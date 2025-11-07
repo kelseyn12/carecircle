@@ -11,11 +11,12 @@ type CommentsScreenRouteProp = RouteProp<RootStackParamList, 'Comments'>;
 const CommentsScreen: React.FC = () => {
   const navigation = useNavigation<CommentsScreenNavigationProp>();
   const route = useRoute<CommentsScreenRouteProp>();
-  const { updateId } = route.params;
+  const { updateId, circleId } = route.params;
 
   return (
     <CommentsList 
-      updateId={updateId} 
+      updateId={updateId}
+      circleId={circleId}
       onClose={() => navigation.goBack()} 
     />
   );

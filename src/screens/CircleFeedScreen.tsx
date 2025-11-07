@@ -28,6 +28,24 @@ const CircleFeedScreen: React.FC = () => {
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [pendingCount, setPendingCount] = useState(0);
 
+  // Fetch encryption key when viewing circle (so new members can decrypt messages)
+  useEffect(() => {
+    if (!circleId) return;
+    
+    const fetchEncryptionKey = async () => {
+      try {
+        const { getCircleEncryptionKey } = await import('../lib/encryption');
+        // This will fetch from Firestore if not already stored locally
+        await getCircleEncryptionKey(circleId);
+      } catch (error) {
+        console.error('Error fetching encryption key:', error);
+        // Don't fail if key fetch fails - circle will work without encryption
+      }
+    };
+    
+    fetchEncryptionKey();
+  }, [circleId]);
+
   // Check if user can post updates
   useEffect(() => {
     if (!user || !circleId) return;
@@ -129,7 +147,7 @@ const CircleFeedScreen: React.FC = () => {
   };
 
   const handleComment = (updateId: string) => {
-    navigation.navigate('Comments', { updateId });
+    navigation.navigate('Comments', { updateId, circleId });
   };
 
   const renderUpdate = ({ item }: { item: Update }) => {

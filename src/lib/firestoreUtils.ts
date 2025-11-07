@@ -19,6 +19,13 @@ import { httpsCallable } from 'firebase/functions';
 import { Circle, Update, User, Comment } from '../types';
 import { handleError, retryOperation } from './errorHandler';
 import { addOfflineUpdate, addOfflineComment, addOfflineReaction } from './offlineQueue';
+import {
+  getCircleEncryptionKey,
+  createCircleEncryptionKey,
+  encryptText,
+  decryptText,
+  isEncryptionEnabled,
+} from './encryption';
 
 // Collection references
 const circlesRef = collection(db, 'circles');
@@ -52,6 +59,15 @@ export const createCircle = async (circleData: {
       roles: { [circleData.ownerId]: 'owner' }, // Set owner role
       createdAt: serverTimestamp(),
     });
+    
+    // Create encryption key for this circle
+    try {
+      await createCircleEncryptionKey(docRef.id);
+    } catch (encryptionError) {
+      console.error('Error creating encryption key for circle:', encryptionError);
+      // Don't fail circle creation if encryption key creation fails
+      // The circle will work without encryption
+    }
     
     return docRef.id;
   } catch (error) {
@@ -553,10 +569,24 @@ export const createUpdate = async (updateData: {
   }
 
   try {
+    // Get encryption key for this circle
+    let encryptedText = updateData.text;
+    const encryptionKey = await getCircleEncryptionKey(updateData.circleId);
+    
+    if (encryptionKey) {
+      try {
+        encryptedText = await encryptText(updateData.text, encryptionKey);
+      } catch (encryptionError) {
+        console.error('Error encrypting update text:', encryptionError);
+        // Fall back to unencrypted if encryption fails
+      }
+    }
+    
     const updateDoc: any = {
       circleId: updateData.circleId,
       authorId: updateData.authorId,
-      text: updateData.text,
+      text: encryptedText,
+      encrypted: encryptionKey !== null, // Flag to indicate if data is encrypted
       createdAt: serverTimestamp(),
       reactions: {},
     };
@@ -604,20 +634,37 @@ export const getCircleUpdates = async (circleId: string): Promise<Update[]> => {
     );
     
     const querySnapshot = await getDocs(q);
-    const updates: Update[] = [];
-
-    querySnapshot.forEach((doc) => {
+    
+    // Get encryption key for this circle
+    const encryptionKey = await getCircleEncryptionKey(circleId);
+    
+    // Process all documents (decrypt if needed)
+    const updatePromises = querySnapshot.docs.map(async (doc) => {
       const data = doc.data();
-      updates.push({
+      let text = data.text;
+      
+      // Decrypt if encrypted
+      if (data.encrypted && encryptionKey) {
+        try {
+          text = await decryptText(data.text, encryptionKey);
+        } catch (decryptionError) {
+          console.error('Error decrypting update text:', decryptionError);
+          text = '[Encrypted content - decryption failed]';
+        }
+      }
+      
+      return {
         id: doc.id,
         circleId: data.circleId,
         authorId: data.authorId,
-        text: data.text,
+        text: text,
         photoURL: data.photoURL,
         createdAt: data.createdAt?.toDate() || new Date(),
         reactions: data.reactions || {},
-      });
+      };
     });
+    
+    const updates = await Promise.all(updatePromises);
 
     // Sort by creation date (newest first)
     updates.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -786,15 +833,36 @@ export const createComment = async (commentData: {
   updateId: string;
   authorId: string;
   text: string;
+  circleId?: string; // Add circleId to get encryption key
 }): Promise<string> => {
   if (!db) {
     throw new Error('Firestore not initialized');
   }
 
   try {
+    // Get encryption key if circleId is provided
+    let encryptedText = commentData.text;
+    let isEncrypted = false;
+    
+    if (commentData.circleId) {
+      const encryptionKey = await getCircleEncryptionKey(commentData.circleId);
+      if (encryptionKey) {
+        try {
+          encryptedText = await encryptText(commentData.text, encryptionKey);
+          isEncrypted = true;
+        } catch (encryptionError) {
+          console.error('Error encrypting comment text:', encryptionError);
+          // Fall back to unencrypted
+        }
+      }
+    }
+    
     const docRef = await retryOperation(async () => {
       return await addDoc(commentsRef, {
-        ...commentData,
+        updateId: commentData.updateId,
+        authorId: commentData.authorId,
+        text: encryptedText,
+        encrypted: isEncrypted,
         createdAt: serverTimestamp(),
       });
     });
@@ -821,7 +889,7 @@ export const createComment = async (commentData: {
 /**
  * Get comments for an update
  */
-export const getComments = async (updateId: string): Promise<Comment[]> => {
+export const getComments = async (updateId: string, circleId?: string): Promise<Comment[]> => {
   if (!db) {
     throw new Error('Firestore not initialized');
   }
@@ -834,18 +902,35 @@ export const getComments = async (updateId: string): Promise<Comment[]> => {
     );
     
     const querySnapshot = await getDocs(q);
-    const comments: Comment[] = [];
-
-    querySnapshot.forEach((doc) => {
+    
+    // Get encryption key if circleId is provided
+    const encryptionKey = circleId ? await getCircleEncryptionKey(circleId) : null;
+    
+    // Process all comments (decrypt if needed)
+    const commentPromises = querySnapshot.docs.map(async (doc) => {
       const data = doc.data();
-      comments.push({
+      let text = data.text;
+      
+      // Decrypt if encrypted
+      if (data.encrypted && encryptionKey) {
+        try {
+          text = await decryptText(data.text, encryptionKey);
+        } catch (decryptionError) {
+          console.error('Error decrypting comment text:', decryptionError);
+          text = '[Encrypted content - decryption failed]';
+        }
+      }
+      
+      return {
         id: doc.id,
         updateId: data.updateId,
         authorId: data.authorId,
-        text: data.text,
+        text: text,
         createdAt: data.createdAt?.toDate() || new Date(),
-      });
+      };
     });
+    
+    const comments = await Promise.all(commentPromises);
 
     return comments;
   } catch (error) {
@@ -859,7 +944,8 @@ export const getComments = async (updateId: string): Promise<Comment[]> => {
  */
 export const subscribeToComments = (
   updateId: string,
-  callback: (comments: Comment[]) => void
+  callback: (comments: Comment[]) => void,
+  circleId?: string
 ): (() => void) => {
   if (!db) {
     console.error('Firestore not initialized');
@@ -872,20 +958,35 @@ export const subscribeToComments = (
     orderBy('createdAt', 'asc')
   );
 
-  return onSnapshot(q, (querySnapshot) => {
-    const comments: Comment[] = [];
-
-    querySnapshot.forEach((doc) => {
+  return onSnapshot(q, async (querySnapshot) => {
+    // Get encryption key if circleId is provided
+    const encryptionKey = circleId ? await getCircleEncryptionKey(circleId) : null;
+    
+    // Process all comments (decrypt if needed)
+    const commentPromises = querySnapshot.docs.map(async (doc) => {
       const data = doc.data();
-      comments.push({
+      let text = data.text;
+      
+      // Decrypt if encrypted
+      if (data.encrypted && encryptionKey) {
+        try {
+          text = await decryptText(data.text, encryptionKey);
+        } catch (decryptionError) {
+          console.error('Error decrypting comment text:', decryptionError);
+          text = '[Encrypted content - decryption failed]';
+        }
+      }
+      
+      return {
         id: doc.id,
         updateId: data.updateId,
         authorId: data.authorId,
-        text: data.text,
+        text: text,
         createdAt: data.createdAt?.toDate() || new Date(),
-      });
+      };
     });
-
+    
+    const comments = await Promise.all(commentPromises);
     callback(comments);
   }, (error) => {
     console.error('Error in comments subscription:', error);
@@ -1142,6 +1243,17 @@ export const approveJoinRequest = async (
   try {
     const callable = httpsCallable(functions, 'ownerApproveJoinRequest');
     await callable({ circleId, requestId });
+    
+    // After member is added, ensure they can access the encryption key
+    // The key should already be in Firestore, but trigger a fetch to ensure it's stored locally
+    try {
+      const { getCircleEncryptionKey } = await import('./encryption');
+      // This will fetch from Firestore if not already stored locally
+      await getCircleEncryptionKey(circleId);
+    } catch (keyError) {
+      console.error('Error ensuring encryption key access:', keyError);
+      // Don't fail the approval if key fetch fails
+    }
   } catch (error) {
     console.error('Error approving join request:', error);
     throw new Error('Failed to approve request.');

@@ -118,7 +118,12 @@ const NewUpdateScreen: React.FC = () => {
       if (photo) {
         const timestamp = Date.now();
         const photoPath = `updates/${user.id}/${timestamp}.jpg`;
-        photoURL = await uploadPhoto(photo, photoPath);
+        
+        // Get encryption key for this circle
+        const { getCircleEncryptionKey } = await import('../lib/encryption');
+        const encryptionKey = await getCircleEncryptionKey(circleId);
+        
+        photoURL = await uploadPhoto(photo, photoPath, encryptionKey);
       }
       
       // Validate form data

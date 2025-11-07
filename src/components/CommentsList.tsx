@@ -20,10 +20,11 @@ import { EMOJIS } from '../utils/emojiUtils';
 
 interface CommentsListProps {
   updateId: string;
+  circleId?: string; // Optional circleId for encryption
   onClose: () => void;
 }
 
-const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
+const CommentsList: React.FC<CommentsListProps> = ({ updateId, circleId, onClose }) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -53,10 +54,10 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
       };
       
       fetchUsers();
-    });
+    }, circleId);
 
     return unsubscribe;
-  }, [updateId]);
+  }, [updateId, circleId]);
 
   const handleSubmitComment = async () => {
     if (!user || !newComment.trim()) return;
@@ -71,6 +72,7 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, onClose }) => {
         updateId,
         authorId: user.id,
         text: validatedData.text,
+        circleId, // Pass circleId for encryption
       });
 
       setNewComment('');

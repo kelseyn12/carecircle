@@ -56,6 +56,18 @@ const JoinScreen: React.FC = () => {
       const result = await acceptInvite({ inviteId });
       const data = result.data as any;
       
+      // If successfully joined, fetch the encryption key so they can read all messages
+      if (data.circleId && !data.alreadyMember) {
+        try {
+          const { getCircleEncryptionKey } = await import('../lib/encryption');
+          // This will fetch from Firestore and store locally
+          await getCircleEncryptionKey(data.circleId);
+        } catch (keyError) {
+          console.error('Error fetching encryption key after joining:', keyError);
+          // Don't fail the join if key fetch fails
+        }
+      }
+      
       setCircleInfo({
         title: data.title,
         circleId: data.circleId,
