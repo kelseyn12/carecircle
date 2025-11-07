@@ -1193,3 +1193,40 @@ export const getInviteInfo = async (
     throw new Error('Failed to read invite.');
   }
 };
+
+/**
+ * Update user document
+ */
+export const updateUser = async (
+  userId: string,
+  updates: Partial<{
+    displayName: string;
+    photoURL: string;
+    expoPushToken: string;
+    circlesMuted: string[];
+    lastViewedCircles: Record<string, Date>;
+  }>
+): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const userDoc = doc(usersRef, userId);
+    const updateData: any = { ...updates };
+    
+    // Convert Date objects to Firestore Timestamps
+    if (updates.lastViewedCircles) {
+      const timestampMap: Record<string, any> = {};
+      Object.entries(updates.lastViewedCircles).forEach(([key, value]) => {
+        timestampMap[key] = Timestamp.fromDate(value);
+      });
+      updateData.lastViewedCircles = timestampMap;
+    }
+
+    await firestoreUpdateDoc(userDoc, updateData);
+  } catch (error) {
+    console.error('Error updating user:', error);
+    throw new Error('Failed to update user. Please try again.');
+  }
+};

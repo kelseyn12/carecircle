@@ -452,3 +452,7 @@ export const onUpdateCreated = onDocumentCreated(
     }
   }
 );
+
+// Export v1 functions from separate files
+// This ensures they're included in the deployment
+export { inviteRedirect } from './inviteRedirect';

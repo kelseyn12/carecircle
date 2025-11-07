@@ -1,6 +1,6 @@
 # Care Circle - Development Roadmap
 
-## 🎉 **PROJECT STATUS: 15/16 PHASES COMPLETED (94%)**
+## 🎉 **PROJECT STATUS: 15/17 PHASES COMPLETED (88%)**
 
 ### ✅ **COMPLETED PHASES:**
 - **Phase 1**: Firebase Setup & Environment Configuration
@@ -17,7 +17,8 @@
 - **Phase 12**: Cloud Functions (Advanced)
 - **Phase 13**: UX Polish & Features
 - **Phase 14**: Offline Support & Error Handling
-- **Phase 15**: Testing & Quality Assurance ✅ **JUST COMPLETED!**
+- **Phase 15**: Testing & Quality Assurance ✅ **COMPLETED!**
+- **Phase 17**: Future Enhancements (QR Code) ✅ **COMPLETED!**
 
 ### 🔄 **REMAINING PHASES:**
 - **Phase 16**: Build & Deployment
@@ -273,16 +274,16 @@ A React Native (Expo, TypeScript) app that lets Care Leads create Circles, invit
   - [ ] Create deployment scripts
 
 ### Phase 17: Future Enhancements
-- [ ] **QR Code Invite System**
-  - [ ] Generate QR codes for circle invites
-  - [ ] Display QR code in app for circle members to share
-  - [ ] Implement QR code scanner for joining circles
-  - [ ] QR code join requests still require owner approval
-  - [ ] Store QR code invite data in Firestore
-  - [ ] Add QR code expiration handling
+- [x] **QR Code Invite System** ✅ COMPLETED
+  - [x] Generate QR codes for circle invites
+  - [x] Display QR code in app for circle members to share
+  - [x] Implement QR code scanner for joining circles
+  - [x] QR code join requests still require owner approval
+  - [x] Store QR code invite data in Firestore (uses existing invite system)
+  - [x] Add QR code expiration handling (uses existing invite expiration)
 
-- [ ] **SMS Text Alert System**
-  - [ ] Integrate SMS service (Twilio or similar)
+- [ ] **SMS Text Alert System** (Future Enhancement)
+  - [ ] Integrate SMS service (Twilio)
   - [ ] Create initial SMS with notification preferences
   - [ ] Allow users to choose: "Receive all notifications" or "Only owner notifications"
   - [ ] Implement "Take me to app" link in SMS
@@ -290,6 +291,10 @@ A React Native (Expo, TypeScript) app that lets Care Leads create Circles, invit
   - [ ] Add SMS notification preference management
   - [ ] Create Cloud Function for SMS sending
   - [ ] Handle SMS opt-out functionality
+  - [ ] Integrate SMS into existing notification system
+  - [ ] Add SMS webhook for reply-based preference selection
+
+**Note**: SMS functionality has been removed from the current implementation and is planned as a future enhancement. See `TWILIO_SETUP.md`, `SMS_TESTING.md`, and `SMS_APP_TESTING.md` for implementation details when ready.
 
 - [ ] **App Encryption**
   - [ ] Implement end-to-end encryption for sensitive data

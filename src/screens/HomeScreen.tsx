@@ -1,6 +1,6 @@
 // Home screen showing user's circles
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert, TextInput, Modal } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert, TextInput, Modal, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -13,6 +13,33 @@ import { EMOJIS } from '../utils/emojiUtils';
 import { initializeNotifications } from '../lib/notificationService';
 import { createJoinRequest, getInviteInfo } from '../lib/firestoreUtils';
 import SafeText from '../components/SafeText';
+// Lazy import BarCodeScanner to avoid crash in Expo Go
+// The native module may not be available in Expo Go
+let BarCodeScanner: any = null;
+let barCodeScannerError: Error | null = null;
+
+const isBarCodeScannerAvailable = () => {
+  if (BarCodeScanner) return true;
+  if (barCodeScannerError) return false;
+  
+  try {
+    // Suppress the native module error by catching it
+    const scannerModule = require('expo-barcode-scanner');
+    if (scannerModule && scannerModule.BarCodeScanner) {
+      BarCodeScanner = scannerModule.BarCodeScanner;
+      return true;
+    }
+  } catch (error: any) {
+    // Native module not available - this is expected in Expo Go
+    barCodeScannerError = error;
+    // Suppress the error from console in Expo Go
+    if (!error.message?.includes('ExpoBarCodeScanner')) {
+      console.warn('BarCodeScanner not available (requires development build)');
+    }
+    return false;
+  }
+  return false;
+};
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -25,6 +52,8 @@ const HomeScreen: React.FC = () => {
   const [requestName, setRequestName] = useState('');
   const [requestRelation, setRequestRelation] = useState('');
   const [lastViewedMap, setLastViewedMap] = useState<Record<string, Date>>({});
+  const [showScanner, setShowScanner] = useState(false);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -33,6 +62,51 @@ const HomeScreen: React.FC = () => {
       setLastViewedMap(u?.lastViewedCircles || {});
     })();
   }, [user]);
+
+  useEffect(() => {
+    (async () => {
+      if (showScanner) {
+        // Try to load BarCodeScanner if not already loaded
+        if (!BarCodeScanner) {
+          isBarCodeScannerAvailable();
+        }
+        
+        // Check if BarCodeScanner is available (requires development build)
+        if (!BarCodeScanner) {
+          Alert.alert(
+            'QR Scanner Not Available',
+            'QR code scanning requires a development build. For now, you can paste the invite link manually.',
+            [{ text: 'OK', onPress: () => setShowScanner(false) }]
+          );
+          return;
+        }
+        try {
+          const { status } = await BarCodeScanner.requestPermissionsAsync();
+          setHasPermission(status === 'granted');
+        } catch (error) {
+          console.error('BarCodeScanner error:', error);
+          Alert.alert(
+            'QR Scanner Not Available',
+            'QR code scanning requires a development build. For now, you can paste the invite link manually.',
+            [{ text: 'OK', onPress: () => setShowScanner(false) }]
+          );
+        }
+      }
+    })();
+  }, [showScanner]);
+
+  const handleBarCodeScanned = ({ data }: { data: string }) => {
+    setShowScanner(false);
+    // Extract invite ID from URL if it's a full URL
+    const inviteId = extractInviteId(data);
+    if (inviteId) {
+      setInviteInput(inviteId);
+      Alert.alert('QR Code Scanned', 'Invite link has been filled in. Please complete the form and join.');
+    } else {
+      setInviteInput(data);
+      Alert.alert('QR Code Scanned', 'Please verify the invite link and complete the form.');
+    }
+  };
 
   const handleCreateCircle = () => {
     navigation.navigate('CreateCircle');
@@ -320,15 +394,40 @@ const HomeScreen: React.FC = () => {
               Example: <Text className="font-semibold">ABC123...</Text>
             </Text>
             
-            <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base mb-4 bg-gray-50"
-              placeholder="https://care-circle-15fd5.web.app/inviteRedirect/..."
-              value={inviteInput}
-              onChangeText={setInviteInput}
-              autoCapitalize="none"
-              autoCorrect={false}
-              multiline
-            />
+            <View className="flex-row gap-2 mb-4">
+              <TextInput
+                className="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base bg-gray-50"
+                placeholder="https://care-circle-15fd5.web.app/inviteRedirect/..."
+                value={inviteInput}
+                onChangeText={setInviteInput}
+                autoCapitalize="none"
+                autoCorrect={false}
+                multiline
+              />
+              <TouchableOpacity
+                onPress={() => {
+                  // Try to load BarCodeScanner if not already loaded
+                  if (!BarCodeScanner) {
+                    isBarCodeScannerAvailable();
+                  }
+                  
+                  // Check if BarCodeScanner is available
+                  if (BarCodeScanner) {
+                    setShowScanner(true);
+                  } else {
+                    Alert.alert(
+                      'QR Scanner Not Available',
+                      'QR code scanning requires a development build. Please paste the invite link manually.',
+                      [{ text: 'OK' }]
+                    );
+                  }
+                }}
+                className="bg-blue-100 rounded-xl px-4 py-3 items-center justify-center"
+                style={{ minWidth: 60 }}
+              >
+                <Text className="text-2xl">📷</Text>
+              </TouchableOpacity>
+            </View>
 
             <Text className="text-gray-700 mb-2">Your name</Text>
             <TextInput
@@ -390,6 +489,59 @@ const HomeScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      {/* QR Code Scanner Modal */}
+      <Modal
+        visible={showScanner}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowScanner(false)}
+      >
+        <View className="flex-1 bg-black">
+          {hasPermission === null ? (
+            <View className="flex-1 justify-center items-center">
+              <Text className="text-white text-lg">Requesting camera permission...</Text>
+            </View>
+          ) : hasPermission === false ? (
+            <View className="flex-1 justify-center items-center px-6">
+              <Text className="text-white text-lg mb-4 text-center">
+                Camera permission is required to scan QR codes.
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowScanner(false)}
+                className="bg-blue-600 rounded-xl px-6 py-3"
+              >
+                <Text className="text-white font-semibold">Close</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              {BarCodeScanner && (
+                <BarCodeScanner
+                  onBarCodeScanned={handleBarCodeScanned}
+                  style={StyleSheet.absoluteFillObject}
+                  barCodeTypes={[BarCodeScanner.Constants?.BarCodeType?.qr || 'qr']}
+                />
+              )}
+              <View className="absolute top-12 left-0 right-0 items-center">
+                <Text className="text-white text-xl font-bold mb-2">Scan QR Code</Text>
+                <Text className="text-white/80 text-sm">Point your camera at the QR code</Text>
+              </View>
+              <View className="absolute bottom-8 left-0 right-0 items-center px-6">
+                <TouchableOpacity
+                  onPress={() => setShowScanner(false)}
+                  className="bg-white/20 rounded-xl px-6 py-3"
+                >
+                  <Text className="text-white font-semibold">Cancel</Text>
+                </TouchableOpacity>
+              </View>
+              <View className="absolute top-1/2 left-1/2" style={{ transform: [{ translateX: -100 }, { translateY: -100 }] }}>
+                <View style={{ width: 200, height: 200, borderWidth: 2, borderColor: '#60a5fa', borderRadius: 12 }} />
+              </View>
+            </>
+          )}
         </View>
       </Modal>
 

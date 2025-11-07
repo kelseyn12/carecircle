@@ -69,6 +69,12 @@ export default {
       'expo-notifications',
       'expo-image-picker',
       [
+        'expo-barcode-scanner',
+        {
+          cameraPermission: 'Allow Care Circle to access your camera to scan QR codes for joining circles.',
+        },
+      ],
+      [
         'expo-build-properties',
         {
           ios: {

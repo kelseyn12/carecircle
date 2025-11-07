@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onUpdateCreated = exports.acceptInvite = exports.ownerDeclineJoinRequest = exports.ownerApproveJoinRequest = exports.listJoinRequests = exports.submitJoinRequest = exports.getInviteInfo = exports.createInvite = void 0;
+exports.inviteRedirect = exports.onUpdateCreated = exports.acceptInvite = exports.ownerDeclineJoinRequest = exports.ownerApproveJoinRequest = exports.listJoinRequests = exports.submitJoinRequest = exports.getInviteInfo = exports.createInvite = void 0;
 const firestore_1 = require("firebase-functions/v2/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
@@ -413,4 +413,8 @@ exports.onUpdateCreated = (0, firestore_1.onDocumentCreated)('updates/{updateId}
         console.error('Error in onUpdateCreated:', error);
     }
 });
+// Export v1 functions from separate files
+// This ensures they're included in the deployment
+var inviteRedirect_1 = require("./inviteRedirect");
+Object.defineProperty(exports, "inviteRedirect", { enumerable: true, get: function () { return inviteRedirect_1.inviteRedirect; } });
 //# sourceMappingURL=index.js.map

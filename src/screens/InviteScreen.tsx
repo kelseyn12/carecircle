@@ -20,6 +20,7 @@ import { useAuth } from '../lib/authContext';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../lib/firebase';
 import Toast from 'react-native-root-toast';
+import QRCode from 'react-native-qrcode-svg';
 
 type InviteScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Invite'>;
 type InviteScreenRouteProp = RouteProp<RootStackParamList, 'Invite'>;
@@ -251,6 +252,24 @@ const InviteScreen: React.FC = () => {
               <Text className="text-gray-600 text-center">
                 Share this link with family and friends to invite them to your circle.
               </Text>
+            </View>
+
+            {/* QR Code Display */}
+            <View className="items-center mb-6">
+              <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <Text className="text-gray-700 font-semibold mb-3 text-center">
+                  Scan to Join
+                </Text>
+                <QRCode
+                  value={inviteLink}
+                  size={200}
+                  color="#1f2937"
+                  backgroundColor="#ffffff"
+                />
+                <Text className="text-gray-500 text-xs mt-3 text-center">
+                  Share this QR code for easy joining
+                </Text>
+              </View>
             </View>
 
             <View className="bg-gray-50 rounded-xl p-4 mb-6">
