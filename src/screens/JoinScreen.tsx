@@ -180,7 +180,7 @@ const JoinScreen: React.FC = () => {
             <SafeText className="text-gray-600 text-center">
               {circleInfo.alreadyMember 
                 ? "You're already a member of this circle!"
-                : "You've been invited to join this Care Circle"
+                : "You've been invited to join this CareCircle Connect circle"
               }
             </SafeText>
           </View>

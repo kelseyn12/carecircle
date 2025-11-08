@@ -362,6 +362,19 @@ const SettingsScreen: React.FC = () => {
             </View>
           )}
 
+          {/* About / Disclaimer */}
+          <View className="bg-white rounded-2xl p-5 mb-6 shadow-sm border border-gray-100">
+            <View className="flex-row items-center mb-3">
+              <Ionicons name="information-circle-outline" size={24} color="#3b82f6" />
+              <SafeText className="text-lg font-semibold text-gray-900 ml-4 leading-[26px]">
+                About CareCircle Connect
+              </SafeText>
+            </View>
+            <SafeText className="text-base text-gray-600 leading-[24px]">
+              CareCircle Connect helps families share updates privately — it's not affiliated with any healthcare provider.
+            </SafeText>
+          </View>
+
           {/* Sign Out */}
           <TouchableOpacity
             onPress={handleSignOut}

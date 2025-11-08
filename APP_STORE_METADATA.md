@@ -5,7 +5,7 @@ This document outlines all the metadata and assets needed for App Store and Goog
 ## App Information
 
 ### Basic Details
-- **App Name**: Care Circle
+- **App Name**: CareCircle Connect
 - **Bundle ID (iOS)**: `com.carecircle.app`
 - **Package Name (Android)**: `com.carecircle.app`
 - **Version**: 1.0.0
@@ -15,12 +15,12 @@ This document outlines all the metadata and assets needed for App Store and Goog
 
 **Short Description (80 characters max):**
 ```
-Share health updates with your care circle - family, friends, and caregivers.
+Share private updates with your family and care circle.
 ```
 
 **Full Description:**
 ```
-Care Circle helps care leads share important health and personal updates with their circle of family, friends, and caregivers.
+CareCircle Connect helps families stay connected during important moments by sharing private updates with your circle of loved ones.
 
 Key Features:
 • Create private circles for your care network
@@ -43,7 +43,9 @@ Privacy & Security:
 • Secure invite system
 • Your data stays private
 
-Download Care Circle today and keep your care network connected.
+CareCircle Connect is an independent app designed to help families share moments that matter. It's not affiliated with any healthcare provider or medical institution.
+
+Download CareCircle Connect today and keep your care network connected.
 ```
 
 ### Keywords (iOS - 100 characters max)
@@ -106,7 +108,7 @@ https://care-circle-15fd5.web.app/privacy
 
 ### Required Information
 1. **App Information**
-   - Name: Care Circle
+   - Name: CareCircle Connect
    - Primary Language: English
    - Bundle ID: com.carecircle.app
    - SKU: care-circle-001
@@ -131,7 +133,7 @@ https://care-circle-15fd5.web.app/privacy
 
 ### App Review Notes
 ```
-Care Circle is a private health update sharing app. 
+CareCircle Connect is a private family update sharing app. It's not affiliated with any healthcare provider. 
 
 To test the app:
 1. Sign up with a test email
@@ -146,7 +148,7 @@ All features are available in the test build. No special setup required.
 
 ### Required Information
 1. **App Details**
-   - App Name: Care Circle
+   - App Name: CareCircle Connect
    - Short Description: 80 characters max
    - Full Description: 4000 characters max
    - App Icon: 512 x 512 pixels

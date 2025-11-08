@@ -153,7 +153,7 @@ const SignInScreen: React.FC = () => {
             <SafeText className="text-5xl leading-[55px]">💙</SafeText>
           </LinearGradient>
           <SafeText className="text-5xl font-bold text-blue-600 text-center px-1 leading-[55px]">
-            Care Circle
+            CareCircle Connect
           </SafeText>
           <SafeText className="text-xl text-gray-600 text-center mt-4 leading-[30px]">
             Share updates with your loved ones

@@ -2,13 +2,13 @@
 
 **Last updated: October, 2025**
 
-## Welcome to Care Circle
+## Welcome to CareCircle Connect
 
-These terms explain the rules for using Care Circle, our app that helps families stay connected during important times. By using our app, you agree to follow these terms.
+These terms explain the rules for using CareCircle Connect, our app that helps families stay connected during important times. By using our app, you agree to follow these terms.
 
-## What Care Circle Does
+## What CareCircle Connect Does
 
-Care Circle lets you:
+CareCircle Connect lets you:
 - Create private "circles" for your family and friends
 - Share updates (text and photos) with circle members
 - Invite others to join your circles
@@ -34,13 +34,13 @@ Care Circle lets you:
 - **You can delete**: You can delete your updates anytime
 
 ### Our App
-- **We own the app**: The Care Circle app and its features belong to us
+- **We own the app**: The CareCircle Connect app and its features belong to us
 - **You can use it**: We give you permission to use the app as intended
 
 ## Important Disclaimers
 
 ### Not Medical Advice
-- **Not a medical device**: Care Circle is not a medical device
+- **Not a medical device**: CareCircle Connect is not a medical device
 - **Not medical advice**: We don't provide medical advice or diagnosis
 - **Not HIPAA-covered**: We're not a healthcare provider
 - **Talk to doctors**: Always consult healthcare professionals for medical decisions
@@ -90,4 +90,4 @@ If you have questions about these terms, please contact us at:
 
 ---
 
-*Thank you for using Care Circle responsibly and helping us create a safe space for families.*
+*Thank you for using CareCircle Connect responsibly and helping us create a safe space for families.*

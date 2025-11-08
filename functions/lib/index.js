@@ -398,7 +398,7 @@ exports.onUpdateCreated = (0, firestore_1.onDocumentCreated)('updates/{updateId}
             if (!(user === null || user === void 0 ? void 0 : user.expoPushToken)) {
                 return;
             }
-            const title = 'New Update in Care Circle';
+            const title = 'New Update in CareCircle Connect';
             const body = `${user.displayName || 'Someone'} posted an update`;
             const data = {
                 circleId,

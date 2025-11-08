@@ -348,7 +348,7 @@ const HomeScreen: React.FC = () => {
         <SafeText className="text-6xl leading-[63px]">{EMOJIS.BLUE_HEART}</SafeText>
       </LinearGradient>
       <SafeText className="text-3xl font-bold text-gray-800 mb-3 text-center leading-[40px]">
-        Welcome to Care Circle
+        Welcome to CareCircle Connect
       </SafeText>
       <SafeText className="text-gray-600 text-center mb-8 text-lg leading-[26px]">
         Create your first circle to start sharing updates with family and friends. 
@@ -496,7 +496,7 @@ const HomeScreen: React.FC = () => {
                     <View className="bg-white rounded-3xl" style={{ padding: 24, overflow: 'hidden', width: '100%', maxWidth: 500, alignSelf: 'center' }}>
                       <SafeText className="text-3xl font-bold mb-2 text-gray-900 leading-[40px]">Join Circle</SafeText>
                       <SafeText className="text-gray-600 text-lg mb-2 leading-[26px]">
-                        Enter your invite link to join a Care Circle.
+                        Enter your invite link to join a CareCircle Connect circle.
                       </SafeText>
                       <SafeText className="text-gray-500 text-base mb-4 leading-[24px]">
                         You can paste the full link or just the code after <SafeText className="font-semibold">inviteRedirect/</SafeText>.

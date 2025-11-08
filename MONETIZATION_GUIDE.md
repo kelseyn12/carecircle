@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide outlines monetization options for Care Circle, a health update sharing app.
+This guide outlines monetization options for CareCircle Connect, a health update sharing app.
 
 ## Monetization Options
 
@@ -73,7 +73,7 @@ This guide outlines monetization options for Care Circle, a health update sharin
 - Privacy concerns with health data
 - May feel inappropriate for sensitive content
 
-**Not Recommended** for Care Circle due to:
+**Not Recommended** for CareCircle Connect due to:
 - Health/medical context requires trust
 - Ads can feel intrusive during difficult times
 - Privacy concerns with health data

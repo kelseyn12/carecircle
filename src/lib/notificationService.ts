@@ -197,8 +197,8 @@ export const openAppSettings = async (): Promise<void> => {
       'Unable to Open Settings',
       'Please manually open Settings → ' + 
       (Platform.OS === 'ios' 
-        ? 'Care Circle → Notifications' 
-        : 'Apps → Care Circle → Notifications') +
+        ? 'CareCircle Connect → Notifications' 
+        : 'Apps → CareCircle Connect → Notifications') +
       ' and enable notifications.'
     );
   }

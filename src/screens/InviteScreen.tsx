@@ -113,7 +113,7 @@ const InviteScreen: React.FC = () => {
     try {
       const cleanLink = String(inviteLink).trim();
       const safeMessage = Platform.OS === 'ios'
-        ? `Join my Care Circle:\n${cleanLink}`
+        ? `Join my CareCircle Connect circle:\n${cleanLink}`
         : cleanLink;
 
       await Share.share({

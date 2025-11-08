@@ -4,7 +4,7 @@ const isDev = process.env.APP_ENV !== 'production';
 
 export default {
   expo: {
-    name: 'Care Circle',
+    name: 'CareCircle Connect',
     slug: 'care-circle',
     version: '1.0.0',
     orientation: 'portrait',
@@ -25,6 +25,7 @@ export default {
       // Format: com.googleusercontent.apps.{CLIENT_ID}
       // The reverse client ID is: com.googleusercontent.apps.{iOS_CLIENT_ID}
       infoPlist: {
+        CFBundleDisplayName: 'CareCircle Connect',
         CFBundleURLTypes: [
           {
             CFBundleURLSchemes: [
@@ -93,7 +94,7 @@ export default {
         'expo-camera',
         {
           cameraPermission:
-            'Allow Care Circle to access your camera to scan QR codes for joining circles.',
+            'Allow CareCircle Connect to access your camera to scan QR codes for joining circles.',
         },
       ],
       'expo-apple-authentication',

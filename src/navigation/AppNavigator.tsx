@@ -1,4 +1,4 @@
-// Main navigation component for the Care Circle app
+// Main navigation component for the CareCircle Connect app
 import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -72,7 +72,7 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen 
               name="Home" 
               component={HomeScreen} 
-              options={{ title: 'Care Circles' }}
+              options={{ title: 'CareCircle Connect' }}
             />
             <Stack.Screen 
               name="CreateCircle" 

@@ -1,6 +1,6 @@
-# Care Circle
+# CareCircle Connect
 
-A React Native app that lets Care Leads create Circles, invite family/friends, and share medical/personal updates securely.
+A React Native app that helps families share private updates with their circle of loved ones. CareCircle Connect is an independent app designed to help families stay connected during important moments — it's not affiliated with any healthcare provider.
 
 ## 🚀 Quick Start
 

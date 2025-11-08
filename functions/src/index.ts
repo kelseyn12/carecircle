@@ -435,7 +435,7 @@ export const onUpdateCreated = onDocumentCreated(
           return;
         }
 
-        const title = 'New Update in Care Circle';
+        const title = 'New Update in CareCircle Connect';
         const body = `${user.displayName || 'Someone'} posted an update`;
         const data = {
           circleId,

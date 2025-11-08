@@ -1,7 +1,7 @@
 {
   "name": "care-circle-functions",
   "version": "1.0.0",
-  "description": "Cloud Functions for Care Circle",
+  "description": "Cloud Functions for CareCircle Connect",
   "scripts": {
     "build": "tsc",
     "serve": "npm run build && firebase emulators:start --only functions",

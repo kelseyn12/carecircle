@@ -1,4 +1,4 @@
-# Care Circle - Development Roadmap
+# CareCircle Connect - Development Roadmap
 
 ## 🎉 **PROJECT STATUS: 15/17 PHASES COMPLETED (88%)**
 

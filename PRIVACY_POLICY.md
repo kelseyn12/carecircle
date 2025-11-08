@@ -4,7 +4,9 @@
 
 ## Introduction
 
-Welcome to Care Circle! We built this app to help families and friends stay connected during important times. This privacy policy explains how we handle your information when you use our app.
+Welcome to CareCircle Connect! We built this app to help families and friends stay connected during important times. This privacy policy explains how we handle your information when you use our app.
+
+**Important Note**: CareCircle Connect is an independent app designed to help families share updates privately. It's not affiliated with any healthcare provider or medical institution.
 
 ## What Information We Collect
 
@@ -58,11 +60,11 @@ Welcome to Care Circle! We built this app to help families and friends stay conn
 
 ## Children's Privacy
 
-Care Circle is not intended for children under 13. We don't knowingly collect information from children under 13. If you believe we have collected information from a child under 13, please contact us immediately.
+CareCircle Connect is not intended for children under 13. We don't knowingly collect information from children under 13. If you believe we have collected information from a child under 13, please contact us immediately.
 
 ## Important Disclaimers
 
-- **Not a medical device**: Care Circle is not a medical device and doesn't provide medical advice
+- **Not a medical device**: CareCircle Connect is not a medical device and doesn't provide medical advice
 - **Not HIPAA-covered**: We're not a healthcare provider, so HIPAA doesn't apply
 - **Voluntary sharing**: You choose what information to share with your circles
 
@@ -78,4 +80,4 @@ If you have questions about this privacy policy or your information, please cont
 
 ---
 
-*Thank you for trusting Care Circle with your family's important moments.*
+*Thank you for trusting CareCircle Connect with your family's important moments.*
