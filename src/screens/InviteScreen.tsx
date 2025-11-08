@@ -244,8 +244,18 @@ const InviteScreen: React.FC = () => {
         ) : (
           // Share invite section
           <View className="bg-white rounded-2xl p-6 shadow-sm">
-            <View className="items-center mb-6">
-              <Text className="text-6xl mb-4">✅</Text>
+            <View className="items-center mb-6" style={{ paddingTop: 8 }}>
+              <View style={{ 
+                width: 80, 
+                height: 80, 
+                borderRadius: 40, 
+                backgroundColor: '#10b981', 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                marginBottom: 16,
+              }}>
+                <Text style={{ fontSize: 48, color: '#ffffff' }}>✓</Text>
+              </View>
               <Text className="text-xl font-semibold text-gray-800 mb-2">
                 Invite Link Created!
               </Text>

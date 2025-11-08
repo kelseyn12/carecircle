@@ -1,6 +1,6 @@
 // Home screen showing user's circles
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert, TextInput, Modal, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert, TextInput, Modal, StyleSheet, KeyboardAvoidingView, ScrollView, TouchableWithoutFeedback, Keyboard, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -14,29 +14,26 @@ import { EMOJIS } from '../utils/emojiUtils';
 import { initializeNotifications } from '../lib/notificationService';
 import { createJoinRequest, getInviteInfo } from '../lib/firestoreUtils';
 import SafeText from '../components/SafeText';
-// Lazy import BarCodeScanner to avoid crash in Expo Go
-// The native module may not be available in Expo Go
-let BarCodeScanner: any = null;
-let barCodeScannerError: Error | null = null;
+// Lazy import CameraView from expo-camera for QR code scanning
+// expo-barcode-scanner is deprecated (removed in SDK 52), using expo-camera instead
+let CameraView: any = null;
+let Camera: any = null; // For permissions
+let cameraError: Error | null = null;
 
-const isBarCodeScannerAvailable = () => {
-  if (BarCodeScanner) return true;
-  if (barCodeScannerError) return false;
+const isCameraAvailable = () => {
+  if (CameraView && Camera) return true;
+  if (cameraError) return false;
   
   try {
-    // Suppress the native module error by catching it
-    const scannerModule = require('expo-barcode-scanner');
-    if (scannerModule && scannerModule.BarCodeScanner) {
-      BarCodeScanner = scannerModule.BarCodeScanner;
+    const cameraModule = require('expo-camera');
+    if (cameraModule) {
+      CameraView = cameraModule.CameraView;
+      Camera = cameraModule.Camera;
       return true;
     }
   } catch (error: any) {
-    // Native module not available - this is expected in Expo Go
-    barCodeScannerError = error;
-    // Suppress the error from console in Expo Go
-    if (!error.message?.includes('ExpoBarCodeScanner')) {
-      console.warn('BarCodeScanner not available (requires development build)');
-    }
+    cameraError = error;
+    console.warn('Camera not available (requires development build)');
     return false;
   }
   return false;
@@ -55,6 +52,13 @@ const HomeScreen: React.FC = () => {
   const [lastViewedMap, setLastViewedMap] = useState<Record<string, Date>>({});
   const [showScanner, setShowScanner] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
+  const [scansEnabled, setScansEnabled] = useState(false);
+  const [cameraViewLoaded, setCameraViewLoaded] = useState(false);
+  const scanTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const scanCountRef = React.useRef<number>(0);
+  const cameraViewRef = React.useRef<any>(null);
 
   useEffect(() => {
     (async () => {
@@ -67,13 +71,30 @@ const HomeScreen: React.FC = () => {
   useEffect(() => {
     (async () => {
       if (showScanner) {
-        // Try to load BarCodeScanner if not already loaded
-        if (!BarCodeScanner) {
-          isBarCodeScannerAvailable();
+        // Reset camera ready state when opening scanner
+        setCameraReady(false);
+        setScansEnabled(false);
+        setLastScannedCode(null);
+        scanCountRef.current = 0;
+        setHasPermission(null);
+        
+        // Clear any existing timeout
+        if (scanTimeoutRef.current) {
+          clearTimeout(scanTimeoutRef.current);
+          scanTimeoutRef.current = null;
         }
         
-        // Check if BarCodeScanner is available (requires development build)
-        if (!BarCodeScanner) {
+        // Try to load Camera if not already loaded
+        if (!cameraViewRef.current || !Camera) {
+          isCameraAvailable();
+          if (CameraView && Camera) {
+            cameraViewRef.current = CameraView;
+            setCameraViewLoaded(true);
+          }
+        }
+        
+        // Check if Camera is available (requires development build)
+        if (!cameraViewRef.current || !Camera) {
           Alert.alert(
             'QR Scanner Not Available',
             'QR code scanning requires a development build. For now, you can paste the invite link manually.',
@@ -81,32 +102,102 @@ const HomeScreen: React.FC = () => {
           );
           return;
         }
+        
         try {
-          const { status } = await BarCodeScanner.requestPermissionsAsync();
+          const { status } = await Camera.requestCameraPermissionsAsync();
           setHasPermission(status === 'granted');
+          
+          if (status === 'granted') {
+            // Wait for camera to fully initialize before allowing scans
+            // Also ignore the first few scans that might fire on mount
+            scanTimeoutRef.current = setTimeout(() => {
+              setCameraReady(true);
+              // Wait an additional 500ms before actually accepting scans
+              setTimeout(() => {
+                setScansEnabled(true);
+              }, 500);
+            }, 1000);
+          }
         } catch (error) {
-          console.error('BarCodeScanner error:', error);
+          console.error('Camera error:', error);
           Alert.alert(
             'QR Scanner Not Available',
             'QR code scanning requires a development build. For now, you can paste the invite link manually.',
             [{ text: 'OK', onPress: () => setShowScanner(false) }]
           );
         }
+      } else {
+        // Reset states when closing scanner
+        setCameraReady(false);
+        setScansEnabled(false);
+        setLastScannedCode(null);
+        setCameraViewLoaded(false);
+        scanCountRef.current = 0;
+        if (scanTimeoutRef.current) {
+          clearTimeout(scanTimeoutRef.current);
+          scanTimeoutRef.current = null;
+        }
       }
     })();
   }, [showScanner]);
 
-  const handleBarCodeScanned = ({ data }: { data: string }) => {
-    setShowScanner(false);
-    // Extract invite ID from URL if it's a full URL
-    const inviteId = extractInviteId(data);
-    if (inviteId) {
-      setInviteInput(inviteId);
-      Alert.alert('QR Code Scanned', 'Invite link has been filled in. Please complete the form and join.');
-    } else {
-      setInviteInput(data);
-      Alert.alert('QR Code Scanned', 'Please verify the invite link and complete the form.');
+  const handleBarCodeScanned = ({ data, type }: { data: string; type: string }) => {
+    // Increment scan count
+    scanCountRef.current += 1;
+    
+    // Ignore scans if they're not enabled yet
+    if (!scansEnabled) {
+      return;
     }
+    
+    // Ignore scans if camera isn't ready yet
+    if (!cameraReady) {
+      return;
+    }
+    
+    // Ignore the first few scans (they're often false positives on mount)
+    if (scanCountRef.current <= 3) {
+      return;
+    }
+    
+    // Validate that we have actual data
+    if (!data || typeof data !== 'string' || data.trim().length === 0) {
+      return;
+    }
+    
+    // Only process QR codes
+    if (type !== 'qr') {
+      return;
+    }
+    
+    // Prevent duplicate scans of the same code
+    if (lastScannedCode === data) {
+      return;
+    }
+    
+    // Additional validation: check if data looks like a valid invite link
+    const trimmedData = data.trim();
+    if (trimmedData.length < 10) {
+      return;
+    }
+    
+    // Mark this code as scanned immediately to prevent duplicates
+    setLastScannedCode(data);
+    
+    // Close scanner
+    setShowScanner(false);
+    
+    // Extract invite ID from URL if it's a full URL
+    const inviteId = extractInviteId(trimmedData);
+    const valueToSet = inviteId || trimmedData;
+    
+    // Set the invite input value
+    setInviteInput(valueToSet);
+    
+    // Re-open the join modal so user can continue filling the form
+    setTimeout(() => {
+      setShowJoinModal(true);
+    }, 300); // Small delay to ensure scanner modal closes first
   };
 
   const handleCreateCircle = () => {
@@ -384,126 +475,160 @@ const HomeScreen: React.FC = () => {
         animationType="slide"
         onRequestClose={() => setShowJoinModal(false)}
       >
-        <View className="flex-1 bg-black/50 justify-center px-5">
-          <View className="bg-white rounded-3xl p-6">
-            <Text className="text-2xl font-bold mb-2">Join Circle</Text>
-            <Text className="text-gray-600 text-base mb-2">
-              Enter your invite link to join a Care Circle.
-            </Text>
-            <Text className="text-gray-500 text-sm mb-4">
-              You can paste the full link or just the code after <Text className="font-semibold">inviteRedirect/</Text>.
-              Example: <Text className="font-semibold">ABC123...</Text>
-            </Text>
-            
-            <View className="flex-row gap-2 mb-4">
-              <TextInput
-                className="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base bg-gray-50"
-                placeholder="https://care-circle-15fd5.web.app/inviteRedirect/..."
-                value={inviteInput}
-                onChangeText={setInviteInput}
-                autoCapitalize="none"
-                autoCorrect={false}
-                multiline
-              />
-              <TouchableOpacity
-                onPress={() => {
-                  // Try to load BarCodeScanner if not already loaded
-                  if (!BarCodeScanner) {
-                    isBarCodeScannerAvailable();
-                  }
-                  
-                  // Check if BarCodeScanner is available
-                  if (BarCodeScanner) {
-                    setShowScanner(true);
-                  } else {
-                    Alert.alert(
-                      'QR Scanner Not Available',
-                      'QR code scanning requires a development build. Please paste the invite link manually.',
-                      [{ text: 'OK' }]
-                    );
-                  }
-                }}
-                className="bg-blue-100 rounded-xl px-4 py-3 items-center justify-center"
-                style={{ minWidth: 60 }}
-              >
-                <Text className="text-2xl">📷</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text className="text-gray-700 mb-2">Your name</Text>
-            <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base mb-4 bg-gray-50"
-              placeholder={user?.displayName ? `${user.displayName}` : 'Full name'}
-              value={requestName}
-              onChangeText={setRequestName}
-              autoCapitalize="words"
-              autoCorrect={false}
-            />
-
-            <Text className="text-gray-700 mb-2">Relation to the person</Text>
-            <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base mb-5 bg-gray-50"
-              placeholder="e.g., Daughter, Friend, Neighbor"
-              value={requestRelation}
-              onChangeText={setRequestRelation}
-              autoCapitalize="sentences"
-              autoCorrect
-            />
-            
-            <View className="flex-row gap-3">
-              <TouchableOpacity
-                className="flex-1 bg-gray-500 rounded-xl py-3.5 items-center"
-                onPress={() => {
-                  setShowJoinModal(false);
-                  setInviteInput('');
-                }}
-              >
-                <Text className="text-white font-semibold text-base">Back</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                onPress={handleJoinByInvite}
-                style={{
-                  flex: 1,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 3,
-                }}
-              >
-                <LinearGradient
-                  colors={['#60a5fa', '#a78bfa']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={{
-                    borderRadius: 12,
-                    paddingVertical: 14,
-                    alignItems: 'center',
-                    justifyContent: 'center',
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            className="flex-1"
+          >
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View className="flex-1 bg-black/50 justify-center px-4">
+                <ScrollView
+                  contentContainerStyle={{ 
+                    flexGrow: 1, 
+                    justifyContent: 'center', 
+                    paddingVertical: 20,
+                    paddingBottom: 30
                   }}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
                 >
-                  <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 16, textAlign: 'center' }}>
-                    Join
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+                  <TouchableWithoutFeedback onPress={() => {}}>
+                    <View className="bg-white rounded-3xl" style={{ padding: 24, overflow: 'hidden', width: '100%', maxWidth: 500, alignSelf: 'center' }}>
+                      <Text className="text-2xl font-bold mb-2 text-gray-900">Join Circle</Text>
+                      <Text className="text-gray-600 text-base mb-2">
+                        Enter your invite link to join a Care Circle.
+                      </Text>
+                      <Text className="text-gray-500 text-sm mb-4">
+                        You can paste the full link or just the code after <Text className="font-semibold">inviteRedirect/</Text>.
+                        Example: <Text className="font-semibold">ABC123...</Text>
+                      </Text>
+                      
+                      <View className="flex-row gap-2 mb-4">
+                        <TextInput
+                          className="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base bg-gray-50"
+                          placeholder="https://care-circle-15fd5.web.app/inviteRedirect/..."
+                          value={inviteInput}
+                          onChangeText={setInviteInput}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          multiline
+                          style={{ minHeight: 44, maxHeight: 100 }}
+                        />
+                        <TouchableOpacity
+                          onPress={() => {
+                            setShowJoinModal(false); // Close join modal first
+                            setTimeout(() => {
+                              setShowScanner(true); // Then open scanner
+                            }, 100); // Small delay to ensure join modal closes
+                          }}
+                          className="bg-blue-100 rounded-xl px-4 py-3 items-center justify-center"
+                          style={{ minWidth: 60, minHeight: 44 }}
+                          activeOpacity={0.7}
+                        >
+                          <Text className="text-2xl">📷</Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      <Text className="text-gray-700 mb-2 font-medium">Your name</Text>
+                      <TextInput
+                        className="border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base mb-4 bg-gray-50"
+                        placeholder={user?.displayName ? `${user.displayName}` : 'Full name'}
+                        value={requestName}
+                        onChangeText={setRequestName}
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                        style={{ minHeight: 44 }}
+                      />
+
+                      <Text className="text-gray-700 mb-2 font-medium">Relation to the person</Text>
+                      <TextInput
+                        className="border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base mb-4 bg-gray-50"
+                        placeholder="e.g., Daughter, Friend, Neighbor"
+                        value={requestRelation}
+                        onChangeText={setRequestRelation}
+                        autoCapitalize="sentences"
+                        autoCorrect
+                        style={{ minHeight: 44 }}
+                      />
+                      
+                      <View className="flex-row gap-3" style={{ marginTop: 8 }}>
+                        <TouchableOpacity
+                          className="flex-1 bg-gray-200 rounded-xl py-3.5 items-center justify-center"
+                          onPress={() => {
+                            Keyboard.dismiss();
+                            setShowJoinModal(false);
+                            setInviteInput('');
+                            setRequestName('');
+                            setRequestRelation('');
+                          }}
+                          activeOpacity={0.7}
+                          style={{ minHeight: 48 }}
+                        >
+                          <Text className="text-gray-700 font-semibold text-base">Cancel</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                          onPress={handleJoinByInvite}
+                          style={{
+                            flex: 1,
+                            minHeight: 48,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 4,
+                            elevation: 3,
+                          }}
+                          activeOpacity={0.8}
+                        >
+                          <LinearGradient
+                            colors={['#60a5fa', '#a78bfa']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={{
+                              borderRadius: 12,
+                              paddingVertical: 14,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              minHeight: 48,
+                            }}
+                          >
+                            <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 16, textAlign: 'center' }}>
+                              Join
+                            </Text>
+                          </LinearGradient>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </TouchableWithoutFeedback>
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
       </Modal>
 
       {/* QR Code Scanner Modal */}
       <Modal
         visible={showScanner}
-        transparent={true}
+        transparent={false}
         animationType="slide"
-        onRequestClose={() => setShowScanner(false)}
+        onRequestClose={() => {
+          setShowScanner(false);
+        }}
+        statusBarTranslucent={true}
       >
-        <View className="flex-1 bg-black">
+        <View style={{ flex: 1, backgroundColor: '#000000' }}>
           {hasPermission === null ? (
             <View className="flex-1 justify-center items-center">
               <Text className="text-white text-lg">Requesting camera permission...</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowScanner(false);
+                }}
+                className="mt-4 bg-blue-600 rounded-xl px-6 py-3"
+              >
+                <Text className="text-white font-semibold">Close</Text>
+              </TouchableOpacity>
             </View>
           ) : hasPermission === false ? (
             <View className="flex-1 justify-center items-center px-6">
@@ -519,12 +644,37 @@ const HomeScreen: React.FC = () => {
             </View>
           ) : (
             <>
-              {BarCodeScanner && (
-                <BarCodeScanner
-                  onBarCodeScanned={handleBarCodeScanned}
-                  style={StyleSheet.absoluteFillObject}
-                  barCodeTypes={[BarCodeScanner.Constants?.BarCodeType?.qr || 'qr']}
-                />
+              {!cameraViewLoaded ? (
+                <View className="flex-1 justify-center items-center bg-black">
+                  <Text className="text-white text-lg font-semibold mb-2">Loading camera...</Text>
+                  <Text className="text-white/70 text-sm">Please wait</Text>
+                </View>
+              ) : !cameraReady ? (
+                <View className="flex-1 justify-center items-center bg-black">
+                  <Text className="text-white text-lg font-semibold mb-2">Preparing camera...</Text>
+                  <Text className="text-white/70 text-sm">Please wait</Text>
+                </View>
+              ) : cameraViewRef.current ? (
+                <View style={{ flex: 1 }}>
+                  {React.createElement(cameraViewRef.current, {
+                    style: StyleSheet.absoluteFillObject,
+                    facing: "back",
+                    onBarcodeScanned: scansEnabled ? handleBarCodeScanned : undefined,
+                    barcodeScannerSettings: {
+                      barcodeTypes: ['qr'],
+                    },
+                  })}
+                </View>
+              ) : (
+                <View className="flex-1 justify-center items-center bg-black">
+                  <Text className="text-white text-lg font-semibold mb-2">Camera not available</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowScanner(false)}
+                    className="mt-4 bg-blue-600 rounded-xl px-6 py-3"
+                  >
+                    <Text className="text-white font-semibold">Close</Text>
+                  </TouchableOpacity>
+                </View>
               )}
               <View className="absolute top-12 left-0 right-0 items-center">
                 <Text className="text-white text-xl font-bold mb-2">Scan QR Code</Text>
@@ -620,20 +770,15 @@ const HomeScreen: React.FC = () => {
                 shadowOpacity: 0.1,
                 shadowRadius: 4,
                 elevation: 3,
+                backgroundColor: '#e5e7eb',
+                borderRadius: 12,
+                width: 48,
+                height: 48,
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
-              <View
-                style={{
-                  backgroundColor: '#e5e7eb',
-                  borderRadius: 12,
-                  width: 48,
-                  height: 48,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Ionicons name="settings-outline" size={24} color="#3b82f6" />
-              </View>
+              <SafeText className="text-base" maxFontSizeMultiplier={1.1}>⚙️</SafeText>
             </TouchableOpacity>
           </View>
         </View>
@@ -647,7 +792,11 @@ const HomeScreen: React.FC = () => {
           data={circles}
           renderItem={renderCircle}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
+          contentContainerStyle={{ 
+            paddingHorizontal: 16, 
+            paddingTop: 16,
+            paddingBottom: 32 
+          }}
           refreshControl={
             <RefreshControl
               refreshing={loading}

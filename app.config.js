@@ -1,5 +1,7 @@
 import 'dotenv/config';
 
+const isDev = process.env.APP_ENV !== 'production';
+
 export default {
   expo: {
     name: 'Care Circle',
@@ -18,8 +20,23 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.carecircle.app',
-      // ✅ Must match your Firebase Hosting domain
       associatedDomains: ['applinks:care-circle-15fd5.web.app'],
+      // Google Sign-In requires the reverse client ID as a URL scheme
+      // Format: com.googleusercontent.apps.{CLIENT_ID}
+      // The reverse client ID is: com.googleusercontent.apps.{iOS_CLIENT_ID}
+      infoPlist: {
+        CFBundleURLTypes: [
+          {
+            CFBundleURLSchemes: [
+              'carecircle', // Your app's custom scheme
+              // Google Sign-In reverse client ID
+              // Extract from iOS client ID: 1005643316602-i4elqebsflij1m5gauplojddo95emlsp
+              'com.googleusercontent.apps.1005643316602-i4elqebsflij1m5gauplojddo95emlsp',
+            ],
+          },
+        ],
+        ITSAppUsesNonExemptEncryption: false,
+      },
     },
 
     android: {
@@ -62,20 +79,21 @@ export default {
         messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
         appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
       },
-      // ✅ Match backend invite links
-      inviteLinkDomain: process.env.EXPO_PUBLIC_INVITE_LINK_DOMAIN || 'care-circle-15fd5.web.app',
+      inviteLinkDomain:
+        process.env.EXPO_PUBLIC_INVITE_LINK_DOMAIN || 'care-circle-15fd5.web.app',
     },
 
     scheme: 'carecircle',
 
     plugins: [
-      'expo-dev-client',
+      ...(isDev ? ['expo-dev-client'] : []),
       'expo-notifications',
       'expo-image-picker',
       [
-        'expo-barcode-scanner',
+        'expo-camera',
         {
-          cameraPermission: 'Allow Care Circle to access your camera to scan QR codes for joining circles.',
+          cameraPermission:
+            'Allow Care Circle to access your camera to scan QR codes for joining circles.',
         },
       ],
       'expo-apple-authentication',
@@ -83,7 +101,8 @@ export default {
         'expo-build-properties',
         {
           ios: {
-            useFrameworks: 'static',
+            bitcode: false,
+            useFrameworks: 'static', // ← Add this back for stability with Firebase & BarcodeScanner
           },
         },
       ],

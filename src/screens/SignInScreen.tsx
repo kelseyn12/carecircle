@@ -60,7 +60,7 @@ const validatePassword = (password: string, isSignUp: boolean): string => {
 
 const SignInScreen: React.FC = () => {
   const navigation = useNavigation<SignInScreenNavigationProp>();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithGoogle, signInWithApple } = useAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -290,6 +290,53 @@ const SignInScreen: React.FC = () => {
               </View>
               
               <View style={{ gap: 12 }}>
+                {/* Apple Sign In Button - Placed first per Apple guidelines */}
+                {Platform.OS === 'ios' && (
+                  <TouchableOpacity
+                    disabled={isLoading}
+                    onPress={async () => {
+                      try {
+                        setIsLoading(true);
+                        await signInWithApple();
+                      } catch (error) {
+                        Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign in with Apple.');
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }}
+                    style={{
+                      backgroundColor: '#000000',
+                      borderRadius: 8,
+                      paddingVertical: 12,
+                      paddingHorizontal: 16,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: isLoading ? 0.7 : 1,
+                      minHeight: 44,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.2,
+                      shadowRadius: 2,
+                      elevation: 2,
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    {/* Apple Logo - SVG path for proper Apple logo */}
+                    <View style={{ marginRight: 8, width: 18, height: 18, justifyContent: 'center', alignItems: 'center' }}>
+                      <Ionicons name="logo-apple" size={18} color="#ffffff" />
+                    </View>
+                    <Text style={{ 
+                      color: '#ffffff', 
+                      fontWeight: '500', 
+                      fontSize: 16,
+                      letterSpacing: 0.2,
+                    }}>
+                      Sign in with Apple
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
                 {/* Google Sign In Button */}
                 <TouchableOpacity
                   disabled={isLoading}
@@ -307,90 +354,60 @@ const SignInScreen: React.FC = () => {
                     backgroundColor: '#ffffff',
                     borderWidth: 1,
                     borderColor: '#dadce0',
-                    borderRadius: 4,
-                    paddingVertical: 11,
+                    borderRadius: 8,
+                    paddingVertical: 12,
                     paddingHorizontal: 16,
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'center',
                     opacity: isLoading ? 0.7 : 1,
-                    minHeight: 40,
+                    minHeight: 44,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 2,
+                    elevation: 2,
                   }}
-                  activeOpacity={0.7}
+                  activeOpacity={0.8}
                 >
-                  {/* Google "G" Logo - multi-colored Google style */}
+                  {/* Google "G" Logo - Official Google colors */}
                   <View style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 2,
+                    width: 20,
+                    height: 20,
                     marginRight: 12,
-                    overflow: 'hidden',
-                    position: 'relative',
+                    justifyContent: 'center',
+                    alignItems: 'center',
                   }}>
-                    <LinearGradient
-                      colors={['#4285F4', '#34A853', '#FBBC05', '#EA4335']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>G</Text>
-                    </LinearGradient>
+                    <View style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      position: 'relative',
+                    }}>
+                      {/* Google G logo using colored squares */}
+                      <View style={{ position: 'absolute', width: 10, height: 10, backgroundColor: '#4285F4', top: 0, left: 0 }} />
+                      <View style={{ position: 'absolute', width: 10, height: 10, backgroundColor: '#34A853', top: 0, right: 0 }} />
+                      <View style={{ position: 'absolute', width: 10, height: 10, backgroundColor: '#FBBC05', bottom: 0, left: 0 }} />
+                      <View style={{ position: 'absolute', width: 10, height: 10, backgroundColor: '#EA4335', bottom: 0, right: 0 }} />
+                      <View style={{ 
+                        position: 'absolute', 
+                        top: 2, 
+                        left: 2, 
+                        width: 6, 
+                        height: 6, 
+                        backgroundColor: '#ffffff',
+                        borderRadius: 1,
+                      }} />
+                    </View>
                   </View>
                   <Text style={{ 
                     color: '#3c4043', 
                     fontWeight: '500', 
-                    fontSize: 14,
-                    letterSpacing: 0.25,
+                    fontSize: 16,
+                    letterSpacing: 0.1,
                   }}>
                     Sign in with Google
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Apple Sign In Button */}
-                <TouchableOpacity
-                  disabled={isLoading}
-                  onPress={async () => {
-                    try {
-                      setIsLoading(true);
-                      await signInWithApple();
-                    } catch (error) {
-                      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign in with Apple.');
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
-                  style={{
-                    backgroundColor: '#000000',
-                    borderRadius: 6,
-                    paddingVertical: 11,
-                    paddingHorizontal: 16,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: isLoading ? 0.7 : 1,
-                    minHeight: 40,
-                  }}
-                  activeOpacity={0.7}
-                >
-                  {/* Apple Logo - white outline style */}
-                  <Text style={{ 
-                    fontSize: 16, 
-                    marginRight: 8, 
-                    color: '#ffffff',
-                    lineHeight: 20,
-                  }}>🍎</Text>
-                  <Text style={{ 
-                    color: '#ffffff', 
-                    fontWeight: '400', 
-                    fontSize: 15,
-                    letterSpacing: 0.3,
-                  }}>
-                    Sign in with Apple
                   </Text>
                 </TouchableOpacity>
               </View>

@@ -136,20 +136,29 @@ const SettingsScreen: React.FC = () => {
       className="flex-1 bg-blue-50"
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View className="bg-white border-b border-gray-200 pt-16 pb-4 px-6">
-          <View className="flex-row items-center">
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              className="mr-4"
-              activeOpacity={0.7}
-            >
-              <Ionicons name="arrow-back" size={24} color="#1f2937" />
-            </TouchableOpacity>
-            <Text className="text-2xl font-bold text-gray-900">Settings</Text>
-          </View>
+      {/* Header - Fixed outside ScrollView */}
+      <View className="bg-white border-b border-gray-200 pt-12 pb-4 px-6">
+        <View className="flex-row items-center">
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+            style={{
+              width: 44,
+              height: 44,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginRight: 12,
+              backgroundColor: '#f3f4f6',
+              borderRadius: 12,
+            }}
+          >
+            <Text style={{ fontSize: 24, color: '#374151', fontWeight: '600' }}>←</Text>
+          </TouchableOpacity>
+          <Text className="text-2xl font-bold text-gray-900">Settings</Text>
         </View>
+      </View>
+      
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
 
         <View className="px-6 py-6">
           {/* User Info */}

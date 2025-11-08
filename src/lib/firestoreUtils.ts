@@ -740,21 +740,37 @@ export const subscribeToCircleUpdates = (
     where('circleId', '==', circleId)
   );
 
-  return onSnapshot(q, (querySnapshot) => {
-    const updates: Update[] = [];
+  return onSnapshot(q, async (querySnapshot) => {
+    // Get encryption key for this circle
+    const encryptionKey = await getCircleEncryptionKey(circleId);
     
-    querySnapshot.forEach((doc) => {
+    // Process all documents (decrypt if needed)
+    const updatePromises = querySnapshot.docs.map(async (doc) => {
       const data = doc.data();
-      updates.push({
+      let text = data.text;
+      
+      // Decrypt if encrypted
+      if (data.encrypted && encryptionKey) {
+        try {
+          text = await decryptText(data.text, encryptionKey);
+        } catch (decryptionError) {
+          console.error('Error decrypting update text:', decryptionError);
+          text = '[Encrypted content - decryption failed]';
+        }
+      }
+      
+      return {
         id: doc.id,
         circleId: data.circleId,
         authorId: data.authorId,
-        text: data.text,
+        text: text,
         photoURL: data.photoURL,
         createdAt: data.createdAt?.toDate() || new Date(),
         reactions: data.reactions || {},
-      });
+      };
     });
+    
+    const updates = await Promise.all(updatePromises);
 
     // Sort by creation date on the client side
     updates.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -762,6 +778,11 @@ export const subscribeToCircleUpdates = (
     callback(updates);
   }, (error) => {
     console.error('Error in updates subscription:', error);
+    // Return empty array on permission error to prevent UI crashes
+    if (error.code === 'permission-denied') {
+      console.warn('Permission denied for updates. User may not be a member of this circle.');
+      callback([]);
+    }
   });
 };
 

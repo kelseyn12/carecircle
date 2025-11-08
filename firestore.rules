@@ -34,8 +34,14 @@ service cloud.firestore {
     
     // Updates: only updateAuthors can create, all members can read and react
     match /updates/{updateId} {
-      allow read: if request.auth != null && 
-        request.auth.uid in get(/databases/$(database)/documents/circles/$(resource.data.circleId)).data.members;
+      allow read: if request.auth != null && (
+        // Check if user is in members array
+        request.auth.uid in get(/databases/$(database)/documents/circles/$(resource.data.circleId)).data.members ||
+        // Also check ownerId and ownerIds for backwards compatibility
+        request.auth.uid == get(/databases/$(database)/documents/circles/$(resource.data.circleId)).data.ownerId ||
+        (get(/databases/$(database)/documents/circles/$(resource.data.circleId)).data.ownerIds != null &&
+         request.auth.uid in get(/databases/$(database)/documents/circles/$(resource.data.circleId)).data.ownerIds)
+      );
       allow create: if request.auth != null && 
         request.auth.uid in get(/databases/$(database)/documents/circles/$(request.resource.data.circleId)).data.updateAuthors &&
         request.auth.uid == request.resource.data.authorId;

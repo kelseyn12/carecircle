@@ -1,6 +1,6 @@
 // Authentication context for managing user state
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, signInWithCredential, OAuthProvider } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, signInWithCredential, OAuthProvider, GoogleAuthProvider } from 'firebase/auth';
 import { Alert } from 'react-native';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db, getFCMToken } from './firebase';
@@ -123,29 +123,91 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       throw new Error('Firebase Auth not initialized. Please check your Firebase configuration.');
     }
     try {
-      // For Expo, we'll use expo-auth-session with Google
-      const { makeRedirectUri, useAuthRequest, ResponseType } = await import('expo-auth-session');
-      const { useGoogleAuth } = await import('expo-auth-session/providers/google');
+      const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
+      const Constants = await import('expo-constants');
       
-      // This is a simplified implementation
-      // In production, you'll need to configure Google OAuth properly
-      Alert.alert('Coming Soon', 'Google Sign-In will be fully implemented in the next build. For now, please use email/password.');
+      // Get the appropriate client ID based on platform
+      const getGoogleClientId = () => {
+        const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+        const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+        const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+        
+        if (Constants.default.platform?.ios && iosClientId) {
+          return iosClientId;
+        } else if (Constants.default.platform?.android && androidClientId) {
+          return androidClientId;
+        } else if (webClientId) {
+          return webClientId;
+        }
+        
+        throw new Error('Google OAuth client ID not configured. Please set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your .env file.');
+      };
+
+      const clientId = getGoogleClientId();
       
-      // TODO: Implement full Google OAuth flow with expo-auth-session
-      // const [request, response, promptAsync] = useGoogleAuth({
-      //   clientId: 'YOUR_GOOGLE_CLIENT_ID',
-      // });
-      // 
-      // const result = await promptAsync();
-      // if (result.type === 'success') {
-      //   const credential = GoogleAuthProvider.credential(result.authentication?.idToken);
-      //   const userCredential = await signInWithCredential(auth, credential);
-      //   await createUserDocument(userCredential.user, {
-      //     displayName: userCredential.user.displayName,
-      //   });
-      // }
+      // Get web client ID (required for ID token)
+      const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+      const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+      
+      if (!webClientId) {
+        throw new Error('Google Web Client ID is required. Please set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your .env file.');
+      }
+
+      // Configure Google Sign-In
+      GoogleSignin.configure({
+        webClientId: webClientId, // Required for ID token
+        iosClientId: iosClientId || undefined,
+        offlineAccess: false, // We don't need offline access
+      });
+
+      // Check if Google Play Services are available (Android only)
+      if (Constants.default.platform?.android) {
+        await GoogleSignin.hasPlayServices();
+      }
+
+      // Sign in
+      const userInfo = await GoogleSignin.signIn();
+      
+      // Get ID token - try from userInfo first, then from getTokens()
+      let idToken = userInfo.idToken;
+      
+      if (!idToken) {
+        // On iOS, sometimes we need to get tokens explicitly
+        const tokens = await GoogleSignin.getTokens();
+        idToken = tokens.idToken;
+      }
+      
+      if (!idToken) {
+        console.error('Google Sign-In response:', userInfo);
+        throw new Error('No ID token received from Google. Please check your Google OAuth configuration.');
+      }
+
+      // Create Firebase credential
+      const credential = GoogleAuthProvider.credential(idToken);
+      
+      // Sign in to Firebase
+      const userCredential = await signInWithCredential(auth, credential);
+      
+      // Create or update user document
+      await createUserDocument(userCredential.user, {
+        displayName: userCredential.user.displayName || userInfo.user.name || 'User',
+        photoURL: userCredential.user.photoURL || userInfo.user.photo || undefined,
+      });
     } catch (error: any) {
       console.error('Google sign-in error:', error);
+      
+      // Handle specific Google Sign-In errors
+      if (error.code === 'SIGN_IN_CANCELLED') {
+        throw new Error('Sign-in was canceled.');
+      } else if (error.code === 'IN_PROGRESS') {
+        throw new Error('Sign-in is already in progress.');
+      } else if (error.code === 'PLAY_SERVICES_NOT_AVAILABLE') {
+        throw new Error('Google Play Services is not available. Please update Google Play Services.');
+      }
+      
+      if (error.message) {
+        throw error;
+      }
       throw new Error('Failed to sign in with Google. Please try again.');
     }
   };
@@ -156,19 +218,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       throw new Error('Firebase Auth not initialized. Please check your Firebase configuration.');
     }
     try {
-      const AppleAuthentication = await import('expo-apple-authentication').then(m => m.default);
+      const AppleAuthentication = await import('expo-apple-authentication');
+      
+      // expo-apple-authentication exports functions directly, not as default
+      const { isAvailableAsync, signInAsync, AppleAuthenticationScope } = AppleAuthentication;
       
       // Check if Apple Authentication is available
-      const isAvailable = await AppleAuthentication.isAvailableAsync();
+      if (!isAvailableAsync) {
+        throw new Error('Apple Sign-In is not available on this device.');
+      }
+      
+      const isAvailable = await isAvailableAsync();
       if (!isAvailable) {
         throw new Error('Apple Sign-In is not available on this device.');
       }
 
       // Request Apple authentication
-      const credential = await AppleAuthentication.signInAsync({
+      const credential = await signInAsync({
         requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+          AppleAuthenticationScope.FULL_NAME,
+          AppleAuthenticationScope.EMAIL,
         ],
       });
 
