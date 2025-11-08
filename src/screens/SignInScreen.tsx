@@ -1,13 +1,15 @@
 // Sign-in screen for user authentication
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../lib/authContext';
 import { z } from 'zod';
+import SafeText from '../components/SafeText';
 
 type SignInScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SignIn'>;
 
@@ -61,6 +63,7 @@ const validatePassword = (password: string, isSignUp: boolean): string => {
 const SignInScreen: React.FC = () => {
   const navigation = useNavigation<SignInScreenNavigationProp>();
   const { signIn, signUp, signInWithGoogle, signInWithApple } = useAuth();
+  const insets = useSafeAreaInsets();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -118,47 +121,51 @@ const SignInScreen: React.FC = () => {
     >
       <ScrollView 
         className="flex-1" 
-        contentContainerStyle={{ flexGrow: 1, paddingTop: 60, paddingBottom: 40 }}
+        contentContainerStyle={{ 
+          flexGrow: 1, 
+          paddingTop: Math.max(insets.top + 40, 80),
+          paddingBottom: 40,
+          paddingHorizontal: 24
+        }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View className="px-6 py-6">
-          {/* Header */}
-          <View className="items-center mb-10">
-            <LinearGradient
-              colors={['#93c5fd', '#c4b5fd']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                width: 96,
-                height: 96,
-                borderRadius: 24,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 24,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
-                elevation: 8,
-              }}
-            >
-              <Text className="text-4xl">💙</Text>
-            </LinearGradient>
-            <Text className="text-4xl font-bold text-blue-600 text-center">
-              Care Circle
-            </Text>
-            <Text className="text-lg text-gray-600 text-center mt-3 leading-relaxed">
-              Share updates with your loved ones
-            </Text>
-          </View>
+        {/* Header */}
+        <View className="items-center mb-10 px-2 py-2">
+          <LinearGradient
+            colors={['#93c5fd', '#c4b5fd']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              width: 96,
+              height: 96,
+              borderRadius: 24,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 24,
+              shadowColor: '#3b82f6',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.25,
+              shadowRadius: 12,
+              elevation: 10,
+            }}
+          >
+            <SafeText className="text-5xl leading-[55px]">💙</SafeText>
+          </LinearGradient>
+          <SafeText className="text-5xl font-bold text-blue-600 text-center px-1 leading-[55px]">
+            Care Circle
+          </SafeText>
+          <SafeText className="text-xl text-gray-600 text-center mt-4 leading-[30px]">
+            Share updates with your loved ones
+          </SafeText>
+        </View>
 
-          <View className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
+        <View className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
             <View className="space-y-6">
               {/* Display Name field for sign up */}
               {isSignUp && (
                 <View>
-                  <Text className="text-gray-700 font-semibold mb-3 text-base">Display Name</Text>
+                  <SafeText className="text-gray-700 font-semibold mb-3 text-lg leading-[26px]">Display Name</SafeText>
                   <View className="bg-gray-50 rounded-2xl border border-gray-100">
                     <TextInput
                       className="px-5 py-4 text-gray-800 text-base"
@@ -168,13 +175,16 @@ const SignInScreen: React.FC = () => {
                       onChangeText={setDisplayName}
                       autoCapitalize="words"
                       autoComplete="name"
+                      allowFontScaling={false}
+                      maxFontSizeMultiplier={1.0}
+                      style={{ fontSize: 19 }}
                     />
                   </View>
                 </View>
               )}
 
               <View>
-                <Text className="text-gray-700 font-semibold mb-3 text-base">Email</Text>
+                <SafeText className="text-gray-700 font-semibold mb-3 text-lg leading-[26px]">Email</SafeText>
                 <View className={`bg-gray-50 rounded-2xl border ${emailError ? 'border-red-300' : 'border-gray-100'}`}>
                   <TextInput
                     className="px-5 py-4 text-gray-800 text-base"
@@ -189,15 +199,18 @@ const SignInScreen: React.FC = () => {
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoComplete="email"
+                    allowFontScaling={false}
+                    maxFontSizeMultiplier={1.0}
+                    style={{ fontSize: 19 }}
                   />
                 </View>
                 {emailError ? (
-                  <Text className="text-red-500 text-sm mt-1 ml-1">{emailError}</Text>
+                  <SafeText className="text-red-500 text-base mt-1 ml-1 leading-[24px]">{emailError}</SafeText>
                 ) : null}
               </View>
 
               <View>
-                <Text className="text-gray-700 font-semibold mb-3 text-base">Password</Text>
+                <SafeText className="text-gray-700 font-semibold mb-3 text-lg leading-[26px]">Password</SafeText>
                 <View className={`bg-gray-50 rounded-2xl border ${passwordError ? 'border-red-300' : 'border-gray-100'} flex-row items-center`}>
                   <TextInput
                     className="flex-1 px-5 py-4 text-gray-800 text-base"
@@ -211,6 +224,9 @@ const SignInScreen: React.FC = () => {
                     onBlur={() => setPasswordError(validatePassword(password, isSignUp))}
                     secureTextEntry={!showPassword}
                     autoComplete="password"
+                    allowFontScaling={false}
+                    maxFontSizeMultiplier={1.0}
+                    style={{ fontSize: 19 }}
                   />
                   <TouchableOpacity
                     onPress={() => setShowPassword(!showPassword)}
@@ -225,10 +241,10 @@ const SignInScreen: React.FC = () => {
                   </TouchableOpacity>
                 </View>
                 {passwordError ? (
-                  <Text className="text-red-500 text-sm mt-1 ml-1">{passwordError}</Text>
+                  <SafeText className="text-red-500 text-base mt-1 ml-1 leading-[24px]">{passwordError}</SafeText>
                 ) : null}
                 {isSignUp && !passwordError && password.length > 0 ? (
-                  <Text className="text-green-600 text-sm mt-1 ml-1">✓ Password meets requirements</Text>
+                  <SafeText className="text-green-600 text-base mt-1 ml-1 leading-[24px]">✓ Password meets requirements</SafeText>
                 ) : null}
               </View>
 
@@ -256,12 +272,12 @@ const SignInScreen: React.FC = () => {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text className="text-white text-center font-bold text-lg">
+                  <SafeText className="text-white text-center font-bold text-xl leading-[30px]">
                     {isLoading 
                       ? (isSignUp ? 'Creating Account...' : 'Signing in...') 
                       : (isSignUp ? 'Create Account' : 'Sign In')
                     }
-                  </Text>
+                  </SafeText>
                 </LinearGradient>
               </TouchableOpacity>
 
@@ -275,9 +291,9 @@ const SignInScreen: React.FC = () => {
                   opacity: isLoading ? 0.7 : 1,
                 }}
               >
-                <Text className="text-gray-700 text-center font-semibold text-base">
+                <SafeText className="text-gray-700 text-center font-semibold text-lg leading-[26px]">
                   {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
-                </Text>
+                </SafeText>
               </TouchableOpacity>
             </View>
 
@@ -285,7 +301,7 @@ const SignInScreen: React.FC = () => {
             <View className="mt-8">
               <View className="flex-row items-center mb-6">
                 <View className="flex-1 h-px bg-gray-200" />
-                <Text className="mx-4 text-gray-500 font-medium text-sm">Or continue with</Text>
+                <SafeText className="mx-4 text-gray-500 font-medium text-base leading-[24px]">Or continue with</SafeText>
                 <View className="flex-1 h-px bg-gray-200" />
               </View>
               
@@ -326,14 +342,9 @@ const SignInScreen: React.FC = () => {
                     <View style={{ marginRight: 8, width: 18, height: 18, justifyContent: 'center', alignItems: 'center' }}>
                       <Ionicons name="logo-apple" size={18} color="#ffffff" />
                     </View>
-                    <Text style={{ 
-                      color: '#ffffff', 
-                      fontWeight: '500', 
-                      fontSize: 16,
-                      letterSpacing: 0.2,
-                    }}>
+                    <SafeText className="text-white font-medium text-lg leading-[26px]" style={{ letterSpacing: 0.2 }}>
                       Sign in with Apple
-                    </Text>
+                    </SafeText>
                   </TouchableOpacity>
                 )}
 
@@ -401,25 +412,19 @@ const SignInScreen: React.FC = () => {
                       }} />
                     </View>
                   </View>
-                  <Text style={{ 
-                    color: '#3c4043', 
-                    fontWeight: '500', 
-                    fontSize: 16,
-                    letterSpacing: 0.1,
-                  }}>
+                  <SafeText className="text-gray-800 font-medium text-lg leading-[26px]" style={{ letterSpacing: 0.1 }}>
                     Sign in with Google
-                  </Text>
+                  </SafeText>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
 
-          {/* Footer */}
-          <View style={{ marginTop: 32, marginBottom: 20, paddingHorizontal: 16 }}>
-            <Text style={{ color: '#6b7280', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
-              By continuing, you agree to our Terms of Service and Privacy Policy
-            </Text>
-          </View>
+        {/* Footer */}
+        <View style={{ marginTop: 32, marginBottom: 20, paddingHorizontal: 16 }}>
+          <SafeText className="text-gray-500 text-center text-base leading-[24px]">
+            By continuing, you agree to our Terms of Service and Privacy Policy
+          </SafeText>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

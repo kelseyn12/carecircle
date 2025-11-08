@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { 
   View, 
-  Text, 
   TouchableOpacity, 
   Alert, 
   Share,
@@ -21,6 +20,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../lib/firebase';
 import Toast from 'react-native-root-toast';
 import QRCode from 'react-native-qrcode-svg';
+import SafeText from '../components/SafeText';
 
 type InviteScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Invite'>;
 type InviteScreenRouteProp = RouteProp<RootStackParamList, 'Invite'>;
@@ -156,10 +156,10 @@ const InviteScreen: React.FC = () => {
               paddingVertical: 10,
             }}
           >
-            <Text className="text-gray-700 font-semibold" style={{ fontSize: 15 }}>Back</Text>
+            <SafeText className="text-gray-700 font-semibold" style={{ fontSize: 15 }}>Back</SafeText>
           </TouchableOpacity>
 
-          <Text className="text-xl font-bold text-gray-900" style={{ fontSize: 20 }}>Invite Members</Text>
+          <SafeText className="text-xl font-bold text-gray-900" style={{ fontSize: 20 }}>Invite Members</SafeText>
 
           <View style={{ width: 60 }} />
         </View>
@@ -175,14 +175,14 @@ const InviteScreen: React.FC = () => {
           // Create invite section
           <View className="bg-white rounded-2xl p-6 shadow-sm">
             <View className="items-center mb-6">
-              <Text className="text-6xl mb-4">📧</Text>
-              <Text className="text-xl font-semibold text-gray-800 mb-2">
+              <SafeText className="text-6xl mb-4">📧</SafeText>
+              <SafeText className="text-xl font-semibold text-gray-800 mb-2">
                 Invite Family & Friends
-              </Text>
-              <Text className="text-gray-600 text-center">
+              </SafeText>
+              <SafeText className="text-gray-600 text-center">
                 Create a secure invite link to share with your loved ones. 
                 They can join your circle with just one tap.
-              </Text>
+              </SafeText>
             </View>
 
             <TouchableOpacity
@@ -207,9 +207,9 @@ const InviteScreen: React.FC = () => {
                 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <ActivityIndicator color="white" size="small" />
-                    <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 18, marginLeft: 8 }}>
+                    <SafeText style={{ color: '#ffffff', fontWeight: '600', fontSize: 18, marginLeft: 8 }}>
                       Creating Invite...
-                    </Text>
+                    </SafeText>
                   </View>
                 </View>
               ) : (
@@ -224,21 +224,21 @@ const InviteScreen: React.FC = () => {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 18, textAlign: 'center' }}>
+                  <SafeText style={{ color: '#ffffff', fontWeight: '600', fontSize: 18, textAlign: 'center' }}>
                     Create Invite Link
-                  </Text>
+                  </SafeText>
                 </LinearGradient>
               )}
             </TouchableOpacity>
 
             <View className="mt-6 bg-blue-50 rounded-xl p-4">
-              <Text className="text-blue-800 font-semibold mb-2">💡 How it works:</Text>
-              <Text className="text-blue-700 text-sm">
+              <SafeText className="text-blue-800 font-semibold mb-2">💡 How it works:</SafeText>
+              <SafeText className="text-blue-700 text-sm">
                 • Invite link expires in 7 days{'\n'}
                 • One-time use for security{'\n'}
                 • Recipients need to create an account{'\n'}
                 • They'll see a consent screen before joining
-              </Text>
+              </SafeText>
             </View>
           </View>
         ) : (
@@ -254,36 +254,40 @@ const InviteScreen: React.FC = () => {
                 alignItems: 'center',
                 marginBottom: 16,
               }}>
-                <Text style={{ fontSize: 48, color: '#ffffff' }}>✓</Text>
+                <SafeText style={{ fontSize: 48, color: '#ffffff' }}>✓</SafeText>
               </View>
-              <Text className="text-xl font-semibold text-gray-800 mb-2">
+              <SafeText className="text-xl font-semibold text-gray-800 mb-2">
                 Invite Link Created!
-              </Text>
-              <Text className="text-gray-600 text-center">
+              </SafeText>
+              <SafeText className="text-gray-600 text-center">
                 Share this link with family and friends to invite them to your circle.
-              </Text>
+              </SafeText>
             </View>
 
             {/* QR Code Display */}
             <View className="items-center mb-6">
               <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                <Text className="text-gray-700 font-semibold mb-3 text-center">
+                <SafeText className="text-gray-700 font-semibold mb-3 text-center">
                   Scan to Join
-                </Text>
+                </SafeText>
                 <QRCode
                   value={inviteLink}
                   size={200}
                   color="#1f2937"
                   backgroundColor="#ffffff"
                 />
-                <Text className="text-gray-500 text-xs mt-3 text-center">
+                <SafeText className="text-gray-500 text-xs mt-3 text-center">
                   Share this QR code for easy joining
-                </Text>
+                </SafeText>
               </View>
             </View>
 
             <View className="bg-gray-50 rounded-xl p-4 mb-6">
-              <Text className="text-gray-800 text-sm font-mono break-all">
+              <Text 
+                allowFontScaling={false}
+                maxFontSizeMultiplier={1.0}
+                className="text-gray-800 text-sm font-mono break-all"
+              >
                 {inviteLink}
               </Text>
             </View>
@@ -310,9 +314,9 @@ const InviteScreen: React.FC = () => {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 18, textAlign: 'center' }}>
+                  <SafeText style={{ color: '#ffffff', fontWeight: '600', fontSize: 18, textAlign: 'center' }}>
                     Share Link
-                  </Text>
+                  </SafeText>
                 </LinearGradient>
               </TouchableOpacity>
 
@@ -320,17 +324,17 @@ const InviteScreen: React.FC = () => {
                 className="bg-gray-100 rounded-xl py-4"
                 onPress={handleCopyLink}
               >
-                <Text className="text-gray-700 text-center font-semibold text-lg">
+                <SafeText className="text-gray-700 text-center font-semibold text-lg">
                   {copied ? '✅ Copied!' : 'Copy Link'}
-                </Text>
+                </SafeText>
               </TouchableOpacity>
             </View>
 
             <View className="mt-6 bg-green-50 rounded-xl p-4">
-              <Text className="text-green-800 font-semibold mb-2">🎉 Ready to share!</Text>
-              <Text className="text-green-700 text-sm">
+              <SafeText className="text-green-800 font-semibold mb-2">🎉 Ready to share!</SafeText>
+              <SafeText className="text-green-700 text-sm">
                 Your invite link is ready. Share it via text, email, or any messaging app.
-              </Text>
+              </SafeText>
             </View>
           </View>
         )}

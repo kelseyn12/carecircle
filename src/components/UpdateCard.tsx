@@ -1,10 +1,11 @@
 // Update card component for displaying individual updates
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, TouchableOpacity, Image, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Update } from '../types';
 import { formatRelativeTime } from '../lib/utils';
 import { EMOJIS, getReactionEmoji } from '../utils/emojiUtils';
+import SafeText from './SafeText';
 
 interface UpdateCardProps {
   update: Update;
@@ -80,21 +81,25 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
               marginRight: 16,
             }}
           >
-            <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 18 }}>
+            <SafeText style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 18 }}>
               {authorName.charAt(0).toUpperCase()}
-            </Text>
+            </SafeText>
           </LinearGradient>
           <View className="flex-1">
-            <Text className="font-bold text-gray-800 text-lg">{authorName}</Text>
-            <Text className="text-gray-500 text-sm">
+            <SafeText className="font-bold text-gray-800 text-lg">{authorName}</SafeText>
+            <SafeText className="text-gray-500 text-sm">
               {formatRelativeTime(update.createdAt)}
-            </Text>
+            </SafeText>
           </View>
         </View>
       </View>
 
-      {/* Update text */}
-      <Text style={{ color: '#1f2937', fontSize: 16, lineHeight: 24, marginBottom: update.photoURL ? 16 : 0 }}>
+      {/* Update text - allow some scaling for user content but cap it */}
+      <Text 
+        allowFontScaling={false}
+        maxFontSizeMultiplier={1.0}
+        style={{ color: '#1f2937', fontSize: 16, lineHeight: 24, marginBottom: update.photoURL ? 16 : 0 }}
+      >
         {update.text}
       </Text>
 
@@ -124,9 +129,9 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
           }}
           onPress={() => onReaction?.(update.id, EMOJIS.HEART)}
         >
-          <Text style={{ fontSize: 16 }}>{EMOJIS.HEART}</Text>
+          <SafeText style={{ fontSize: 16 }}>{EMOJIS.HEART}</SafeText>
           {getReactionCount(EMOJIS.HEART) > 0 && (
-            <Text style={{ color: '#dc2626', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount(EMOJIS.HEART)}</Text>
+            <SafeText style={{ color: '#dc2626', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount(EMOJIS.HEART)}</SafeText>
           )}
         </TouchableOpacity>
 
@@ -143,9 +148,9 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
           }}
           onPress={() => onReaction?.(update.id, EMOJIS.PRAY)}
         >
-          <Text style={{ fontSize: 16 }}>{EMOJIS.PRAY}</Text>
+          <SafeText style={{ fontSize: 16 }}>{EMOJIS.PRAY}</SafeText>
           {getReactionCount(EMOJIS.PRAY) > 0 && (
-            <Text style={{ color: '#ca8a04', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount(EMOJIS.PRAY)}</Text>
+            <SafeText style={{ color: '#ca8a04', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount(EMOJIS.PRAY)}</SafeText>
           )}
         </TouchableOpacity>
 
@@ -162,9 +167,9 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
           }}
           onPress={() => onReaction?.(update.id, EMOJIS.THUMBS_UP)}
         >
-          <Text style={{ fontSize: 16 }}>{EMOJIS.THUMBS_UP}</Text>
+          <SafeText style={{ fontSize: 16 }}>{EMOJIS.THUMBS_UP}</SafeText>
           {getReactionCount(EMOJIS.THUMBS_UP) > 0 && (
-            <Text style={{ color: '#16a34a', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount(EMOJIS.THUMBS_UP)}</Text>
+            <SafeText style={{ color: '#16a34a', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>{getReactionCount(EMOJIS.THUMBS_UP)}</SafeText>
           )}
         </TouchableOpacity>
 
@@ -172,8 +177,8 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
           style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#eff6ff', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 }}
           onPress={() => onComment?.(update.id)}
         >
-          <Text style={{ fontSize: 16 }}>{EMOJIS.COMMENT}</Text>
-          <Text style={{ color: '#2563eb', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>Comment</Text>
+          <SafeText style={{ fontSize: 16 }}>{EMOJIS.COMMENT}</SafeText>
+          <SafeText style={{ color: '#2563eb', fontSize: 14, fontWeight: '600', marginLeft: 4 }}>Comment</SafeText>
         </TouchableOpacity>
       </View>
     </View>

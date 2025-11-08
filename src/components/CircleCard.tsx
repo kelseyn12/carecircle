@@ -1,8 +1,9 @@
 // Circle card component for displaying circle information
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { Circle } from '../types';
 import { EMOJIS } from '../utils/emojiUtils';
+import SafeText from './SafeText';
 
 interface CircleCardProps {
   circle: Circle;
@@ -44,23 +45,23 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress, hasNew }) => {
                 marginRight: 12,
               }}
             >
-              <Text className="text-lg text-blue-700 font-bold">{EMOJIS.PEOPLE}</Text>
+              <SafeText className="text-lg text-blue-700 font-bold">{EMOJIS.PEOPLE}</SafeText>
             </View>
-            <Text className="text-lg font-bold text-gray-800 flex-1">
+            <SafeText className="text-lg font-bold text-gray-800 flex-1">
               {circle.title}
-            </Text>
+            </SafeText>
             {hasNew && <View className="w-2 h-2 bg-red-500 rounded-full ml-2" />}
           </View>
           
           <View className="flex-row items-center mb-2">
             <View className="bg-blue-100 rounded-xl px-2.5 py-1 mr-2">
-              <Text className="text-blue-800 text-sm font-semibold">
+              <SafeText className="text-blue-800 text-sm font-semibold">
                 {memberCount} member{memberCount !== 1 ? 's' : ''}
-              </Text>
+              </SafeText>
             </View>
-            <Text className="text-gray-500 text-sm">
+            <SafeText className="text-gray-500 text-sm">
               {formatDate(circle.createdAt)}
-            </Text>
+            </SafeText>
           </View>
         </View>
 
@@ -75,16 +76,16 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, onPress, hasNew }) => {
               alignItems: 'center',
             }}
           >
-            <Text className="text-white text-lg font-bold">{EMOJIS.ARROW_RIGHT}</Text>
+            <SafeText className="text-white text-lg font-bold">{EMOJIS.ARROW_RIGHT}</SafeText>
           </View>
         </View>
       </View>
 
       <View className="mt-3 pt-3 border-t border-gray-200">
         <View className="flex-row items-center justify-between">
-          <Text className="text-blue-600 text-sm font-semibold">
+          <SafeText className="text-blue-600 text-sm font-semibold">
             View updates
-          </Text>
+          </SafeText>
           <View
             style={{
               width: 8,

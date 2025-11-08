@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, 
-  Text, 
   FlatList, 
   TouchableOpacity, 
   Alert, 
@@ -14,6 +13,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Circle, User } from '../types';
 import { useAuth } from '../lib/authContext';
+import SafeText from '../components/SafeText';
 import { 
   getCircle, 
   getUserRoleInCircle, 
@@ -410,17 +410,17 @@ const MemberManagementScreen: React.FC = () => {
             marginRight: 12,
           }}
         >
-          <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '600' }}>
+          <SafeText style={{ color: '#ffffff', fontSize: 16, fontWeight: '600' }}>
             {item.displayName.charAt(0).toUpperCase()}
-          </Text>
+          </SafeText>
         </LinearGradient>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontWeight: '600', color: '#1f2937', fontSize: 15 }}>
+          <SafeText style={{ fontWeight: '600', color: '#1f2937', fontSize: 15 }}>
             {item.displayName} {item.isCurrentUser && '(You)'}
-          </Text>
-          <Text style={{ fontSize: 13, color: '#6b7280', textTransform: 'capitalize', marginTop: 2 }}>
+          </SafeText>
+          <SafeText style={{ fontSize: 13, color: '#6b7280', textTransform: 'capitalize', marginTop: 2 }}>
             {item.role}
-          </Text>
+          </SafeText>
         </View>
       </View>
       
@@ -443,7 +443,7 @@ const MemberManagementScreen: React.FC = () => {
                 }}
                 onPress={() => handlePromoteMember(item.id)}
               >
-                <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>Promote</Text>
+                <SafeText style={{ color: '#ffffff', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>Promote</SafeText>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -461,7 +461,7 @@ const MemberManagementScreen: React.FC = () => {
                 }}
                 onPress={() => handleDemoteOwner(item.id)}
               >
-                <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>Demote</Text>
+                <SafeText style={{ color: '#ffffff', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>Demote</SafeText>
               </TouchableOpacity>
             )}
             {circle?.updateAuthors?.includes(item.id) ? (
@@ -480,7 +480,7 @@ const MemberManagementScreen: React.FC = () => {
                 }}
                 onPress={() => handleRemoveUpdateAuthor(item.id)}
               >
-                <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Revoke Updates</Text>
+                <SafeText style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Revoke Updates</SafeText>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -507,7 +507,7 @@ const MemberManagementScreen: React.FC = () => {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Allow Updates</Text>
+                  <SafeText style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>Allow Updates</SafeText>
                 </LinearGradient>
               </TouchableOpacity>
             )}
@@ -525,7 +525,7 @@ const MemberManagementScreen: React.FC = () => {
             }}
             onPress={() => handleRemoveMember(item.id, item.displayName)}
           >
-            <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>Remove from Circle</Text>
+            <SafeText style={{ color: '#ffffff', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>Remove from Circle</SafeText>
           </TouchableOpacity>
         </View>
       )}
@@ -536,7 +536,7 @@ const MemberManagementScreen: React.FC = () => {
     return (
       <View className="flex-1 justify-center items-center bg-gray-50">
         <ActivityIndicator size="large" color="#3b82f6" />
-        <Text className="text-gray-600 mt-4">Loading members...</Text>
+        <SafeText className="text-gray-600 mt-4">Loading members...</SafeText>
       </View>
     );
   }
@@ -555,40 +555,40 @@ const MemberManagementScreen: React.FC = () => {
               paddingVertical: 10,
             }}
           >
-            <Text className="text-gray-700 font-semibold" style={{ fontSize: 15 }}>Back</Text>
+            <SafeText className="text-gray-700 font-semibold" style={{ fontSize: 15 }}>Back</SafeText>
           </TouchableOpacity>
           
-          <Text className="text-xl font-bold text-gray-900" style={{ fontSize: 20 }}>Members</Text>
+          <SafeText className="text-xl font-bold text-gray-900" style={{ fontSize: 20 }}>Members</SafeText>
           
           <View style={{ width: 60 }} />
         </View>
         {circle && (
-          <Text className="text-gray-600 text-center" style={{ fontSize: 14, marginTop: 4 }}>
+          <SafeText className="text-gray-600 text-center" style={{ fontSize: 14, marginTop: 4 }}>
             {circle.title} • {members.length} member{members.length !== 1 ? 's' : ''}
-          </Text>
+          </SafeText>
         )}
       </View>
 
       {/* Pending Join Requests (Owners only) */}
       {userRole === 'owner' && pendingRequests.length > 0 && (
         <View className="bg-white mx-4 mt-4 rounded-xl p-4 shadow-sm border border-gray-100">
-          <Text className="font-semibold text-gray-800 mb-3">Pending Join Requests</Text>
+          <SafeText className="font-semibold text-gray-800 mb-3">Pending Join Requests</SafeText>
           {pendingRequests.map((req) => (
             <View key={req.id} className="border border-gray-100 rounded-lg p-3 mb-2">
-              <Text className="text-gray-900 font-medium">{req.displayName}</Text>
-              <Text className="text-gray-600 text-sm mt-0.5">Relation: {req.relation}</Text>
+              <SafeText className="text-gray-900 font-medium">{req.displayName}</SafeText>
+              <SafeText className="text-gray-600 text-sm mt-0.5">Relation: {req.relation}</SafeText>
               <View className="flex-row gap-2 mt-3">
                 <TouchableOpacity
                   className="bg-green-600 rounded-lg px-4 py-2"
                   onPress={() => handleApproveRequest(req.id, req.userId)}
                 >
-                  <Text className="text-white font-semibold text-sm">Approve</Text>
+                  <SafeText className="text-white font-semibold text-sm">Approve</SafeText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   className="bg-gray-300 rounded-lg px-4 py-2"
                   onPress={() => handleDeclineRequest(req.id)}
                 >
-                  <Text className="text-gray-800 font-semibold text-sm">Decline</Text>
+                  <SafeText className="text-gray-800 font-semibold text-sm">Decline</SafeText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -600,10 +600,10 @@ const MemberManagementScreen: React.FC = () => {
       <View className="bg-white mx-4 mt-4 rounded-xl p-4 shadow-sm border border-gray-100">
         <View className="flex-row items-center justify-between">
           <View className="flex-1">
-            <Text className="font-semibold text-gray-800">Notifications</Text>
-            <Text className="text-sm text-gray-600">
+            <SafeText className="font-semibold text-gray-800">Notifications</SafeText>
+            <SafeText className="text-sm text-gray-600">
               {isMuted ? 'Muted for this circle' : 'Enabled for this circle'}
-            </Text>
+            </SafeText>
           </View>
           <Switch
             value={!isMuted}
@@ -640,9 +640,9 @@ const MemberManagementScreen: React.FC = () => {
               elevation: 3,
             }}
           >
-            <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 16, textAlign: 'center' }}>
+            <SafeText style={{ color: '#ffffff', fontWeight: '600', fontSize: 16, textAlign: 'center' }}>
               Delete Circle
-            </Text>
+            </SafeText>
           </TouchableOpacity>
         </View>
       )}
@@ -663,9 +663,9 @@ const MemberManagementScreen: React.FC = () => {
               elevation: 3,
             }}
           >
-            <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 16, textAlign: 'center' }}>
+            <SafeText style={{ color: '#ffffff', fontWeight: '600', fontSize: 16, textAlign: 'center' }}>
               Leave Circle
-            </Text>
+            </SafeText>
           </TouchableOpacity>
         </View>
       )}

@@ -2,14 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, 
-  Text, 
   TextInput, 
   TouchableOpacity, 
   FlatList, 
   Alert,
   KeyboardAvoidingView,
-  Platform 
+  Platform,
+  Text 
 } from 'react-native';
+import SafeText from './SafeText';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-root-toast';
 import { Comment, User } from '../types';
@@ -105,20 +106,24 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, circleId, onClose
     <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
       <View className="flex-row items-start" style={{ gap: 12 }}>
         <View className="w-10 h-10 bg-blue-500 rounded-full items-center justify-center" style={{ backgroundColor: '#3b82f6' }}>
-          <Text className="text-white font-bold text-sm">
+          <SafeText className="text-white font-bold text-sm">
             {users[item.authorId]?.displayName?.charAt(0).toUpperCase() || '?'}
-          </Text>
+          </SafeText>
         </View>
         <View className="flex-1">
           <View className="flex-row items-center mb-1" style={{ gap: 8 }}>
-            <Text className="font-semibold text-gray-900">
+            <SafeText className="font-semibold text-gray-900">
               {users[item.authorId]?.displayName || 'Unknown User'}
-            </Text>
-            <Text className="text-gray-500 text-sm">
+            </SafeText>
+            <SafeText className="text-gray-500 text-sm">
               {formatTime(item.createdAt)}
-            </Text>
+            </SafeText>
           </View>
-          <Text className="text-gray-700 leading-relaxed">
+          <Text 
+            allowFontScaling={false}
+            maxFontSizeMultiplier={1.0}
+            className="text-gray-700 leading-relaxed"
+          >
             {item.text}
           </Text>
         </View>
@@ -134,12 +139,12 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, circleId, onClose
       {/* Header */}
       <View className="bg-white border-b border-gray-200 px-6 py-4">
         <View className="flex-row items-center justify-between">
-          <Text className="text-xl font-bold text-gray-900">Comments</Text>
+          <SafeText className="text-xl font-bold text-gray-900">Comments</SafeText>
           <TouchableOpacity
             className="bg-gray-100 rounded-xl px-4 py-2"
             onPress={onClose}
           >
-            <Text className="text-gray-700 font-semibold">Close</Text>
+            <SafeText className="text-gray-700 font-semibold">Close</SafeText>
           </TouchableOpacity>
         </View>
       </View>
@@ -154,14 +159,14 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, circleId, onClose
         ListEmptyComponent={
           <View className="flex-1 justify-center items-center py-12">
             <View className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center mb-4">
-              <Text className="text-2xl">{EMOJIS.COMMENT}</Text>
+              <SafeText className="text-2xl">{EMOJIS.COMMENT}</SafeText>
             </View>
-            <Text className="text-gray-600 text-lg font-medium mb-2">
+            <SafeText className="text-gray-600 text-lg font-medium mb-2">
               No comments yet
-            </Text>
-            <Text className="text-gray-500 text-center leading-relaxed">
+            </SafeText>
+            <SafeText className="text-gray-500 text-center leading-relaxed">
               Leave some encouragement {EMOJIS.BLUE_HEART}
-            </Text>
+            </SafeText>
           </View>
         }
       />
@@ -171,17 +176,19 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, circleId, onClose
         <View className="flex-row items-start" style={{ gap: 12 }}>
           <View className="flex-1">
             <TextInput
+              allowFontScaling={false}
+              maxFontSizeMultiplier={1.0}
               className="bg-gray-100 rounded-2xl px-4 py-3 text-gray-900 text-base"
               placeholder="Add a comment..."
               value={newComment}
               onChangeText={setNewComment}
               multiline
               maxLength={1000}
-              style={{ maxHeight: 100 }}
+              style={{ fontSize: 19, maxHeight: 100 }}
             />
-            <Text className="text-gray-400 text-xs mt-1 text-right">
+            <SafeText className="text-gray-400 text-xs mt-1 text-right">
               {newComment.length}/1000
-            </Text>
+            </SafeText>
           </View>
           <TouchableOpacity
             onPress={handleSubmitComment}
@@ -208,9 +215,9 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, circleId, onClose
                   justifyContent: 'center',
                 }}
               >
-                <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 15 }}>
+                <SafeText style={{ color: '#ffffff', fontWeight: '600', fontSize: 15 }}>
                   {loading ? 'Posting...' : 'Post'}
-                </Text>
+                </SafeText>
               </LinearGradient>
             ) : (
               <View
@@ -223,9 +230,9 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, circleId, onClose
                   justifyContent: 'center',
                 }}
               >
-                <Text style={{ color: '#6b7280', fontWeight: '600', fontSize: 15 }}>
+                <SafeText style={{ color: '#6b7280', fontWeight: '600', fontSize: 15 }}>
                   {loading ? 'Posting...' : 'Post'}
-                </Text>
+                </SafeText>
               </View>
             )}
           </TouchableOpacity>

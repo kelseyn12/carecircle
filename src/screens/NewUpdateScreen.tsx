@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, 
-  Text, 
   TextInput, 
   TouchableOpacity, 
   Alert, 
@@ -18,6 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { RootStackParamList } from '../types';
 import { createUpdateSchema } from '../validation/schemas';
+import SafeText from '../components/SafeText';
 import { useAuth } from '../lib/authContext';
 import { createUpdate, canUserPostUpdates } from '../lib/firestoreUtils';
 import { uploadPhoto } from '../lib/firebase';
@@ -190,7 +190,7 @@ const NewUpdateScreen: React.FC = () => {
                 paddingVertical: 10,
               }}
             >
-              <Text className="text-gray-700 font-semibold" style={{ fontSize: 15 }}>Cancel</Text>
+              <SafeText className="text-gray-700 font-semibold" style={{ fontSize: 15 }}>Cancel</SafeText>
             </TouchableOpacity>
             
             <TouchableOpacity
@@ -214,9 +214,9 @@ const NewUpdateScreen: React.FC = () => {
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                  <Text style={{ color: '#6b7280', fontWeight: '600', fontSize: 15 }}>
+                  <SafeText style={{ color: '#6b7280', fontWeight: '600', fontSize: 15 }}>
                     {isLoading ? 'Posting...' : 'Post'}
-                  </Text>
+                  </SafeText>
                 </View>
               ) : (
                 <LinearGradient
@@ -231,9 +231,9 @@ const NewUpdateScreen: React.FC = () => {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 15 }}>
+                  <SafeText style={{ color: '#ffffff', fontWeight: '600', fontSize: 15 }}>
                     Post
-                  </Text>
+                  </SafeText>
                 </LinearGradient>
               )}
             </TouchableOpacity>
@@ -244,9 +244,9 @@ const NewUpdateScreen: React.FC = () => {
           <View className="bg-white rounded-2xl p-6 shadow-sm">
             {/* Text Input */}
             <View className="mb-6">
-              <Text className="text-lg font-semibold text-gray-800 mb-2">
+              <SafeText className="text-lg font-semibold text-gray-800 mb-2">
                 What's happening?
-              </Text>
+              </SafeText>
               <TextInput
                 className="border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base min-h-[120px]"
                 placeholder="Share an update with your circle..."
@@ -255,17 +255,20 @@ const NewUpdateScreen: React.FC = () => {
                 maxLength={2000}
                 multiline
                 textAlignVertical="top"
+                allowFontScaling={false}
+                maxFontSizeMultiplier={1.0}
+                style={{ fontSize: 19 }}
               />
-              <Text className="text-gray-500 text-sm mt-2 text-right">
+              <SafeText className="text-gray-500 text-sm mt-2 text-right">
                 {text.length}/2000 characters
-              </Text>
+              </SafeText>
             </View>
 
             {/* Photo Section */}
             <View className="mb-6">
-              <Text className="text-lg font-semibold text-gray-800 mb-2">
+              <SafeText className="text-lg font-semibold text-gray-800 mb-2">
                 Add a photo (optional)
-              </Text>
+              </SafeText>
               
               {photo ? (
                 <View className="relative">
@@ -278,7 +281,7 @@ const NewUpdateScreen: React.FC = () => {
                     className="absolute top-2 right-2 bg-red-500 rounded-full w-8 h-8 justify-center items-center"
                     onPress={handleRemovePhoto}
                   >
-                    <Text className="text-white text-lg">×</Text>
+                    <SafeText className="text-white text-lg">×</SafeText>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -286,22 +289,22 @@ const NewUpdateScreen: React.FC = () => {
                   className="border-2 border-dashed border-gray-300 rounded-xl p-6 items-center"
                   onPress={handlePickImage}
                 >
-                  <Text className="text-4xl mb-2">📷</Text>
-                  <Text className="text-gray-600 font-medium">Tap to add a photo</Text>
-                  <Text className="text-gray-500 text-sm">Optional</Text>
+                  <SafeText className="text-4xl mb-2">📷</SafeText>
+                  <SafeText className="text-gray-600 font-medium">Tap to add a photo</SafeText>
+                  <SafeText className="text-gray-500 text-sm">Optional</SafeText>
                 </TouchableOpacity>
               )}
             </View>
 
             {/* Tips */}
             <View className="bg-blue-50 rounded-xl p-4">
-              <Text className="text-blue-800 font-semibold mb-2">💡 Tips for great updates:</Text>
-              <Text className="text-blue-700 text-sm">
+              <SafeText className="text-blue-800 font-semibold mb-2">💡 Tips for great updates:</SafeText>
+              <SafeText className="text-blue-700 text-sm">
                 • Share how you're feeling{'\n'}
                 • Include photos of activities or progress{'\n'}
                 • Keep updates positive and encouraging{'\n'}
                 • Be specific about what's happening
-              </Text>
+              </SafeText>
             </View>
           </View>
         </View>

@@ -1,9 +1,10 @@
 // Offline indicator component
 import React from 'react';
-import { View, Text, TouchableOpacity, Animated } from 'react-native';
+import { View, TouchableOpacity, Animated } from 'react-native';
 import { useNetworkStatus, isGoodConnection } from '../hooks/useNetworkStatus';
 import { getOfflineQueueStatus } from '../lib/offlineQueue';
 import { EMOJIS } from '../utils/emojiUtils';
+import SafeText from './SafeText';
 
 interface OfflineIndicatorProps {
   onPress?: () => void;
@@ -76,25 +77,25 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ onPress }) => {
         alignItems: 'center',
         marginRight: 12,
       }}>
-        <Text style={{ fontSize: 16 }}>{content.emoji}</Text>
+        <SafeText style={{ fontSize: 16 }}>{content.emoji}</SafeText>
       </View>
       
       <View style={{ flex: 1 }}>
-        <Text style={{
+        <SafeText style={{
           color: content.textColor,
           fontSize: 14,
           fontWeight: '600',
           marginBottom: 2,
         }}>
           {content.text}
-        </Text>
-        <Text style={{
+        </SafeText>
+        <SafeText style={{
           color: content.textColor,
           fontSize: 12,
           opacity: 0.8,
         }}>
           {content.subtext}
-        </Text>
+        </SafeText>
       </View>
 
       {onPress && (
@@ -104,13 +105,13 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ onPress }) => {
           justifyContent: 'center',
           alignItems: 'center',
         }}>
-          <Text style={{
+          <SafeText style={{
             color: content.textColor,
             fontSize: 16,
             fontWeight: 'bold',
           }}>
             →
-          </Text>
+          </SafeText>
         </View>
       )}
     </TouchableOpacity>

@@ -345,15 +345,15 @@ const HomeScreen: React.FC = () => {
           elevation: 8,
         }}
       >
-        <Text className="text-6xl">{EMOJIS.BLUE_HEART}</Text>
+        <SafeText className="text-6xl leading-[63px]">{EMOJIS.BLUE_HEART}</SafeText>
       </LinearGradient>
-      <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
+      <SafeText className="text-3xl font-bold text-gray-800 mb-3 text-center leading-[40px]">
         Welcome to Care Circle
-      </Text>
-      <Text className="text-gray-600 text-center mb-8 leading-relaxed text-base">
+      </SafeText>
+      <SafeText className="text-gray-600 text-center mb-8 text-lg leading-[26px]">
         Create your first circle to start sharing updates with family and friends. 
         Stay connected with those who matter most.
-      </Text>
+      </SafeText>
       <View className="w-full gap-3">
         <TouchableOpacity
           onPress={handleCreateCircle}
@@ -377,9 +377,9 @@ const HomeScreen: React.FC = () => {
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>
+            <SafeText className="text-white font-bold text-xl text-center leading-[30px]">
               Create Your First Circle
-            </Text>
+            </SafeText>
           </LinearGradient>
         </TouchableOpacity>
         
@@ -387,7 +387,7 @@ const HomeScreen: React.FC = () => {
           className="bg-gray-200 rounded-2xl px-8 py-4 items-center"
           onPress={() => setShowJoinModal(true)}
         >
-          <Text className="text-gray-700 font-semibold text-lg">Join Existing Circle</Text>
+          <SafeText className="text-gray-700 font-semibold text-xl leading-[30px]">Join Existing Circle</SafeText>
         </TouchableOpacity>
       </View>
     </View>
@@ -421,9 +421,9 @@ const HomeScreen: React.FC = () => {
             marginBottom: 16,
           }}
         >
-          <Text className="text-2xl">{EMOJIS.BLUE_HEART}</Text>
+          <SafeText className="text-3xl leading-[40px]">{EMOJIS.BLUE_HEART}</SafeText>
         </LinearGradient>
-        <Text className="text-gray-600 text-lg font-medium">Loading circles...</Text>
+        <SafeText className="text-gray-600 text-xl font-medium leading-[30px]">Loading circles...</SafeText>
       </View>
     );
   }
@@ -432,9 +432,9 @@ const HomeScreen: React.FC = () => {
     return (
       <View className="flex-1 justify-center items-center bg-blue-50 px-6">
         <View className="w-16 h-16 bg-red-100 rounded-full items-center justify-center mb-4">
-          <Text className="text-2xl">{EMOJIS.WARNING}</Text>
+          <SafeText className="text-3xl leading-[40px]">{EMOJIS.WARNING}</SafeText>
         </View>
-        <Text className="text-red-600 text-center mb-6 text-lg font-medium">{error}</Text>
+        <SafeText className="text-red-600 text-center mb-6 text-xl font-medium leading-[30px]">{error}</SafeText>
         <TouchableOpacity
           onPress={handleRefresh}
           style={{
@@ -457,9 +457,9 @@ const HomeScreen: React.FC = () => {
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
+            <SafeText style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
               Try Again
-            </Text>
+            </SafeText>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -494,14 +494,14 @@ const HomeScreen: React.FC = () => {
                 >
                   <TouchableWithoutFeedback onPress={() => {}}>
                     <View className="bg-white rounded-3xl" style={{ padding: 24, overflow: 'hidden', width: '100%', maxWidth: 500, alignSelf: 'center' }}>
-                      <Text className="text-2xl font-bold mb-2 text-gray-900">Join Circle</Text>
-                      <Text className="text-gray-600 text-base mb-2">
+                      <SafeText className="text-3xl font-bold mb-2 text-gray-900 leading-[40px]">Join Circle</SafeText>
+                      <SafeText className="text-gray-600 text-lg mb-2 leading-[26px]">
                         Enter your invite link to join a Care Circle.
-                      </Text>
-                      <Text className="text-gray-500 text-sm mb-4">
-                        You can paste the full link or just the code after <Text className="font-semibold">inviteRedirect/</Text>.
-                        Example: <Text className="font-semibold">ABC123...</Text>
-                      </Text>
+                      </SafeText>
+                      <SafeText className="text-gray-500 text-base mb-4 leading-[24px]">
+                        You can paste the full link or just the code after <SafeText className="font-semibold">inviteRedirect/</SafeText>.
+                        Example: <SafeText className="font-semibold">ABC123...</SafeText>
+                      </SafeText>
                       
                       <View className="flex-row gap-2 mb-4">
                         <TextInput
@@ -512,7 +512,9 @@ const HomeScreen: React.FC = () => {
                           autoCapitalize="none"
                           autoCorrect={false}
                           multiline
-                          style={{ minHeight: 44, maxHeight: 100 }}
+                          allowFontScaling={false}
+                          maxFontSizeMultiplier={1.0}
+                          style={{ minHeight: 44, maxHeight: 100, fontSize: 19 }}
                         />
                         <TouchableOpacity
                           onPress={() => {
@@ -525,11 +527,11 @@ const HomeScreen: React.FC = () => {
                           style={{ minWidth: 60, minHeight: 44 }}
                           activeOpacity={0.7}
                         >
-                          <Text className="text-2xl">📷</Text>
+                          <SafeText className="text-3xl leading-[40px]">📷</SafeText>
                         </TouchableOpacity>
                       </View>
 
-                      <Text className="text-gray-700 mb-2 font-medium">Your name</Text>
+                      <SafeText className="text-gray-700 mb-2 font-medium text-lg leading-[26px]">Your name</SafeText>
                       <TextInput
                         className="border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base mb-4 bg-gray-50"
                         placeholder={user?.displayName ? `${user.displayName}` : 'Full name'}
@@ -537,10 +539,12 @@ const HomeScreen: React.FC = () => {
                         onChangeText={setRequestName}
                         autoCapitalize="words"
                         autoCorrect={false}
-                        style={{ minHeight: 44 }}
+                        allowFontScaling={false}
+                        maxFontSizeMultiplier={1.0}
+                        style={{ minHeight: 44, fontSize: 19 }}
                       />
 
-                      <Text className="text-gray-700 mb-2 font-medium">Relation to the person</Text>
+                      <SafeText className="text-gray-700 mb-2 font-medium text-lg leading-[26px]">Relation to the person</SafeText>
                       <TextInput
                         className="border border-gray-300 rounded-xl px-4 py-3 text-gray-800 text-base mb-4 bg-gray-50"
                         placeholder="e.g., Daughter, Friend, Neighbor"
@@ -548,7 +552,9 @@ const HomeScreen: React.FC = () => {
                         onChangeText={setRequestRelation}
                         autoCapitalize="sentences"
                         autoCorrect
-                        style={{ minHeight: 44 }}
+                        allowFontScaling={false}
+                        maxFontSizeMultiplier={1.0}
+                        style={{ minHeight: 44, fontSize: 19 }}
                       />
                       
                       <View className="flex-row gap-3" style={{ marginTop: 8 }}>
@@ -564,7 +570,7 @@ const HomeScreen: React.FC = () => {
                           activeOpacity={0.7}
                           style={{ minHeight: 48 }}
                         >
-                          <Text className="text-gray-700 font-semibold text-base">Cancel</Text>
+                          <SafeText className="text-gray-700 font-semibold text-lg leading-[26px]">Cancel</SafeText>
                         </TouchableOpacity>
                         
                         <TouchableOpacity
@@ -592,9 +598,9 @@ const HomeScreen: React.FC = () => {
                               minHeight: 48,
                             }}
                           >
-                            <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 16, textAlign: 'center' }}>
+                            <SafeText style={{ color: '#ffffff', fontWeight: '600', fontSize: 16, textAlign: 'center' }}>
                               Join
-                            </Text>
+                            </SafeText>
                           </LinearGradient>
                         </TouchableOpacity>
                       </View>
@@ -620,39 +626,39 @@ const HomeScreen: React.FC = () => {
         <View style={{ flex: 1, backgroundColor: '#000000' }}>
           {hasPermission === null ? (
             <View className="flex-1 justify-center items-center">
-              <Text className="text-white text-lg">Requesting camera permission...</Text>
+              <SafeText className="text-white text-xl">Requesting camera permission...</SafeText>
               <TouchableOpacity
                 onPress={() => {
                   setShowScanner(false);
                 }}
                 className="mt-4 bg-blue-600 rounded-xl px-6 py-3"
               >
-                <Text className="text-white font-semibold">Close</Text>
+                <SafeText className="text-white font-semibold text-lg">Close</SafeText>
               </TouchableOpacity>
             </View>
           ) : hasPermission === false ? (
             <View className="flex-1 justify-center items-center px-6">
-              <Text className="text-white text-lg mb-4 text-center">
+              <SafeText className="text-white text-xl mb-4 text-center">
                 Camera permission is required to scan QR codes.
-              </Text>
+              </SafeText>
               <TouchableOpacity
                 onPress={() => setShowScanner(false)}
                 className="bg-blue-600 rounded-xl px-6 py-3"
               >
-                <Text className="text-white font-semibold">Close</Text>
+                <SafeText className="text-white font-semibold text-lg">Close</SafeText>
               </TouchableOpacity>
             </View>
           ) : (
             <>
               {!cameraViewLoaded ? (
                 <View className="flex-1 justify-center items-center bg-black">
-                  <Text className="text-white text-lg font-semibold mb-2">Loading camera...</Text>
-                  <Text className="text-white/70 text-sm">Please wait</Text>
+                  <SafeText className="text-white text-xl font-semibold mb-2">Loading camera...</SafeText>
+                  <SafeText className="text-white/70 text-base">Please wait</SafeText>
                 </View>
               ) : !cameraReady ? (
                 <View className="flex-1 justify-center items-center bg-black">
-                  <Text className="text-white text-lg font-semibold mb-2">Preparing camera...</Text>
-                  <Text className="text-white/70 text-sm">Please wait</Text>
+                  <SafeText className="text-white text-xl font-semibold mb-2">Preparing camera...</SafeText>
+                  <SafeText className="text-white/70 text-base">Please wait</SafeText>
                 </View>
               ) : cameraViewRef.current ? (
                 <View style={{ flex: 1 }}>
@@ -667,25 +673,25 @@ const HomeScreen: React.FC = () => {
                 </View>
               ) : (
                 <View className="flex-1 justify-center items-center bg-black">
-                  <Text className="text-white text-lg font-semibold mb-2">Camera not available</Text>
+                  <SafeText className="text-white text-xl font-semibold mb-2">Camera not available</SafeText>
                   <TouchableOpacity
                     onPress={() => setShowScanner(false)}
                     className="mt-4 bg-blue-600 rounded-xl px-6 py-3"
                   >
-                    <Text className="text-white font-semibold">Close</Text>
+                    <SafeText className="text-white font-semibold text-lg">Close</SafeText>
                   </TouchableOpacity>
                 </View>
               )}
               <View className="absolute top-12 left-0 right-0 items-center">
-                <Text className="text-white text-xl font-bold mb-2">Scan QR Code</Text>
-                <Text className="text-white/80 text-sm">Point your camera at the QR code</Text>
+                <SafeText className="text-white text-2xl font-bold mb-2">Scan QR Code</SafeText>
+                <SafeText className="text-white/80 text-base">Point your camera at the QR code</SafeText>
               </View>
               <View className="absolute bottom-8 left-0 right-0 items-center px-6">
                 <TouchableOpacity
                   onPress={() => setShowScanner(false)}
                   className="bg-white/20 rounded-xl px-6 py-3"
                 >
-                  <Text className="text-white font-semibold">Cancel</Text>
+                  <SafeText className="text-white font-semibold text-lg">Cancel</SafeText>
                 </TouchableOpacity>
               </View>
               <View className="absolute top-1/2 left-1/2" style={{ transform: [{ translateX: -100 }, { translateY: -100 }] }}>
@@ -711,12 +717,17 @@ const HomeScreen: React.FC = () => {
       >
         <View className="flex-row justify-between items-center">
           <View className="flex-1">
-            <SafeText className="text-3xl font-bold mt-5" style={{ color: '#3b82f6' }} maxFontSizeMultiplier={1.2}>
+            <SafeText className="text-4xl font-bold mt-5 leading-[48px]" style={{ color: '#3b82f6' }} maxFontSizeMultiplier={1.2}>
               My Circles
             </SafeText>
-            <SafeText className="text-base mt-1" style={{ color: '#64748b' }} maxFontSizeMultiplier={1.3}>
-              Welcome, {user?.displayName || 'User'} {EMOJIS.BLUE_HEART}
-            </SafeText>
+            <View>
+              <SafeText className="text-lg mt-1 leading-[26px]" style={{ color: '#64748b' }} maxFontSizeMultiplier={1.3}>
+                Welcome,
+              </SafeText>
+              <SafeText className="text-lg leading-[26px]" style={{ color: '#64748b' }} maxFontSizeMultiplier={1.3}>
+                {user?.displayName || 'User'} {EMOJIS.BLUE_HEART}
+              </SafeText>
+            </View>
           </View>
           <View className="flex-row gap-2 mt-5 flex-shrink-0">
             <TouchableOpacity
@@ -735,7 +746,7 @@ const HomeScreen: React.FC = () => {
                 alignItems: 'center',
               }}
             >
-              <SafeText className="text-base" maxFontSizeMultiplier={1.1}>👥</SafeText>
+              <SafeText className="text-lg" maxFontSizeMultiplier={1.1}>👥</SafeText>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleCreateCircle}
@@ -759,7 +770,7 @@ const HomeScreen: React.FC = () => {
                   alignItems: 'center',
                 }}
               >
-                <SafeText className="text-base font-bold" style={{ color: '#ffffff' }} maxFontSizeMultiplier={1.1}>+</SafeText>
+                <SafeText className="text-lg font-bold" style={{ color: '#ffffff' }} maxFontSizeMultiplier={1.1}>+</SafeText>
               </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity
@@ -778,7 +789,7 @@ const HomeScreen: React.FC = () => {
                 alignItems: 'center',
               }}
             >
-              <SafeText className="text-base" maxFontSizeMultiplier={1.1}>⚙️</SafeText>
+              <SafeText className="text-lg" maxFontSizeMultiplier={1.1}>⚙️</SafeText>
             </TouchableOpacity>
           </View>
         </View>

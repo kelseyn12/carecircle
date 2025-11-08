@@ -1,6 +1,6 @@
 // Circle feed screen showing updates for a specific circle
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert } from 'react-native';
+import { View, FlatList, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -10,6 +10,7 @@ import { useAuth } from '../lib/authContext';
 import { subscribeToCircleUpdates, canUserPostUpdates, getUser, toggleReaction, getPendingJoinRequests, setCircleLastViewed } from '../lib/firestoreUtils';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import OfflineIndicator from '../components/OfflineIndicator';
+import SafeText from '../components/SafeText';
 
 type CircleFeedScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CircleFeed'>;
 type CircleFeedScreenRouteProp = RouteProp<RootStackParamList, 'CircleFeed'>;
@@ -184,14 +185,14 @@ const CircleFeedScreen: React.FC = () => {
           elevation: 8,
         }}
       >
-        <Text className="text-4xl">💙</Text>
+        <SafeText className="text-4xl">💙</SafeText>
       </LinearGradient>
-      <Text className="text-4xl font-bold text-gray-800 mb-3 text-center">
+      <SafeText className="text-4xl font-bold text-gray-800 mb-3 text-center">
         No updates yet
-      </Text>
-      <Text className="text-gray-600 text-center mb-8 leading-relaxed text-base">
+      </SafeText>
+      <SafeText className="text-gray-600 text-center mb-8 leading-relaxed text-base">
         When you have news, share it here. Your circle is waiting to hear from you.
-      </Text>
+      </SafeText>
       {canPostUpdates && (
         <TouchableOpacity
           onPress={handleCreateUpdate}
@@ -215,17 +216,17 @@ const CircleFeedScreen: React.FC = () => {
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>
+            <SafeText style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>
               Share Update
-            </Text>
+            </SafeText>
           </LinearGradient>
         </TouchableOpacity>
       )}
       {!canPostUpdates && (
         <View className="bg-gray-100 rounded-2xl px-8 py-4">
-          <Text className="text-gray-600 font-medium text-lg text-center">
+          <SafeText className="text-gray-600 font-medium text-lg text-center">
             You don't have permission to post updates in this circle
-          </Text>
+          </SafeText>
         </View>
       )}
     </View>
@@ -247,9 +248,9 @@ const CircleFeedScreen: React.FC = () => {
             marginBottom: 16,
           }}
         >
-          <Text className="text-2xl">💙</Text>
+          <SafeText className="text-2xl">💙</SafeText>
         </LinearGradient>
-        <Text className="text-gray-600 text-lg font-medium">Loading updates...</Text>
+        <SafeText className="text-gray-600 text-lg font-medium">Loading updates...</SafeText>
       </View>
     );
   }
@@ -258,9 +259,9 @@ const CircleFeedScreen: React.FC = () => {
     return (
       <View className="flex-1 justify-center items-center bg-blue-50 px-6">
         <View className="w-16 h-16 bg-red-100 rounded-full items-center justify-center mb-4">
-          <Text className="text-2xl">⚠️</Text>
+          <SafeText className="text-2xl">⚠️</SafeText>
         </View>
-        <Text className="text-red-600 text-center mb-6 text-lg font-medium">{error}</Text>
+        <SafeText className="text-red-600 text-center mb-6 text-lg font-medium">{error}</SafeText>
         <TouchableOpacity
           onPress={handleRefresh}
           style={{
@@ -283,9 +284,9 @@ const CircleFeedScreen: React.FC = () => {
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
+            <SafeText style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
               Try Again
-            </Text>
+            </SafeText>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -310,15 +311,15 @@ const CircleFeedScreen: React.FC = () => {
                 alignItems: 'center',
               }}
             >
-              <Text className="text-gray-700 text-lg font-bold" style={{ fontSize: 18 }}>←</Text>
+              <SafeText className="text-gray-700 text-lg font-bold" style={{ fontSize: 18 }}>←</SafeText>
             </TouchableOpacity>
             <View className="flex-1">
-              <Text className="text-2xl font-bold text-blue-600">
+              <SafeText className="text-2xl font-bold text-blue-600">
                 Circle Updates
-              </Text>
-              <Text className="text-gray-600 text-base" style={{ marginTop: 4 }}>
+              </SafeText>
+              <SafeText className="text-gray-600 text-base" style={{ marginTop: 4 }}>
                 {updates.length} update{updates.length !== 1 ? 's' : ''}
-              </Text>
+              </SafeText>
             </View>
           </View>
           <View className="flex-row" style={{ gap: 8 }}>
@@ -338,7 +339,7 @@ const CircleFeedScreen: React.FC = () => {
               }}
               onPress={handleManageMembers}
             >
-              <Text className="text-gray-700" style={{ fontSize: 20 }}>⚙️</Text>
+              <SafeText className="text-gray-700" style={{ fontSize: 20 }}>⚙️</SafeText>
               {pendingCount > 0 && (
                 <View style={{
                   position: 'absolute',
@@ -353,7 +354,7 @@ const CircleFeedScreen: React.FC = () => {
                   borderWidth: 2,
                   borderColor: '#e5e7eb',
                 }}>
-                  <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{pendingCount > 9 ? '9+' : pendingCount}</Text>
+                  <SafeText style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{pendingCount > 9 ? '9+' : pendingCount}</SafeText>
                 </View>
               )}
             </TouchableOpacity>
@@ -373,7 +374,7 @@ const CircleFeedScreen: React.FC = () => {
               }}
               onPress={handleInviteMembers}
             >
-              <Text className="text-blue-700" style={{ fontSize: 20 }}>👥</Text>
+              <SafeText className="text-blue-700" style={{ fontSize: 20 }}>👥</SafeText>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleCreateUpdate}
@@ -397,7 +398,7 @@ const CircleFeedScreen: React.FC = () => {
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ color: '#ffffff', fontSize: 24, fontWeight: 'bold' }}>+</Text>
+                <SafeText style={{ color: '#ffffff', fontSize: 24, fontWeight: 'bold' }}>+</SafeText>
               </LinearGradient>
             </TouchableOpacity>
           </View>

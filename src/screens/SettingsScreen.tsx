@@ -1,6 +1,6 @@
 // Settings screen for user account management
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, TouchableOpacity, Alert, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +9,7 @@ import { RootStackParamList } from '../types';
 import { useAuth } from '../lib/authContext';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import SafeText from '../components/SafeText';
 
 type SettingsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Settings'>;
 
@@ -138,7 +139,7 @@ const SettingsScreen: React.FC = () => {
     >
       {/* Header - Fixed outside ScrollView */}
       <View className="bg-white border-b border-gray-200 pt-12 pb-4 px-6">
-        <View className="flex-row items-center">
+        <View className="flex-row items-center" style={{ marginTop: 10 }}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
@@ -147,14 +148,14 @@ const SettingsScreen: React.FC = () => {
               height: 44,
               justifyContent: 'center',
               alignItems: 'center',
-              marginRight: 12,
+              marginRight: 16,
               backgroundColor: '#f3f4f6',
               borderRadius: 12,
             }}
           >
-            <Text style={{ fontSize: 24, color: '#374151', fontWeight: '600' }}>←</Text>
+            <SafeText style={{ fontSize: 24, color: '#374151', fontWeight: '600' }}>←</SafeText>
           </TouchableOpacity>
-          <Text className="text-2xl font-bold text-gray-900">Settings</Text>
+          <SafeText className="text-3xl font-bold text-gray-900 leading-[40px]" style={{ marginLeft: 4 }}>Settings</SafeText>
         </View>
       </View>
       
@@ -162,7 +163,7 @@ const SettingsScreen: React.FC = () => {
 
         <View className="px-6 py-6">
           {/* User Info */}
-          <View className="bg-white rounded-2xl p-6 mb-6 shadow-sm border border-gray-100">
+          <View className="bg-white rounded-2xl p-6 mb-6 shadow-sm border border-gray-100 py-3">
             <View className="flex-row items-center mb-4">
               <LinearGradient
                 colors={['#93c5fd', '#c4b5fd']}
@@ -177,17 +178,17 @@ const SettingsScreen: React.FC = () => {
                   marginRight: 16,
                 }}
               >
-                <Text className="text-2xl">
+                <SafeText className="text-3xl leading-[40px]">
                   {user?.displayName?.charAt(0).toUpperCase() || 'U'}
-                </Text>
+                </SafeText>
               </LinearGradient>
               <View className="flex-1">
-                <Text className="text-lg font-semibold text-gray-900">
+                <SafeText className="text-xl font-semibold text-gray-900 leading-[30px]">
                   {user?.displayName || 'User'}
-                </Text>
-                <Text className="text-sm text-gray-500 mt-1">
+                </SafeText>
+                <SafeText className="text-base text-gray-500 mt-1 leading-[24px]">
                   {auth?.currentUser?.email}
-                </Text>
+                </SafeText>
               </View>
             </View>
           </View>
@@ -201,18 +202,18 @@ const SettingsScreen: React.FC = () => {
             >
               <View className="flex-row items-center flex-1">
                 <Ionicons name="lock-closed-outline" size={24} color="#3b82f6" />
-                <Text className="text-base font-semibold text-gray-900 ml-4">
+                <SafeText className="text-lg font-semibold text-gray-900 ml-4 leading-[26px]">
                   Change Password
-                </Text>
+                </SafeText>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
             </TouchableOpacity>
           ) : (
             <View className="bg-white rounded-2xl p-6 mb-6 shadow-sm border border-gray-100">
               <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-lg font-semibold text-gray-900">
+                <SafeText className="text-xl font-semibold text-gray-900 leading-[30px]">
                   Change Password
-                </Text>
+                </SafeText>
                 <TouchableOpacity
                   onPress={() => {
                     setShowChangePassword(false);
@@ -229,7 +230,7 @@ const SettingsScreen: React.FC = () => {
 
               {/* Current Password */}
               <View className="mb-4">
-                <Text className="text-gray-700 font-semibold mb-2">Current Password</Text>
+                <SafeText className="text-gray-700 font-semibold mb-2 text-lg leading-[26px]">Current Password</SafeText>
                 <View className="bg-gray-50 rounded-xl border border-gray-100 flex-row items-center">
                   <TextInput
                     className="flex-1 px-4 py-3 text-gray-800"
@@ -239,6 +240,9 @@ const SettingsScreen: React.FC = () => {
                     onChangeText={setCurrentPassword}
                     secureTextEntry={!showCurrentPassword}
                     autoComplete="password"
+                    allowFontScaling={false}
+                    maxFontSizeMultiplier={1.0}
+                    style={{ fontSize: 19 }}
                   />
                   <TouchableOpacity
                     onPress={() => setShowCurrentPassword(!showCurrentPassword)}
@@ -256,7 +260,7 @@ const SettingsScreen: React.FC = () => {
 
               {/* New Password */}
               <View className="mb-4">
-                <Text className="text-gray-700 font-semibold mb-2">New Password</Text>
+                <SafeText className="text-gray-700 font-semibold mb-2 text-lg leading-[26px]">New Password</SafeText>
                 <View className="bg-gray-50 rounded-xl border border-gray-100 flex-row items-center">
                   <TextInput
                     className="flex-1 px-4 py-3 text-gray-800"
@@ -270,6 +274,9 @@ const SettingsScreen: React.FC = () => {
                     onBlur={() => setPasswordError(validateNewPassword(newPassword))}
                     secureTextEntry={!showNewPassword}
                     autoComplete="password-new"
+                    allowFontScaling={false}
+                    maxFontSizeMultiplier={1.0}
+                    style={{ fontSize: 19 }}
                   />
                   <TouchableOpacity
                     onPress={() => setShowNewPassword(!showNewPassword)}
@@ -284,18 +291,18 @@ const SettingsScreen: React.FC = () => {
                   </TouchableOpacity>
                 </View>
                 {passwordError ? (
-                  <Text className="text-red-500 text-sm mt-1">{passwordError}</Text>
+                  <SafeText className="text-red-500 text-base mt-1 leading-[24px]">{passwordError}</SafeText>
                 ) : null}
                 {!passwordError && newPassword.length > 0 ? (
-                  <Text className="text-green-600 text-sm mt-1">
+                  <SafeText className="text-green-600 text-base mt-1 leading-[24px]">
                     ✓ Password meets requirements
-                  </Text>
+                  </SafeText>
                 ) : null}
               </View>
 
               {/* Confirm Password */}
               <View className="mb-6">
-                <Text className="text-gray-700 font-semibold mb-2">Confirm New Password</Text>
+                <SafeText className="text-gray-700 font-semibold mb-2 text-lg leading-[26px]">Confirm New Password</SafeText>
                 <View className="bg-gray-50 rounded-xl border border-gray-100 flex-row items-center">
                   <TextInput
                     className="flex-1 px-4 py-3 text-gray-800"
@@ -305,6 +312,9 @@ const SettingsScreen: React.FC = () => {
                     onChangeText={setConfirmPassword}
                     secureTextEntry={!showConfirmPassword}
                     autoComplete="password-new"
+                    allowFontScaling={false}
+                    maxFontSizeMultiplier={1.0}
+                    style={{ fontSize: 19 }}
                   />
                   <TouchableOpacity
                     onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -319,9 +329,9 @@ const SettingsScreen: React.FC = () => {
                   </TouchableOpacity>
                 </View>
                 {confirmPassword && newPassword !== confirmPassword ? (
-                  <Text className="text-red-500 text-sm mt-1">
+                  <SafeText className="text-red-500 text-base mt-1 leading-[24px]">
                     Passwords do not match
-                  </Text>
+                  </SafeText>
                 ) : null}
               </View>
 
@@ -344,9 +354,9 @@ const SettingsScreen: React.FC = () => {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text className="text-white font-bold text-base">
+                  <SafeText className="text-white font-bold text-lg leading-[26px]">
                     {isLoading ? 'Changing Password...' : 'Change Password'}
-                  </Text>
+                  </SafeText>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -360,9 +370,9 @@ const SettingsScreen: React.FC = () => {
           >
             <View className="flex-row items-center">
               <Ionicons name="log-out-outline" size={24} color="#ef4444" />
-              <Text className="text-base font-semibold text-red-600 ml-4">
+              <SafeText className="text-lg font-semibold text-red-600 ml-4 leading-[26px]">
                 Sign Out
-              </Text>
+              </SafeText>
             </View>
           </TouchableOpacity>
         </View>

@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, 
-  Text, 
   TouchableOpacity, 
   Alert, 
   ActivityIndicator,
-  ScrollView 
+  ScrollView,
+  Text 
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -14,6 +14,7 @@ import { RootStackParamList } from '../types';
 import { useAuth } from '../lib/authContext';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../lib/firebase';
+import SafeText from '../components/SafeText';
 
 type JoinScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Join'>;
 type JoinScreenRouteProp = RouteProp<RootStackParamList, 'Join'>;
@@ -130,7 +131,7 @@ const JoinScreen: React.FC = () => {
     return (
       <View className="flex-1 justify-center items-center bg-gray-50">
         <ActivityIndicator size="large" color="#3b82f6" />
-        <Text className="text-gray-600 mt-4">Joining circle...</Text>
+        <SafeText className="text-gray-600 mt-4">Joining circle...</SafeText>
       </View>
     );
   }
@@ -138,12 +139,12 @@ const JoinScreen: React.FC = () => {
   if (!circleInfo) {
     return (
       <View className="flex-1 justify-center items-center bg-gray-50 px-6">
-        <Text className="text-red-600 text-center mb-4">Failed to load circle information</Text>
+        <SafeText className="text-red-600 text-center mb-4">Failed to load circle information</SafeText>
         <TouchableOpacity
           className="bg-blue-500 rounded-xl px-6 py-3"
           onPress={() => navigation.navigate('Home')}
         >
-          <Text className="text-white font-semibold">Go Home</Text>
+          <SafeText className="text-white font-semibold">Go Home</SafeText>
         </TouchableOpacity>
       </View>
     );
@@ -158,12 +159,12 @@ const JoinScreen: React.FC = () => {
             className="bg-gray-100 rounded-xl px-4 py-3 mt-4"
             onPress={() => navigation.navigate('Home')}
           >
-            <Text className="text-gray-700 font-semibold">Back</Text>
+            <SafeText className="text-gray-700 font-semibold">Back</SafeText>
           </TouchableOpacity>
           
-          <Text className="text-xl font-semibold text-gray-800">
+          <SafeText className="text-xl font-semibold text-gray-800">
             {circleInfo.alreadyMember ? 'Welcome Back!' : 'Join Circle'}
-          </Text>
+          </SafeText>
           
           <View className="w-16" />
         </View>
@@ -172,39 +173,39 @@ const JoinScreen: React.FC = () => {
       <View className="flex-1 px-6 py-6">
         <View className="bg-white rounded-2xl p-6 shadow-sm">
           <View className="items-center mb-6">
-            <Text className="text-6xl mb-4">👥</Text>
-            <Text className="text-2xl font-semibold text-gray-800 mb-2">
+            <SafeText className="text-6xl mb-4">👥</SafeText>
+            <SafeText className="text-2xl font-semibold text-gray-800 mb-2">
               {circleInfo.title}
-            </Text>
-            <Text className="text-gray-600 text-center">
+            </SafeText>
+            <SafeText className="text-gray-600 text-center">
               {circleInfo.alreadyMember 
                 ? "You're already a member of this circle!"
                 : "You've been invited to join this Care Circle"
               }
-            </Text>
+            </SafeText>
           </View>
 
           {!circleInfo.alreadyMember && (
             <View className="mb-6">
-              <Text className="text-lg font-semibold text-gray-800 mb-3">
+              <SafeText className="text-lg font-semibold text-gray-800 mb-3">
                 What you'll be able to do:
-              </Text>
+              </SafeText>
               <View className="space-y-2">
                 <View className="flex-row items-center">
-                  <Text className="text-green-600 text-lg mr-3">✓</Text>
-                  <Text className="text-gray-700">See updates shared by circle members</Text>
+                  <SafeText className="text-green-600 text-lg mr-3">✓</SafeText>
+                  <SafeText className="text-gray-700">See updates shared by circle members</SafeText>
                 </View>
                 <View className="flex-row items-center">
-                  <Text className="text-green-600 text-lg mr-3">✓</Text>
-                  <Text className="text-gray-700">Post your own updates and photos</Text>
+                  <SafeText className="text-green-600 text-lg mr-3">✓</SafeText>
+                  <SafeText className="text-gray-700">Post your own updates and photos</SafeText>
                 </View>
                 <View className="flex-row items-center">
-                  <Text className="text-green-600 text-lg mr-3">✓</Text>
-                  <Text className="text-gray-700">React to updates with emojis</Text>
+                  <SafeText className="text-green-600 text-lg mr-3">✓</SafeText>
+                  <SafeText className="text-gray-700">React to updates with emojis</SafeText>
                 </View>
                 <View className="flex-row items-center">
-                  <Text className="text-green-600 text-lg mr-3">✓</Text>
-                  <Text className="text-gray-700">Receive push notifications for new updates</Text>
+                  <SafeText className="text-green-600 text-lg mr-3">✓</SafeText>
+                  <SafeText className="text-gray-700">Receive push notifications for new updates</SafeText>
                 </View>
               </View>
             </View>
@@ -220,24 +221,24 @@ const JoinScreen: React.FC = () => {
             {isJoining ? (
               <View className="flex-row items-center justify-center">
                 <ActivityIndicator color="white" size="small" />
-                <Text className="text-white font-semibold ml-2">Joining...</Text>
+                <SafeText className="text-white font-semibold ml-2">Joining...</SafeText>
               </View>
             ) : (
-              <Text className="text-white text-center font-semibold text-lg">
+              <SafeText className="text-white text-center font-semibold text-lg">
                 {circleInfo.alreadyMember ? 'View Circle' : 'Join Circle'}
-              </Text>
+              </SafeText>
             )}
           </TouchableOpacity>
 
           {/* Privacy notice */}
           <View className="mt-6 bg-blue-50 rounded-xl p-4">
-            <Text className="text-blue-800 font-semibold mb-2">🔒 Privacy & Security</Text>
-            <Text className="text-blue-700 text-sm">
+            <SafeText className="text-blue-800 font-semibold mb-2">🔒 Privacy & Security</SafeText>
+            <SafeText className="text-blue-700 text-sm">
               • Only circle members can see updates{'\n'}
               • Your personal information is protected{'\n'}
               • You can leave the circle anytime{'\n'}
               • Updates are not shared publicly
-            </Text>
+            </SafeText>
           </View>
         </View>
       </View>

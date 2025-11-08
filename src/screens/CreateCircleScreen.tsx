@@ -1,6 +1,6 @@
 // Create Circle screen for setting up new care circles
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -9,6 +9,7 @@ import { createCircleSchema } from '../validation/schemas';
 import { useCircles } from '../lib/useCircles';
 import { useAuth } from '../lib/authContext';
 import { initializeNotifications } from '../lib/notificationService';
+import SafeText from '../components/SafeText';
 
 type CreateCircleScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CreateCircle'>;
 
@@ -93,13 +94,13 @@ const CreateCircleScreen: React.FC = () => {
                 marginRight: 16,
               }}
             >
-              <Text style={{ color: '#374151', fontSize: 18, fontWeight: 'bold' }}>←</Text>
+              <SafeText style={{ color: '#374151', fontSize: 18, fontWeight: 'bold' }}>←</SafeText>
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 22, marginTop: 20, fontWeight: 'bold', color: '#1f2937' }}>Create New Circle</Text>
-              <Text style={{ color: '#6b7280', marginTop: 4, fontSize: 15 }}>
+              <SafeText style={{ fontSize: 22, marginTop: 20, fontWeight: 'bold', color: '#1f2937' }}>Create New Circle</SafeText>
+              <SafeText style={{ color: '#6b7280', marginTop: 4, fontSize: 15 }}>
                 Set up a private space to share updates with your loved ones
-              </Text>
+              </SafeText>
             </View>
           </View>
         </View>
@@ -118,33 +119,35 @@ const CreateCircleScreen: React.FC = () => {
             borderColor: '#f3f4f6',
           }}>
             <View style={{ marginBottom: 32 }}>
-              <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1f2937', marginBottom: 12 }}>
+              <SafeText style={{ fontSize: 20, fontWeight: 'bold', color: '#1f2937', marginBottom: 12 }}>
                 Circle Name
-              </Text>
-              <Text style={{ color: '#6b7280', marginBottom: 24, fontSize: 15, lineHeight: 22 }}>
+              </SafeText>
+              <SafeText style={{ color: '#6b7280', marginBottom: 24, fontSize: 15, lineHeight: 22 }}>
                 Choose a meaningful name for your circle (e.g., "Dad's Recovery", "Mom's Health Updates")
-              </Text>
+              </SafeText>
               
               <View style={{ backgroundColor: '#f9fafb', borderRadius: 16, borderWidth: 1, borderColor: '#f3f4f6' }}>
                 <TextInput
-                  style={{ paddingHorizontal: 20, paddingVertical: 16, color: '#1f2937', fontSize: 16 }}
+                  style={{ paddingHorizontal: 20, paddingVertical: 16, color: '#1f2937', fontSize: 19 }}
                   placeholder="Enter circle name"
                   placeholderTextColor="#9CA3AF"
                   value={title}
                   onChangeText={setTitle}
                   maxLength={100}
                   autoFocus
+                  allowFontScaling={false}
+                  maxFontSizeMultiplier={1.0}
                 />
               </View>
               
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                <Text style={{ color: '#6b7280', fontSize: 13 }}>
+                <SafeText style={{ color: '#6b7280', fontSize: 13 }}>
                   {title.length}/100 characters
-                </Text>
+                </SafeText>
                 {title.length > 80 && (
-                  <Text style={{ color: '#f97316', fontSize: 13, fontWeight: '600' }}>
+                  <SafeText style={{ color: '#f97316', fontSize: 13, fontWeight: '600' }}>
                     Getting close to limit
-                  </Text>
+                  </SafeText>
                 )}
               </View>
             </View>
@@ -174,9 +177,9 @@ const CreateCircleScreen: React.FC = () => {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ color: '#ffffff', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
+                  <SafeText style={{ color: '#ffffff', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
                     {isLoading ? 'Creating Circle...' : 'Create Circle'}
-                  </Text>
+                  </SafeText>
                 </LinearGradient>
               </TouchableOpacity>
 
@@ -191,9 +194,9 @@ const CreateCircleScreen: React.FC = () => {
                   opacity: isLoading ? 0.7 : 1,
                 }}
               >
-                <Text style={{ color: '#374151', textAlign: 'center', fontWeight: '600', fontSize: 15 }}>
+                <SafeText style={{ color: '#374151', textAlign: 'center', fontWeight: '600', fontSize: 15 }}>
                   Cancel
-                </Text>
+                </SafeText>
               </TouchableOpacity>
             </View>
           </View>
@@ -221,20 +224,20 @@ const CreateCircleScreen: React.FC = () => {
                   marginRight: 12,
                 }}
               >
-                <Text style={{ color: '#ffffff', fontSize: 16 }}>💡</Text>
+                <SafeText style={{ color: '#ffffff', fontSize: 16 }}>💡</SafeText>
               </LinearGradient>
-              <Text style={{ color: '#1e40af', fontWeight: 'bold', fontSize: 16 }}>Tips for a great circle name:</Text>
+              <SafeText style={{ color: '#1e40af', fontWeight: 'bold', fontSize: 16 }}>Tips for a great circle name:</SafeText>
             </View>
             <View style={{ gap: 8 }}>
-              <Text style={{ color: '#1e3a8a', fontSize: 13, lineHeight: 20 }}>
+              <SafeText style={{ color: '#1e3a8a', fontSize: 13, lineHeight: 20 }}>
                 • Use the person's name or relationship (e.g., "Mom's Recovery")
-              </Text>
-              <Text style={{ color: '#1e3a8a', fontSize: 13, lineHeight: 20 }}>
+              </SafeText>
+              <SafeText style={{ color: '#1e3a8a', fontSize: 13, lineHeight: 20 }}>
                 • Be specific about the purpose (e.g., "Dad's Health Updates")
-              </Text>
-              <Text style={{ color: '#1e3a8a', fontSize: 13, lineHeight: 20 }}>
+              </SafeText>
+              <SafeText style={{ color: '#1e3a8a', fontSize: 13, lineHeight: 20 }}>
                 • Keep it simple and clear for all family members
-              </Text>
+              </SafeText>
             </View>
           </View>
         </View>
