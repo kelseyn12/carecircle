@@ -314,8 +314,19 @@ const SignInScreen: React.FC = () => {
                       try {
                         setIsLoading(true);
                         await signInWithApple();
+                        // Navigation will be handled by AuthProvider
                       } catch (error) {
-                        Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign in with Apple.');
+                        // Log full error for debugging
+                        console.error('SignInScreen Apple sign-in error:', error);
+                        
+                        // Show user-friendly error
+                        const errorMessage = error instanceof Error 
+                          ? error.message 
+                          : 'Failed to sign in with Apple. Please try again.';
+                        
+                        Alert.alert('Error', errorMessage, [
+                          { text: 'OK', style: 'default' }
+                        ]);
                       } finally {
                         setIsLoading(false);
                       }
@@ -355,8 +366,19 @@ const SignInScreen: React.FC = () => {
                     try {
                       setIsLoading(true);
                       await signInWithGoogle();
+                      // Navigation will be handled by AuthProvider
                     } catch (error) {
-                      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign in with Google.');
+                      // Log full error for debugging
+                      console.error('SignInScreen Google sign-in error:', error);
+                      
+                      // Show user-friendly error
+                      const errorMessage = error instanceof Error 
+                        ? error.message 
+                        : 'Failed to sign in with Google. Please try again.';
+                      
+                      Alert.alert('Error', errorMessage, [
+                        { text: 'OK', style: 'default' }
+                      ]);
                     } finally {
                       setIsLoading(false);
                     }

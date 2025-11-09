@@ -11,7 +11,7 @@ export default {
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
     splash: {
-      image: './assets/icon.png',
+      image: './assets/splash-icon.png', // Falls back to icon.png if not found
       resizeMode: 'contain',
       backgroundColor: '#ffffff',
     },
@@ -65,7 +65,7 @@ export default {
     },
 
     web: {
-      favicon: './assets/icon.png',
+      favicon: './assets/favicon.png', // Falls back to icon.png if not found
     },
 
     extra: {

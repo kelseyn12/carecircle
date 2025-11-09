@@ -166,15 +166,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       // Sign in
-      const userInfo = await GoogleSignin.signIn();
+      let userInfo;
+      try {
+        userInfo = await GoogleSignin.signIn();
+        
+        if (!userInfo) {
+          throw new Error('No user info received from Google Sign-In.');
+        }
+      } catch (signInError: any) {
+        console.error('Google Sign-In error:', signInError);
+        
+        // Handle specific Google Sign-In errors
+        if (signInError.code === 'SIGN_IN_CANCELLED') {
+          throw new Error('Sign-in was canceled.');
+        } else if (signInError.code === 'IN_PROGRESS') {
+          throw new Error('Sign-in is already in progress.');
+        } else if (signInError.code === 'PLAY_SERVICES_NOT_AVAILABLE') {
+          throw new Error('Google Play Services is not available. Please update Google Play Services.');
+        }
+        
+        throw new Error(`Google Sign-In failed: ${signInError.message || 'Unknown error'}`);
+      }
       
       // Get ID token - try from userInfo first, then from getTokens()
       let idToken = userInfo.idToken;
       
       if (!idToken) {
-        // On iOS, sometimes we need to get tokens explicitly
-        const tokens = await GoogleSignin.getTokens();
-        idToken = tokens.idToken;
+        try {
+          // On iOS, sometimes we need to get tokens explicitly
+          const tokens = await GoogleSignin.getTokens();
+          idToken = tokens.idToken;
+        } catch (tokenError) {
+          console.error('Error getting Google tokens:', tokenError);
+          // Continue - we'll check if idToken is still null
+        }
       }
       
       if (!idToken) {
@@ -182,19 +207,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('No ID token received from Google. Please check your Google OAuth configuration.');
       }
 
-      // Create Firebase credential
-      const credential = GoogleAuthProvider.credential(idToken);
+      // Create Firebase credential with error handling
+      let credential;
+      try {
+        credential = GoogleAuthProvider.credential(idToken);
+        
+        if (!credential) {
+          throw new Error('Failed to create Firebase credential from Google token.');
+        }
+      } catch (credError: any) {
+        console.error('Firebase credential creation error:', credError);
+        throw new Error(`Failed to process Google Sign-In credentials: ${credError.message || 'Unknown error'}`);
+      }
       
-      // Sign in to Firebase
-      const userCredential = await signInWithCredential(auth, credential);
+      // Sign in to Firebase with error handling
+      let userCredential;
+      try {
+        userCredential = await signInWithCredential(auth, credential);
+        
+        if (!userCredential || !userCredential.user) {
+          throw new Error('Firebase sign-in succeeded but no user was returned.');
+        }
+      } catch (firebaseError: any) {
+        console.error('Firebase sign-in error:', firebaseError);
+        
+        // Handle specific Firebase errors
+        if (firebaseError.code === 'auth/invalid-credential') {
+          throw new Error('Invalid Google Sign-In credentials. Please try again.');
+        }
+        if (firebaseError.code === 'auth/operation-not-allowed') {
+          throw new Error('Google Sign-In is not enabled in Firebase. Please contact support.');
+        }
+        
+        throw new Error(`Firebase authentication failed: ${firebaseError.message || 'Unknown error'}`);
+      }
       
-      // Create or update user document
-      await createUserDocument(userCredential.user, {
-        displayName: userCredential.user.displayName || userInfo.user.name || 'User',
-        photoURL: userCredential.user.photoURL || userInfo.user.photo || undefined,
-      });
+      // Create or update user document (non-blocking)
+      try {
+        await createUserDocument(userCredential.user, {
+          displayName: userCredential.user.displayName || userInfo.user.name || 'User',
+          photoURL: userCredential.user.photoURL || userInfo.user.photo || undefined,
+        });
+      } catch (docError) {
+        // Non-critical error - log but don't fail sign-in
+        console.warn('Failed to create user document:', docError);
+      }
     } catch (error: any) {
       console.error('Google sign-in error:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack,
+      });
       
       // Handle specific Google Sign-In errors
       if (error.code === 'SIGN_IN_CANCELLED') {
@@ -205,10 +269,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('Google Play Services is not available. Please update Google Play Services.');
       }
       
-      if (error.message) {
+      // Check for Firebase-specific errors
+      if (error.code?.startsWith('auth/')) {
+        const firebaseErrorMsg = error.message || 'Firebase authentication error';
+        throw new Error(`Authentication failed: ${firebaseErrorMsg}`);
+      }
+      
+      // If error already has a message, use it; otherwise provide generic message
+      if (error.message && !error.message.includes('Failed to sign in with Google')) {
         throw error;
       }
-      throw new Error('Failed to sign in with Google. Please try again.');
+      
+      const errorMessage = error.message || error.toString() || 'Unknown error';
+      throw new Error(`Failed to sign in with Google: ${errorMessage}`);
     }
   };
 
@@ -241,35 +314,108 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         ],
       });
 
-      if (credential.identityToken) {
-        // Create Firebase credential
+      // Validate credential
+      if (!credential) {
+        throw new Error('No credential received from Apple Sign-In.');
+      }
+
+      if (!credential.identityToken) {
+        throw new Error('Apple Sign-In did not provide an identity token. Please try again.');
+      }
+
+      // Create Firebase credential with error handling
+      let firebaseCredential;
+      try {
         const provider = new OAuthProvider('apple.com');
-        const firebaseCredential = provider.credential({
+        firebaseCredential = provider.credential({
           idToken: credential.identityToken,
-          rawNonce: credential.nonce,
+          rawNonce: credential.nonce || undefined, // nonce is optional for Apple
         });
 
-        // Sign in to Firebase
-        const userCredential = await signInWithCredential(auth, firebaseCredential);
+        if (!firebaseCredential) {
+          throw new Error('Failed to create Firebase credential from Apple token.');
+        }
+      } catch (credError: any) {
+        console.error('Firebase credential creation error:', credError);
+        throw new Error(`Failed to process Apple Sign-In credentials: ${credError.message || 'Unknown error'}`);
+      }
+
+      // Sign in to Firebase with error handling
+      let userCredential;
+      try {
+        userCredential = await signInWithCredential(auth, firebaseCredential);
         
-        // Update profile with Apple name if available
-        if (credential.fullName) {
+        if (!userCredential || !userCredential.user) {
+          throw new Error('Firebase sign-in succeeded but no user was returned.');
+        }
+      } catch (firebaseError: any) {
+        console.error('Firebase sign-in error:', firebaseError);
+        
+        // Handle specific Firebase errors
+        if (firebaseError.code === 'auth/invalid-credential') {
+          throw new Error('Invalid Apple Sign-In credentials. Please try again.');
+        }
+        if (firebaseError.code === 'auth/operation-not-allowed') {
+          throw new Error('Apple Sign-In is not enabled in Firebase. Please contact support.');
+        }
+        
+        throw new Error(`Firebase authentication failed: ${firebaseError.message || 'Unknown error'}`);
+      }
+      
+      // Update profile with Apple name if available (non-blocking)
+      try {
+        if (credential.fullName && userCredential.user) {
           const displayName = `${credential.fullName.givenName || ''} ${credential.fullName.familyName || ''}`.trim();
-          if (displayName && userCredential.user) {
+          if (displayName) {
             await updateProfile(userCredential.user, { displayName });
           }
         }
+      } catch (profileError) {
+        // Non-critical error - log but don't fail sign-in
+        console.warn('Failed to update profile with Apple name:', profileError);
+      }
 
+      // Create user document (non-blocking)
+      try {
         await createUserDocument(userCredential.user, {
           displayName: userCredential.user.displayName || credential.fullName?.givenName || 'User',
         });
+      } catch (docError) {
+        // Non-critical error - log but don't fail sign-in
+        console.warn('Failed to create user document:', docError);
       }
     } catch (error: any) {
       console.error('Apple sign-in error:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack,
+      });
+      
+      // Handle specific error codes
       if (error.code === 'ERR_REQUEST_CANCELED') {
         throw new Error('Sign-in was canceled.');
       }
-      throw new Error('Failed to sign in with Apple. Please try again.');
+      
+      // Check for capability/entitlement errors
+      if (error.message?.includes('entitlement') || error.message?.includes('capability')) {
+        throw new Error('Apple Sign-In is not properly configured. Please contact support.');
+      }
+      
+      // Check for availability errors
+      if (error.message?.includes('not available') || error.code === 'ERR_APPLE_AUTHENTICATION_UNAVAILABLE') {
+        throw new Error('Apple Sign-In is not available. This may require enabling the capability in Apple Developer Portal.');
+      }
+      
+      // Check for Firebase-specific errors
+      if (error.code?.startsWith('auth/')) {
+        const firebaseErrorMsg = error.message || 'Firebase authentication error';
+        throw new Error(`Authentication failed: ${firebaseErrorMsg}`);
+      }
+      
+      // Provide more detailed error message
+      const errorMessage = error.message || error.toString() || 'Unknown error';
+      throw new Error(`Failed to sign in with Apple: ${errorMessage}`);
     }
   };
 
@@ -338,20 +484,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      async (firebaseUser) => {
         try {
-          const appUser = await convertFirebaseUser(firebaseUser);
-          setUser(appUser);
+          if (firebaseUser) {
+            try {
+              const appUser = await convertFirebaseUser(firebaseUser);
+              setUser(appUser);
+            } catch (error) {
+              console.error('Error converting user:', error);
+              // Set a minimal user object to prevent crashes
+              setUser({
+                id: firebaseUser.uid,
+                displayName: firebaseUser.displayName || '',
+                photoURL: firebaseUser.photoURL || undefined,
+                createdAt: new Date(),
+              });
+            }
+          } else {
+            setUser(null);
+          }
         } catch (error) {
-          console.error('Error converting user:', error);
+          console.error('Error in auth state listener:', error);
+          // Ensure we don't leave the app in a broken state
           setUser(null);
+        } finally {
+          setLoading(false);
         }
-      } else {
+      },
+      (error) => {
+        // Handle auth state change errors
+        console.error('Auth state change error:', error);
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    );
 
     return unsubscribe;
   }, []);
