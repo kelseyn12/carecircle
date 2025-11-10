@@ -24,35 +24,58 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.inviteRedirect = void 0;
-// Cloud Function for handling invite redirects (replaces Firebase Dynamic Links)
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
-exports.inviteRedirect = functions.https.onRequest(async (req, res) => {
+if (!admin.apps.length) {
+    admin.initializeApp();
+}
+exports.inviteRedirect = functions
+    .region("us-central1")
+    .https.onRequest(async (req, res) => {
     try {
-        // Extract inviteId from URL path
-        const inviteId = req.path.split("/").pop();
+        // 1️⃣ Extract inviteId from path or query
+        const inviteId = req.path.split("/").pop() ||
+            req.query.inviteId;
         if (!inviteId) {
             res.status(400).send("Missing inviteId");
             return;
         }
-        // Get invite document from Firestore
-        const inviteDoc = await admin.firestore().doc(`invites/${inviteId}`).get();
-        if (!inviteDoc.exists) {
+        // 2️⃣ Fetch invite document
+        const inviteRef = admin.firestore().doc(`invites/${inviteId}`);
+        const inviteSnap = await inviteRef.get();
+        if (!inviteSnap.exists) {
             res.status(404).send("Invite not found");
             return;
         }
-        const inviteData = inviteDoc.data();
-        // Check if invite has expired
+        const inviteData = inviteSnap.data();
+        if (!inviteData) {
+            res.status(500).send("Invalid invite data");
+            return;
+        }
+        // 3️⃣ Check expiration
         if (inviteData.expiresAt && inviteData.expiresAt.toDate() < new Date()) {
             res.status(410).send("Invite expired");
             return;
         }
-        // Redirect to the fallback page with inviteId in the URL
+        // 4️⃣ Construct deep link or web fallback
+        const iosAppLink = `carecircle://inviteRedirect?inviteId=${inviteId}`;
+        const androidAppLink = `https://care-circle-15fd5.web.app/inviteRedirect?inviteId=${inviteId}`;
         const fallbackUrl = `https://care-circle-15fd5.web.app/fallback.html?inviteId=${inviteId}`;
-        res.redirect(302, fallbackUrl);
+        // 5️⃣ Smart redirect logic
+        const userAgent = req.get("user-agent") || "";
+        const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
+        const isAndroid = /Android/i.test(userAgent);
+        // On iOS, try app scheme first (universal links may handle it)
+        const redirectTarget = isIOS
+            ? iosAppLink
+            : isAndroid
+                ? androidAppLink
+                : fallbackUrl;
+        // 6️⃣ Redirect
+        res.redirect(302, redirectTarget);
     }
     catch (error) {
-        console.error('Error in inviteRedirect:', error);
+        console.error("Error in inviteRedirect:", error);
         res.status(500).send("Internal server error");
     }
 });

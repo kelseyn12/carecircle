@@ -61,19 +61,20 @@ A React Native app that helps families share private updates with their circle o
 - **Form Validation**: Zod schemas for input validation
 - **Error Handling**: User-friendly error messages
 
-### 🚧 In Progress
-- **Firebase Integration**: Firestore queries and real-time updates
+### ✅ Recently Completed
+- **Social Login**: Google and Apple Sign-In integration
 - **Circle Management**: Create, list, and manage care circles
 - **Update Sharing**: Text and photo updates with reactions
-- **Invite System**: Dynamic links for circle invitations
+- **Invite System**: Custom redirect system with beautiful fallback pages
 - **Push Notifications**: Real-time notifications for updates
+- **Offline Support**: Offline data synchronization and queuing
+- **Testing**: Comprehensive test suite (87 tests, 80% coverage)
+- **Build Configuration**: EAS Build setup with auto-increment
+- **Production Hardening**: Hermes/minification-safe Firebase callables
 
-### 📋 Planned
-- **Social Login**: Google and Apple Sign-In
-- **Offline Support**: Offline data synchronization
-- **Advanced Features**: Circle archiving, notification settings
-- **Testing**: Unit and integration tests
-- **Deployment**: App store preparation
+### 🚧 In Progress
+- **App Store Submission**: iOS production build #9 completed, ready for TestFlight
+- **Device Testing**: iOS build ready for testing, Android build pending
 
 ## 🏗️ Project Structure
 
@@ -136,12 +137,19 @@ EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
 - Secure password requirements
 - User session management
 
+### Implemented
+- Firestore security rules with row-level security (RLS)
+- EXIF data stripping from photos before upload
+- Input validation with Zod schemas
+- Secure password requirements
+- User session management
+- Production-safe Firebase callable implementation
+- Error boundaries and global error handling
+
 ### Planned
-- Firestore security rules
-- Row-level security (RLS)
-- EXIF data stripping
-- Rate limiting
-- Data encryption
+- Rate limiting on API endpoints
+- Advanced data encryption (upgrade from XOR to AES-GCM)
+- Key rotation mechanism
 
 ## 📚 Documentation
 

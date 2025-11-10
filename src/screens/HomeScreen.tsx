@@ -1,6 +1,7 @@
 // Home screen showing user's circles
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert, TextInput, Modal, StyleSheet, KeyboardAvoidingView, ScrollView, TouchableWithoutFeedback, Keyboard, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -45,6 +46,7 @@ const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user, signOut } = useAuth();
   const { circles, loading, error, refreshCircles } = useCircles();
+  const insets = useSafeAreaInsets();
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [inviteInput, setInviteInput] = useState('');
   const [requestName, setRequestName] = useState('');
@@ -682,7 +684,10 @@ const HomeScreen: React.FC = () => {
                   </TouchableOpacity>
                 </View>
               )}
-              <View className="absolute top-12 left-0 right-0 items-center">
+              <View 
+                className="absolute left-0 right-0 items-center"
+                style={{ top: insets.top + 16 }}
+              >
                 <SafeText className="text-white text-2xl font-bold mb-2">Scan QR Code</SafeText>
                 <SafeText className="text-white/80 text-base">Point your camera at the QR code</SafeText>
               </View>

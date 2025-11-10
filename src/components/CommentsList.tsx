@@ -10,6 +10,7 @@ import {
   Platform,
   Text 
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SafeText from './SafeText';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-root-toast';
@@ -27,6 +28,7 @@ interface CommentsListProps {
 
 const CommentsList: React.FC<CommentsListProps> = ({ updateId, circleId, onClose }) => {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
@@ -137,12 +139,19 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, circleId, onClose
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Header */}
-      <View className="bg-white border-b border-gray-200 px-6 py-4">
+      <View 
+        className="bg-white border-b border-gray-200 px-6"
+        style={{ 
+          paddingTop: insets.top + 12,
+          paddingBottom: 16
+        }}
+      >
         <View className="flex-row items-center justify-between">
           <SafeText className="text-xl font-bold text-gray-900">Comments</SafeText>
           <TouchableOpacity
             className="bg-gray-100 rounded-xl px-4 py-2"
             onPress={onClose}
+            activeOpacity={0.7}
           >
             <SafeText className="text-gray-700 font-semibold">Close</SafeText>
           </TouchableOpacity>
@@ -172,7 +181,13 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, circleId, onClose
       />
 
       {/* Comment Input */}
-      <View className="bg-white border-t border-gray-200 px-6 py-4">
+      <View 
+        className="bg-white border-t border-gray-200 px-6"
+        style={{ 
+          paddingTop: 16,
+          paddingBottom: Math.max(insets.bottom, 16)
+        }}
+      >
         <View className="flex-row items-start" style={{ gap: 12 }}>
           <View className="flex-1">
             <TextInput
