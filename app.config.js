@@ -104,6 +104,12 @@ export default {
           ios: {
             bitcode: false,
             useFrameworks: 'static', // ← Add this back for stability with Firebase & BarcodeScanner
+            // Disable Hermes to avoid minification issues with Firebase (can re-enable after testing)
+            // hermes: false,
+          },
+          android: {
+            // Disable Hermes to avoid minification issues with Firebase (can re-enable after testing)
+            // hermes: false,
           },
         },
       ],

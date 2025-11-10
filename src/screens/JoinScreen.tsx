@@ -1,20 +1,61 @@
-// Join screen for accepting circle invites
+// Join screen for accepting circle invites (Hermes-safe)
 import React, { useState, useEffect } from 'react';
 import { 
   View, 
   TouchableOpacity, 
   Alert, 
   ActivityIndicator,
-  ScrollView,
-  Text 
+  ScrollView
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../lib/authContext';
-import { httpsCallable } from 'firebase/functions';
+import { httpsCallable, type HttpsCallable, type HttpsCallableResult } from 'firebase/functions';
 import { functions } from '../lib/firebase';
 import SafeText from '../components/SafeText';
+
+// ✅ Hermes detection utility
+const isHermesEnabled = (): boolean => {
+  try {
+    const globalAny = global as any;
+    return typeof globalAny.HermesInternal !== 'undefined';
+  } catch {
+    return false;
+  }
+};
+
+// ✅ Production-safe callable creation
+const createSafeCallable = <RequestData = any, ResponseData = any>(
+  functionsInstance: any,
+  functionName: string
+): HttpsCallable<RequestData, ResponseData> | null => {
+  if (!functionsInstance || typeof httpsCallable !== 'function') {
+    console.error('[createSafeCallable] Invalid Firebase setup:', {
+      hasFunctions: !!functionsInstance,
+      hasCallable: typeof httpsCallable === 'function',
+    });
+    return null;
+  }
+
+  try {
+    const callable = httpsCallable<RequestData, ResponseData>(functionsInstance, functionName);
+    if (typeof callable !== 'function') {
+      console.error('[createSafeCallable] Callable is not a function:', typeof callable);
+      return null;
+    }
+
+    console.log('[createSafeCallable] Created callable for', functionName, 'Hermes:', isHermesEnabled());
+    return callable;
+  } catch (error: any) {
+    console.error('[createSafeCallable] Failed to create callable:', {
+      error: error.message,
+      stack: error.stack,
+      hermesEnabled: isHermesEnabled(),
+    });
+    return null;
+  }
+};
 
 type JoinScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Join'>;
 type JoinScreenRouteProp = RouteProp<RootStackParamList, 'Join'>;
@@ -24,7 +65,7 @@ const JoinScreen: React.FC = () => {
   const route = useRoute<JoinScreenRouteProp>();
   const { user } = useAuth();
   const { inviteId } = route.params;
-  
+
   const [circleInfo, setCircleInfo] = useState<{
     title: string;
     circleId: string;
@@ -33,7 +74,12 @@ const JoinScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
 
-  const acceptInvite = functions ? httpsCallable(functions, 'acceptInvite') : null;
+  // ✅ Safely create callable before async usage
+  const acceptInviteCallable = createSafeCallable<{ inviteId: string }, { 
+    title: string;
+    circleId: string;
+    alreadyMember: boolean;
+  }>(functions, 'acceptInvite');
 
   useEffect(() => {
     if (!user) {
@@ -50,43 +96,66 @@ const JoinScreen: React.FC = () => {
 
     try {
       setIsLoading(true);
-      
-      if (!acceptInvite) {
+
+      if (!acceptInviteCallable) {
         throw new Error('Firebase functions not available');
       }
-      const result = await acceptInvite({ inviteId });
-      const data = result.data as any;
-      
-      // If successfully joined, fetch the encryption key so they can read all messages
+
+      let result: HttpsCallableResult<{
+        title: string;
+        circleId: string;
+        alreadyMember: boolean;
+      }>;
+
+      try {
+        result = await acceptInviteCallable({ inviteId });
+      } catch (callError: any) {
+        console.error('[handleAcceptInvite] Callable execution error:', callError);
+        throw callError;
+      }
+
+      if (!result?.data) {
+        throw new Error('Invalid response from server');
+      }
+
+      const data = result.data;
+
+      if (!data.circleId || !data.title) {
+        throw new Error('Server response missing required fields');
+      }
+
+      // Optional: fetch encryption key after join
       if (data.circleId && !data.alreadyMember) {
         try {
           const { getCircleEncryptionKey } = await import('../lib/encryption');
-          // This will fetch from Firestore and store locally
           await getCircleEncryptionKey(data.circleId);
         } catch (keyError) {
-          console.error('Error fetching encryption key after joining:', keyError);
-          // Don't fail the join if key fetch fails
+          console.warn('Error fetching encryption key:', keyError);
         }
       }
-      
+
       setCircleInfo({
         title: data.title,
         circleId: data.circleId,
         alreadyMember: data.alreadyMember,
       });
     } catch (error: any) {
-      console.error('Error accepting invite:', error);
-      
+      console.error('[handleAcceptInvite] Error accepting invite:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
+        hermesEnabled: isHermesEnabled(),
+      });
+
       let errorMessage = 'Failed to join circle. Please try again.';
-      
       if (error.code === 'functions/not-found') {
         errorMessage = 'Invite not found or has expired.';
       } else if (error.code === 'functions/deadline-exceeded') {
         errorMessage = 'This invite has expired. Please request a new one.';
-      } else if (error.message) {
-        errorMessage = error.message;
+      } else if (error.message?.includes('minification')) {
+        errorMessage = 'A build configuration issue occurred. Please contact support.';
       }
-      
+
       Alert.alert('Error', errorMessage, [
         {
           text: 'OK',
@@ -102,25 +171,16 @@ const JoinScreen: React.FC = () => {
     if (!circleInfo) return;
 
     if (circleInfo.alreadyMember) {
-      // User is already a member, just navigate to the circle
       navigation.navigate('CircleFeed', { circleId: circleInfo.circleId });
     } else {
-      // Show consent screen
       Alert.alert(
         'Join Circle',
         `By joining "${circleInfo.title}", you'll be able to see updates shared within this circle. Do you want to join?`,
         [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-            onPress: () => navigation.navigate('Home'),
-          },
+          { text: 'Cancel', style: 'cancel', onPress: () => navigation.navigate('Home') },
           {
             text: 'Join',
-            onPress: () => {
-              // User has already been added to the circle by the Cloud Function
-              navigation.navigate('CircleFeed', { circleId: circleInfo.circleId });
-            },
+            onPress: () => navigation.navigate('CircleFeed', { circleId: circleInfo.circleId }),
           },
         ]
       );
@@ -161,11 +221,11 @@ const JoinScreen: React.FC = () => {
           >
             <SafeText className="text-gray-700 font-semibold">Back</SafeText>
           </TouchableOpacity>
-          
+
           <SafeText className="text-xl font-semibold text-gray-800">
             {circleInfo.alreadyMember ? 'Welcome Back!' : 'Join Circle'}
           </SafeText>
-          
+
           <View className="w-16" />
         </View>
       </View>
@@ -178,10 +238,9 @@ const JoinScreen: React.FC = () => {
               {circleInfo.title}
             </SafeText>
             <SafeText className="text-gray-600 text-center">
-              {circleInfo.alreadyMember 
+              {circleInfo.alreadyMember
                 ? "You're already a member of this circle!"
-                : "You've been invited to join this CareCircle Connect circle"
-              }
+                : "You've been invited to join this CareCircle Connect circle"}
             </SafeText>
           </View>
 
@@ -191,30 +250,23 @@ const JoinScreen: React.FC = () => {
                 What you'll be able to do:
               </SafeText>
               <View className="space-y-2">
-                <View className="flex-row items-center">
-                  <SafeText className="text-green-600 text-lg mr-3">✓</SafeText>
-                  <SafeText className="text-gray-700">See updates shared by circle members</SafeText>
-                </View>
-                <View className="flex-row items-center">
-                  <SafeText className="text-green-600 text-lg mr-3">✓</SafeText>
-                  <SafeText className="text-gray-700">Post your own updates and photos</SafeText>
-                </View>
-                <View className="flex-row items-center">
-                  <SafeText className="text-green-600 text-lg mr-3">✓</SafeText>
-                  <SafeText className="text-gray-700">React to updates with emojis</SafeText>
-                </View>
-                <View className="flex-row items-center">
-                  <SafeText className="text-green-600 text-lg mr-3">✓</SafeText>
-                  <SafeText className="text-gray-700">Receive push notifications for new updates</SafeText>
-                </View>
+                {[
+                  'See updates shared by circle members',
+                  'Post your own updates and photos',
+                  'React to updates with emojis',
+                  'Receive push notifications for new updates',
+                ].map((text, i) => (
+                  <View key={i} className="flex-row items-center">
+                    <SafeText className="text-green-600 text-lg mr-3">✓</SafeText>
+                    <SafeText className="text-gray-700">{text}</SafeText>
+                  </View>
+                ))}
               </View>
             </View>
           )}
 
           <TouchableOpacity
-            className={`rounded-xl py-4 ${
-              isJoining ? 'bg-gray-300' : 'bg-blue-500'
-            }`}
+            className={`rounded-xl py-4 ${isJoining ? 'bg-gray-300' : 'bg-blue-500'}`}
             onPress={handleJoinCircle}
             disabled={isJoining}
           >
@@ -245,5 +297,9 @@ const JoinScreen: React.FC = () => {
     </ScrollView>
   );
 };
+
+// 🧠 Prevent Hermes minifier renaming
+JoinScreen.displayName = 'JoinScreen';
+Object.defineProperty(JoinScreen, 'name', { value: 'JoinScreen' });
 
 export default JoinScreen;

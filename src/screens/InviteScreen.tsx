@@ -6,6 +6,7 @@ import {
   Share,
   ActivityIndicator,
   TextInput,
+  Text,
   Platform,
   ScrollView,
   KeyboardAvoidingView
@@ -16,11 +17,93 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../lib/authContext';
-import { httpsCallable } from 'firebase/functions';
+// Import httpsCallable with explicit typing to prevent minification issues
+import { httpsCallable, type HttpsCallable, type HttpsCallableResult } from 'firebase/functions';
 import { functions } from '../lib/firebase';
 import Toast from 'react-native-root-toast';
 import QRCode from 'react-native-qrcode-svg';
 import SafeText from '../components/SafeText';
+
+// Hermes detection utility for production debugging
+const isHermesEnabled = (): boolean => {
+  try {
+    // @ts-ignore - Hermes global is not in types
+    const globalAny = globalThis as any;
+    const globalObj = global as any;
+    return typeof globalAny.HermesInternal !== 'undefined' || 
+           typeof globalObj.HermesInternal !== 'undefined';
+  } catch {
+    return false;
+  }
+};
+
+// Production-safe callable creation with runtime validation
+const createSafeCallable = <RequestData = any, ResponseData = any>(
+  functionsInstance: any,
+  functionName: string
+): HttpsCallable<RequestData, ResponseData> | null => {
+  // Runtime validation: ensure functions instance is valid
+  if (!functionsInstance) {
+    console.error('[createSafeCallable] Functions instance is null/undefined');
+    return null;
+  }
+
+  // Runtime validation: ensure functions is an object (not a class that got minified incorrectly)
+  if (typeof functionsInstance !== 'object') {
+    console.error('[createSafeCallable] Functions instance is not an object:', typeof functionsInstance);
+    return null;
+  }
+
+  // Runtime validation: ensure httpsCallable is a function
+  if (typeof httpsCallable !== 'function') {
+    console.error('[createSafeCallable] httpsCallable is not a function:', typeof httpsCallable);
+    return null;
+  }
+
+  try {
+    // Create callable synchronously - critical for minification safety
+    const callable = httpsCallable<RequestData, ResponseData>(functionsInstance, functionName);
+    
+    // Runtime validation: ensure callable was created and is a function
+    if (!callable) {
+      console.error('[createSafeCallable] Callable creation returned null/undefined');
+      return null;
+    }
+
+    if (typeof callable !== 'function') {
+      const callableAny = callable as any;
+      console.error('[createSafeCallable] Callable is not a function:', {
+        type: typeof callable,
+        constructor: callableAny?.constructor?.name,
+        value: callable,
+      });
+      return null;
+    }
+
+    // Log Hermes status in production for debugging (only once)
+    const globalAny = global as any;
+    if (__DEV__ || !globalAny.__HERMES_LOGGED__) {
+      const hermesEnabled = isHermesEnabled();
+      console.log('[createSafeCallable] Environment:', {
+        hermesEnabled,
+        functionName,
+        functionsType: typeof functionsInstance,
+        callableType: typeof callable,
+      });
+      globalAny.__HERMES_LOGGED__ = true;
+    }
+
+    return callable;
+  } catch (error: any) {
+    console.error('[createSafeCallable] Error creating callable:', {
+      error: error.message,
+      stack: error.stack,
+      functionName,
+      hermesEnabled: isHermesEnabled(),
+    });
+    return null;
+  }
+};
 
 type InviteScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Invite'>;
 type InviteScreenRouteProp = RouteProp<RootStackParamList, 'Invite'>;
@@ -54,29 +137,109 @@ const InviteScreen: React.FC = () => {
   };
 
   const handleCreateInvite = async () => {
+    // Early validation: user must be logged in
     if (!user) {
       Alert.alert('Error', 'You must be logged in to create invites.');
       return;
     }
 
+    // Early validation: functions must be available
     if (!functions) {
       Alert.alert('Error', 'Firebase functions not available. Please check your connection.');
+      return;
+    }
+
+    // Early validation: circleId must be present
+    if (!circleId || typeof circleId !== 'string' || circleId.trim().length === 0) {
+      Alert.alert('Error', 'Invalid circle ID.');
       return;
     }
 
     try {
       setIsCreating(true);
       
-      // Create the callable function inside the handler to ensure functions is initialized
-      const createInvite = httpsCallable(functions, 'createInvite');
-      const result = await createInvite({ circleId });
-      const data = result.data as any;
+      // PRODUCTION-SAFE: Create callable with runtime validation
+      // This ensures class constructors aren't mis-minified by Hermes
+      const createInviteCallable = createSafeCallable<{ circleId: string }, { inviteLink: string; inviteId: string; expiresAt: string }>(
+        functions,
+        'createInvite'
+      );
 
-      if (!data || !data.inviteLink) {
-        throw new Error('Invalid response from server');
+      // Runtime guard: validate callable was created successfully
+      if (!createInviteCallable) {
+        throw new Error('Failed to create Firebase callable function. This may be a minification issue.');
       }
 
-      const link = String(data.inviteLink).trim();
+      // Runtime guard: ensure callable is actually a function before calling
+      if (typeof createInviteCallable !== 'function') {
+        const callableAny = createInviteCallable as any;
+        console.error('[handleCreateInvite] Callable is not a function:', {
+          type: typeof createInviteCallable,
+          constructor: callableAny?.constructor?.name,
+          hermesEnabled: isHermesEnabled(),
+        });
+        throw new Error('Callable function is invalid. This may indicate a minification issue.');
+      }
+
+      // Call the function with explicit typing and error handling
+      let result: HttpsCallableResult<{ inviteLink: string; inviteId: string; expiresAt: string }>;
+      try {
+        result = await createInviteCallable({ circleId });
+      } catch (callError: any) {
+        // Catch callable execution errors separately
+        console.error('[handleCreateInvite] Callable execution error:', {
+          error: callError.message,
+          code: callError.code,
+          hermesEnabled: isHermesEnabled(),
+        });
+        throw callError;
+      }
+
+      // Runtime validation: ensure result exists and has data
+      if (!result) {
+        throw new Error('No response received from server');
+      }
+
+      if (!result.data) {
+        throw new Error('Invalid response format from server');
+      }
+
+      const data = result.data;
+
+      // PRODUCTION-SAFE: Explicit runtime validation for inviteLink
+      // This prevents undefined/null issues after minification
+      if (!data.inviteLink) {
+        console.error('[handleCreateInvite] Missing inviteLink in response:', {
+          dataKeys: Object.keys(data),
+          dataType: typeof data,
+          hermesEnabled: isHermesEnabled(),
+        });
+        throw new Error('Server response missing invite link');
+      }
+
+      // Type-safe conversion with validation
+      const inviteLinkValue = data.inviteLink;
+      if (typeof inviteLinkValue !== 'string') {
+        console.error('[handleCreateInvite] inviteLink is not a string:', {
+          type: typeof inviteLinkValue,
+          value: inviteLinkValue,
+        });
+        throw new Error('Invalid invite link format from server');
+      }
+
+      const link = String(inviteLinkValue).trim();
+      
+      // Final validation: ensure link is not empty
+      if (!link || link.length === 0) {
+        throw new Error('Received empty invite link from server');
+      }
+
+      // Validate link format (should be a URL)
+      if (!link.startsWith('http://') && !link.startsWith('https://')) {
+        console.warn('[handleCreateInvite] Invite link does not start with http/https:', link.substring(0, 50));
+        // Still proceed, but log warning
+      }
+
       setInviteLink(link);
       await forcePlainCopy(link);
 
@@ -85,21 +248,34 @@ const InviteScreen: React.FC = () => {
         position: Toast.positions.BOTTOM,
       });
     } catch (error: any) {
-      console.error('Error creating invite:', error);
-      console.error('Error details:', {
+      // Comprehensive error logging for production debugging
+      const hermesEnabled = isHermesEnabled();
+      console.error('[handleCreateInvite] Error creating invite:', {
+        error: error.message,
         code: error.code,
-        message: error.message,
         stack: error.stack,
+        hermesEnabled,
+        functionsAvailable: !!functions,
+        circleId,
+        errorType: error.constructor?.name,
       });
       
+      // User-friendly error messages
       let errorMessage = 'Failed to create invite. Please try again.';
+      
       if (error.code === 'functions/permission-denied') {
         errorMessage = 'You are not a member of this circle.';
       } else if (error.code === 'functions/not-found') {
         errorMessage = 'Circle not found.';
+      } else if (error.code === 'functions/unavailable') {
+        errorMessage = 'Firebase Functions service is unavailable. Please check your connection.';
+      } else if (error.message?.includes('minification')) {
+        errorMessage = 'A build configuration issue occurred. Please contact support.';
       } else if (error.message) {
-        errorMessage = error.message;
+        // Use the error message if it's user-friendly, otherwise use generic
+        errorMessage = error.message.length < 100 ? error.message : errorMessage;
       }
+      
       Alert.alert('Error', errorMessage);
     } finally {
       setIsCreating(false);

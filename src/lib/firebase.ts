@@ -56,7 +56,18 @@ try {
   storage = getStorage(app);
 
   // Initialize Cloud Functions
-  functions = getFunctions(app);
+  // Use default region (us-central1) or specify if needed
+  try {
+    functions = getFunctions(app);
+    // Ensure functions is properly initialized
+    if (!functions) {
+      console.warn('getFunctions returned null/undefined');
+      functions = null;
+    }
+  } catch (functionsError) {
+    console.error('Error initializing Firebase Functions:', functionsError);
+    functions = null;
+  }
 } catch (error) {
   console.warn('Firebase services initialization failed:', error);
   // Create mock objects to prevent crashes
