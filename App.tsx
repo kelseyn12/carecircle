@@ -1,28 +1,26 @@
 import 'react-native-gesture-handler';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { RootSiblingParent } from 'react-native-root-siblings'; // Required for react-native-root-toast
+import { RootSiblingParent } from 'react-native-root-siblings';
 import AppNavigator from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/lib/authContext';
 import { ErrorBoundary } from './src/lib/errorHandler';
-import './global.css'; 
+import './global.css';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Linking from 'expo-linking';
+import { NavigationContainerRefWithCurrent } from '@react-navigation/native';
 
-// Global error handler for unhandled promise rejections
+// 🧩 Global error handler
 if (typeof global !== 'undefined') {
   const originalHandler = global.ErrorUtils?.getGlobalHandler?.();
-  
   global.ErrorUtils?.setGlobalHandler?.((error: Error, isFatal?: boolean) => {
     console.error('Global error handler:', error, { isFatal });
-    
-    // Call original handler if it exists
-    if (originalHandler) {
-      originalHandler(error, isFatal);
-    }
+    if (originalHandler) originalHandler(error, isFatal);
   });
 }
 
-// Handle unhandled promise rejections
+// 🧩 Handle unhandled promise rejections
 if (typeof process !== 'undefined' && process.on) {
   process.on('unhandledRejection', (reason: any) => {
     console.error('Unhandled promise rejection:', reason);
@@ -30,12 +28,79 @@ if (typeof process !== 'undefined' && process.on) {
 }
 
 export default function App() {
+  // We'll store a ref to the navigator so we can trigger navigation after mount
+  const navigationRef = useRef<NavigationContainerRefWithCurrent<ReactNavigation.RootParamList>>(null);
+
+  // ✅ Handle invite links and stored pending invites
+  useEffect(() => {
+    const handleInitialInvite = async () => {
+      try {
+        // Wait a moment for navigation to initialize
+        await new Promise((r) => setTimeout(r, 500));
+
+        let inviteId: string | null = null;
+
+        // Check if the app was opened via a deep link (carecircle:// or universal link)
+        const url = await Linking.getInitialURL();
+        if (url) {
+          try {
+            const parsed = new URL(url);
+            inviteId = parsed.searchParams.get('inviteId');
+          } catch (parseError) {
+            console.warn('Could not parse deep link:', parseError);
+          }
+        }
+
+        // Fallback: check if there's a pending invite saved by fallback.html
+        if (!inviteId) {
+          inviteId = await AsyncStorage.getItem('pendingInviteId');
+        }
+
+        if (inviteId) {
+          console.log('🎯 Found invite ID:', inviteId);
+          await AsyncStorage.removeItem('pendingInviteId');
+
+          // Ensure navigation is ready
+          const navigateToJoin = () => {
+            if (navigationRef.current?.navigate) {
+              navigationRef.current.navigate('Join', { inviteId });
+            } else {
+              // If navigation not ready, retry shortly
+              setTimeout(navigateToJoin, 300);
+            }
+          };
+          navigateToJoin();
+        }
+      } catch (err) {
+        console.error('Error handling pending invite:', err);
+      }
+    };
+
+    handleInitialInvite();
+
+    // Optional: Listen for new deep links while app is open
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      try {
+        const parsed = new URL(url);
+        const inviteId = parsed.searchParams.get('inviteId');
+        if (inviteId && navigationRef.current?.navigate) {
+          navigationRef.current.navigate('Join', { inviteId });
+        }
+      } catch (err) {
+        console.error('Error handling runtime deep link:', err);
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
         <RootSiblingParent>
           <AuthProvider>
-            <AppNavigator />
+            {/* 🚀 Pass the navigationRef down so it can be accessed in AppNavigator */}
+            <AppNavigator navigationRef={navigationRef} />
             <StatusBar style="auto" />
           </AuthProvider>
         </RootSiblingParent>
@@ -43,4 +108,3 @@ export default function App() {
     </ErrorBoundary>
   );
 }
-

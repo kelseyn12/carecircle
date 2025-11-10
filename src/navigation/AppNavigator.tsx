@@ -32,24 +32,20 @@ const LoadingScreen: React.FC = () => (
   </View>
 );
 
-const AppNavigator: React.FC = () => {
+// AppNavigator.tsx
+const AppNavigator: React.FC<{ navigationRef?: any }> = ({ navigationRef }) => {
   const { user, loading } = useAuth();
   const notificationListenersRef = useRef<ReturnType<typeof setupNotificationListeners> | null>(null);
 
-  // Setup notification listeners when app loads
   useEffect(() => {
     const listeners = setupNotificationListeners();
     notificationListenersRef.current = listeners;
-    
-    return () => {
-      listeners.remove();
-    };
+    return () => listeners.remove();
   }, []);
 
-  // Configure deep linking
   const prefix = Linking.createURL('/');
   const linking = {
-    prefixes: [prefix, 'https://carecircle.web.app', 'carecircle://'],
+    prefixes: [prefix, 'https://care-circle-15fd5.web.app', 'https://carecircle.web.app', 'carecircle://'],
     config: {
       screens: {
         Join: 'join',
@@ -58,73 +54,30 @@ const AppNavigator: React.FC = () => {
     },
   };
 
-  // Show loading screen while checking authentication
-  if (loading) {
-    return <LoadingScreen />;
-  }
+  if (loading) return <LoadingScreen />;
 
   return (
-    <NavigationContainer linking={linking}>
+    <NavigationContainer ref={navigationRef} linking={linking}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
-          // Authenticated user screens
           <>
-            <Stack.Screen 
-              name="Home" 
-              component={HomeScreen} 
-              options={{ title: 'CareCircle Connect' }}
-            />
-            <Stack.Screen 
-              name="CreateCircle" 
-              component={CreateCircleScreen}
-              options={{ title: 'Create Circle' }}
-            />
-            <Stack.Screen 
-              name="CircleFeed" 
-              component={CircleFeedScreen}
-              options={{ title: 'Circle Updates' }}
-            />
-            <Stack.Screen 
-              name="NewUpdate" 
-              component={NewUpdateScreen}
-              options={{ title: 'Share Update' }}
-            />
-            <Stack.Screen 
-              name="Invite" 
-              component={InviteScreen}
-              options={{ title: 'Invite to Circle' }}
-            />
-            <Stack.Screen 
-              name="Join" 
-              component={JoinScreen}
-              options={{ title: 'Join Circle' }}
-            />
-            <Stack.Screen 
-              name="MemberManagement" 
-              component={MemberManagementScreen}
-              options={{ title: 'Manage Members' }}
-            />
-            <Stack.Screen 
-              name="Comments" 
-              component={CommentsScreen}
-              options={{ 
-                title: 'Comments',
-                presentation: 'modal'
-              }}
-            />
-            <Stack.Screen 
-              name="Settings" 
-              component={SettingsScreen}
-              options={{ title: 'Settings' }}
-            />
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="CreateCircle" component={CreateCircleScreen} />
+            <Stack.Screen name="CircleFeed" component={CircleFeedScreen} />
+            <Stack.Screen name="NewUpdate" component={NewUpdateScreen} />
+            <Stack.Screen name="Invite" component={InviteScreen} />
+            <Stack.Screen name="Join" component={JoinScreen} />
+            <Stack.Screen name="MemberManagement" component={MemberManagementScreen} />
+            <Stack.Screen name="Comments" component={CommentsScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
           </>
         ) : (
-          // Unauthenticated user screens
           <Stack.Screen name="SignIn" component={SignInScreen} />
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
 };
+
 
 export default AppNavigator;
