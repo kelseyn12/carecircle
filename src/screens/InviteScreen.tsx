@@ -36,8 +36,6 @@ const InviteScreen: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
-  const createInvite = functions ? httpsCallable(functions, 'createInvite') : null;
-
   /** ✅ Force plain-text copy (fixes iOS "bplist00" bug) */
   const forcePlainCopy = async (text: string) => {
     const cleanText = String(text).trim();
@@ -61,13 +59,22 @@ const InviteScreen: React.FC = () => {
       return;
     }
 
+    if (!functions) {
+      Alert.alert('Error', 'Firebase functions not available. Please check your connection.');
+      return;
+    }
+
     try {
       setIsCreating(true);
-      if (!createInvite) {
-        throw new Error('Firebase functions not available');
-      }
+      
+      // Create the callable function inside the handler to ensure functions is initialized
+      const createInvite = httpsCallable(functions, 'createInvite');
       const result = await createInvite({ circleId });
       const data = result.data as any;
+
+      if (!data || !data.inviteLink) {
+        throw new Error('Invalid response from server');
+      }
 
       const link = String(data.inviteLink).trim();
       setInviteLink(link);
@@ -79,6 +86,12 @@ const InviteScreen: React.FC = () => {
       });
     } catch (error: any) {
       console.error('Error creating invite:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack,
+      });
+      
       let errorMessage = 'Failed to create invite. Please try again.';
       if (error.code === 'functions/permission-denied') {
         errorMessage = 'You are not a member of this circle.';
