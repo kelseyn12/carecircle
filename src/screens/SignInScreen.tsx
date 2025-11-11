@@ -10,6 +10,7 @@ import { RootStackParamList } from '../types';
 import { useAuth } from '../lib/authContext';
 import { z } from 'zod';
 import SafeText from '../components/SafeText';
+import { generateCaptcha, validateCaptcha, type CaptchaChallenge } from '../utils/captcha';
 
 type SignInScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SignIn'>;
 
@@ -73,15 +74,30 @@ const SignInScreen: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [captcha, setCaptcha] = useState<CaptchaChallenge>(generateCaptcha());
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
+  const [captchaError, setCaptchaError] = useState('');
 
   // Handle sign in
   const handleSignIn = async () => {
     try {
+      // Validate CAPTCHA
+      if (!validateCaptcha(captchaAnswer, captcha.answer)) {
+        setCaptchaError('Incorrect answer. Please try again.');
+        setCaptcha(generateCaptcha());
+        setCaptchaAnswer('');
+        return;
+      }
+      setCaptchaError('');
+      
       // Validate form data
       const validatedData = signInSchema.parse({ email, password });
       
       setIsLoading(true);
       await signIn(validatedData.email, validatedData.password);
+      // Reset CAPTCHA after successful sign in
+      setCaptcha(generateCaptcha());
+      setCaptchaAnswer('');
       // Navigation will be handled by AuthProvider
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -89,6 +105,9 @@ const SignInScreen: React.FC = () => {
       } else {
         Alert.alert('Sign In Error', error instanceof Error ? error.message : 'Failed to sign in. Please try again.');
       }
+      // Generate new CAPTCHA on error
+      setCaptcha(generateCaptcha());
+      setCaptchaAnswer('');
     } finally {
       setIsLoading(false);
     }
@@ -97,11 +116,23 @@ const SignInScreen: React.FC = () => {
   // Handle sign up
   const handleSignUp = async () => {
     try {
+      // Validate CAPTCHA
+      if (!validateCaptcha(captchaAnswer, captcha.answer)) {
+        setCaptchaError('Incorrect answer. Please try again.');
+        setCaptcha(generateCaptcha());
+        setCaptchaAnswer('');
+        return;
+      }
+      setCaptchaError('');
+      
       // Validate form data
       const validatedData = signUpSchema.parse({ email, password, displayName });
       
       setIsLoading(true);
       await signUp(validatedData.email, validatedData.password, validatedData.displayName);
+      // Reset CAPTCHA after successful sign up
+      setCaptcha(generateCaptcha());
+      setCaptchaAnswer('');
       // Navigation will be handled by AuthProvider
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -109,6 +140,9 @@ const SignInScreen: React.FC = () => {
       } else {
         Alert.alert('Sign Up Error', error instanceof Error ? error.message : 'Failed to create account. Please try again.');
       }
+      // Generate new CAPTCHA on error
+      setCaptcha(generateCaptcha());
+      setCaptchaAnswer('');
     } finally {
       setIsLoading(false);
     }
@@ -245,6 +279,43 @@ const SignInScreen: React.FC = () => {
                 ) : null}
                 {isSignUp && !passwordError && password.length > 0 ? (
                   <SafeText className="text-green-600 text-base mt-1 ml-1 leading-[24px]">✓ Password meets requirements</SafeText>
+                ) : null}
+              </View>
+
+              {/* CAPTCHA */}
+              <View style={{ marginTop: 20 }}>
+                <SafeText className="text-gray-700 font-semibold mb-3 text-lg leading-[26px]">
+                  Security Check: {captcha.question}
+                </SafeText>
+                <View className={`bg-gray-50 rounded-2xl border ${captchaError ? 'border-red-300' : 'border-gray-100'} flex-row items-center`}>
+                  <TextInput
+                    className="flex-1 px-5 py-4 text-gray-800 text-base"
+                    placeholder="Enter answer"
+                    placeholderTextColor="#9CA3AF"
+                    value={captchaAnswer}
+                    onChangeText={(text) => {
+                      setCaptchaAnswer(text);
+                      setCaptchaError('');
+                    }}
+                    keyboardType="numeric"
+                    allowFontScaling={false}
+                    maxFontSizeMultiplier={1.0}
+                    style={{ fontSize: 19 }}
+                  />
+                  <TouchableOpacity
+                    onPress={() => {
+                      setCaptcha(generateCaptcha());
+                      setCaptchaAnswer('');
+                      setCaptchaError('');
+                    }}
+                    className="px-4 py-4"
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="refresh-outline" size={20} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
+                {captchaError ? (
+                  <SafeText className="text-red-500 text-base mt-1 ml-1 leading-[24px]">{captchaError}</SafeText>
                 ) : null}
               </View>
 

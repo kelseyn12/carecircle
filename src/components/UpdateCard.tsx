@@ -1,6 +1,6 @@
 // Update card component for displaying individual updates
-import React from 'react';
-import { View, TouchableOpacity, Image, Text } from 'react-native';
+import React, { useState } from 'react';
+import { View, TouchableOpacity, Image, Text, Modal, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Update } from '../types';
 import { formatRelativeTime } from '../lib/utils';
@@ -15,6 +15,8 @@ interface UpdateCardProps {
   onComment?: (updateId: string) => void;
 }
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 const UpdateCard: React.FC<UpdateCardProps> = ({ 
   update, 
   authorName = 'Anonymous',
@@ -22,6 +24,8 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
   onReaction,
   onComment 
 }) => {
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+
   // Format relative time
   const formatRelativeTime = (date: Date) => {
     const now = new Date();
@@ -105,13 +109,48 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
 
       {/* Photo if available */}
       {update.photoURL && (
-        <View style={{ marginBottom: 16, borderRadius: 16, overflow: 'hidden' }}>
+        <TouchableOpacity
+          onPress={() => setImageModalVisible(true)}
+          activeOpacity={0.9}
+          style={{ marginBottom: 16, borderRadius: 16, overflow: 'hidden' }}
+        >
           <Image
             source={{ uri: update.photoURL }}
             style={{ width: '100%', height: 200 }}
             resizeMode="cover"
           />
-        </View>
+        </TouchableOpacity>
+      )}
+
+      {/* Image Viewer Modal */}
+      {update.photoURL && (
+        <Modal
+          visible={imageModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setImageModalVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setImageModalVisible(false)}
+              activeOpacity={0.7}
+            >
+              <SafeText style={styles.closeButtonText}>✕</SafeText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.imageContainer}
+              activeOpacity={1}
+              onPress={() => setImageModalVisible(false)}
+            >
+              <Image
+                source={{ uri: update.photoURL }}
+                style={styles.fullScreenImage}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          </View>
+        </Modal>
       )}
 
       {/* Reactions */}
@@ -184,5 +223,41 @@ const UpdateCard: React.FC<UpdateCardProps> = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  imageContainer: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+  },
+});
 
 export default UpdateCard;

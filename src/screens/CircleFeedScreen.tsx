@@ -7,7 +7,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Update } from '../types';
 import UpdateCard from '../components/UpdateCard';
 import { useAuth } from '../lib/authContext';
-import { subscribeToCircleUpdates, canUserPostUpdates, getUser, toggleReaction, getPendingJoinRequests, setCircleLastViewed } from '../lib/firestoreUtils';
+import { subscribeToCircleUpdates, getCircleUpdatesPaginated, canUserPostUpdates, getUser, toggleReaction, getPendingJoinRequests, setCircleLastViewed } from '../lib/firestoreUtils';
+import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import OfflineIndicator from '../components/OfflineIndicator';
 import SafeText from '../components/SafeText';
@@ -24,10 +25,13 @@ const CircleFeedScreen: React.FC = () => {
   const [updates, setUpdates] = useState<Update[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [canPostUpdates, setCanPostUpdates] = useState(true); // Set to true by default for now
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [pendingCount, setPendingCount] = useState(0);
+  const [lastUpdateDoc, setLastUpdateDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMoreUpdates, setHasMoreUpdates] = useState(true);
 
   // Fetch encryption key when viewing circle (so new members can decrypt messages)
   useEffect(() => {
@@ -58,47 +62,147 @@ const CircleFeedScreen: React.FC = () => {
         setCanPostUpdates(canPost);
       } catch (error) {
         console.error('Error checking update permissions:', error);
-        // Temporarily allow all users to post updates for debugging
-        console.log('Permission check failed, allowing post for debugging');
-        setCanPostUpdates(true);
+        // Default to false for security - user must have explicit permission
+        setCanPostUpdates(false);
       }
     };
 
     checkUpdatePermissions();
   }, [user, circleId]);
 
-  // Subscribe to real-time updates
+  // Load initial updates with pagination
   useEffect(() => {
     if (!circleId) return;
 
-    setLoading(true);
-    setError(null);
+    const loadInitialUpdates = async () => {
+      setLoading(true);
+      setError(null);
+      setLastUpdateDoc(null);
+      setHasMoreUpdates(true);
 
-    const unsubscribe = subscribeToCircleUpdates(circleId, async (updatesData) => {
-      setUpdates(updatesData);
-      
-      // Fetch user names for all authors
-      const authorIds = Array.from(new Set(updatesData.map(u => u.authorId)));
-      const namesMap: Record<string, string> = {};
-      
-      for (const authorId of authorIds) {
-        try {
-          const userData = await getUser(authorId);
-          if (userData) {
-            namesMap[authorId] = userData.displayName;
+      try {
+        const result = await getCircleUpdatesPaginated(circleId, 15);
+        setUpdates(result.updates);
+        setLastUpdateDoc(result.lastDoc);
+        setHasMoreUpdates(result.hasMore);
+        
+        // Fetch user names for all authors
+        const authorIds = Array.from(new Set(result.updates.map(u => u.authorId)));
+        const namesMap: Record<string, string> = {};
+        
+        for (const authorId of authorIds) {
+          try {
+            const userData = await getUser(authorId);
+            if (userData) {
+              namesMap[authorId] = userData.displayName;
+            }
+          } catch (error) {
+            console.error('Error fetching user:', authorId, error);
           }
-        } catch (error) {
-          console.error('Error fetching user:', authorId, error);
         }
+        
+        setUserNames(namesMap);
+      } catch (error: any) {
+        console.error('Error loading updates:', error);
+        setError(error.message || 'Failed to load updates');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-      
-      setUserNames(namesMap);
-      setLoading(false);
-      setRefreshing(false);
+    };
+
+    loadInitialUpdates();
+  }, [circleId]);
+
+  // Subscribe to new updates (real-time for latest posts)
+  useEffect(() => {
+    if (!circleId || updates.length === 0) return;
+
+    // Get the most recent update timestamp
+    const mostRecentUpdate = updates[0]?.createdAt;
+    if (!mostRecentUpdate) return;
+
+    // Subscribe to updates created after the most recent one we have
+    const unsubscribe = subscribeToCircleUpdates(circleId, async (updatesData) => {
+      // Filter to only new updates (created after our most recent)
+      const newUpdates = updatesData.filter(
+        update => update.createdAt.getTime() > mostRecentUpdate.getTime()
+      );
+
+      if (newUpdates.length > 0) {
+        // Add new updates to the beginning of the list
+        setUpdates(prev => {
+          const combined = [...newUpdates, ...prev];
+          // Remove duplicates
+          const unique = combined.filter((update, index, self) =>
+            index === self.findIndex(u => u.id === update.id)
+          );
+          return unique;
+        });
+
+        // Fetch user names for new authors
+        const authorIds = Array.from(new Set(newUpdates.map(u => u.authorId)));
+        const namesMap: Record<string, string> = { ...userNames };
+        
+        for (const authorId of authorIds) {
+          if (!namesMap[authorId]) {
+            try {
+              const userData = await getUser(authorId);
+              if (userData) {
+                namesMap[authorId] = userData.displayName;
+              }
+            } catch (error) {
+              console.error('Error fetching user:', authorId, error);
+            }
+          }
+        }
+        
+        setUserNames(namesMap);
+      }
     });
 
     return unsubscribe;
-  }, [circleId]);
+  }, [circleId, updates.length > 0 ? updates[0]?.createdAt : null]);
+
+  // Load more updates
+  const handleLoadMore = async () => {
+    if (!circleId || !lastUpdateDoc || loadingMore || !hasMoreUpdates) return;
+
+    setLoadingMore(true);
+    try {
+      const result = await getCircleUpdatesPaginated(circleId, 15, lastUpdateDoc);
+      
+      if (result.updates.length > 0) {
+        setUpdates(prev => [...prev, ...result.updates]);
+        setLastUpdateDoc(result.lastDoc);
+        setHasMoreUpdates(result.hasMore);
+
+        // Fetch user names for new authors
+        const authorIds = Array.from(new Set(result.updates.map(u => u.authorId)));
+        const namesMap: Record<string, string> = { ...userNames };
+        
+        for (const authorId of authorIds) {
+          if (!namesMap[authorId]) {
+            try {
+              const userData = await getUser(authorId);
+              if (userData) {
+                namesMap[authorId] = userData.displayName;
+              }
+            } catch (error) {
+              console.error('Error fetching user:', authorId, error);
+            }
+          }
+        }
+        
+        setUserNames(namesMap);
+      }
+    } catch (error: any) {
+      console.error('Error loading more updates:', error);
+      Alert.alert('Error', 'Failed to load more updates');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   // Mark as viewed
   useEffect(() => {
@@ -120,7 +224,38 @@ const CircleFeedScreen: React.FC = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    // The real-time subscription will automatically update the data
+    setError(null);
+    setLastUpdateDoc(null);
+    setHasMoreUpdates(true);
+
+    try {
+      const result = await getCircleUpdatesPaginated(circleId, 15);
+      setUpdates(result.updates);
+      setLastUpdateDoc(result.lastDoc);
+      setHasMoreUpdates(result.hasMore);
+      
+      // Fetch user names for all authors
+      const authorIds = Array.from(new Set(result.updates.map(u => u.authorId)));
+      const namesMap: Record<string, string> = {};
+      
+      for (const authorId of authorIds) {
+        try {
+          const userData = await getUser(authorId);
+          if (userData) {
+            namesMap[authorId] = userData.displayName;
+          }
+        } catch (error) {
+          console.error('Error fetching user:', authorId, error);
+        }
+      }
+      
+      setUserNames(namesMap);
+    } catch (error: any) {
+      console.error('Error refreshing updates:', error);
+      setError(error.message || 'Failed to refresh updates');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleCreateUpdate = () => {
@@ -425,6 +560,27 @@ const CircleFeedScreen: React.FC = () => {
             />
           }
           showsVerticalScrollIndicator={false}
+          ListFooterComponent={
+            hasMoreUpdates ? (
+              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                <TouchableOpacity
+                  onPress={handleLoadMore}
+                  disabled={loadingMore}
+                  style={{
+                    backgroundColor: loadingMore ? '#d1d5db' : '#3b82f6',
+                    borderRadius: 16,
+                    paddingHorizontal: 24,
+                    paddingVertical: 12,
+                    minWidth: 120,
+                  }}
+                >
+                  <SafeText style={{ color: '#ffffff', fontWeight: '600', fontSize: 16, textAlign: 'center' }}>
+                    {loadingMore ? 'Loading...' : 'Load More'}
+                  </SafeText>
+                </TouchableOpacity>
+              </View>
+            ) : null
+          }
         />
       )}
     </View>

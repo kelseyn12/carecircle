@@ -263,7 +263,7 @@ A React Native (Expo, TypeScript) app that lets Care Leads create Circles, invit
   - [x] E2E scenario documentation
   - [x] Manual testing checklist
 
-### Phase 16: Build & Deployment ✅ IN PROGRESS (90% Complete)
+### Phase 16: Build & Deployment ✅ IN PROGRESS (95% Complete)
 - [x] **Build Configuration** ✅ COMPLETED
   - [x] Configure EAS Build (eas.json)
   - [x] Set up development build profiles
@@ -282,7 +282,7 @@ A React Native (Expo, TypeScript) app that lets Care Leads create Circles, invit
   - [x] Runtime validation for Firebase callables
   - [x] Comprehensive error logging with Hermes detection
 
-- [x] **App Store Preparation** ✅ IN PROGRESS (70% Complete)
+- [x] **App Store Preparation** ✅ COMPLETED (95% Complete)
   - [x] Create app metadata guide (APP_STORE_METADATA.md)
   - [x] Document required assets and descriptions
   - [x] Create App Store content (APP_STORE_CONTENT.md)
@@ -290,17 +290,23 @@ A React Native (Expo, TypeScript) app that lets Care Leads create Circles, invit
   - [x] Update app.config.js with new branding
   - [x] Set up Bundle ID (com.carecircle.app)
   - [x] Configure auto-increment for build numbers
-  - [ ] Prepare app screenshots
-  - [ ] Set up App Store Connect (iOS) - partially done
-  - [ ] Set up Google Play Console (Android)
+  - [x] Prepare app screenshots (iPad Pro 13-inch)
+  - [x] Set up App Store Connect (iOS) - completed ✅
+  - [x] Create privacy policy and terms of use HTML pages
+  - [x] Configure support URL and contact email
+  - [x] Complete app encryption documentation
+  - [x] Complete data collection privacy declarations
+  - [ ] Set up Google Play Console (Android) - deferred
   - [x] Create production builds - iOS Build #9 completed ✅
-  - [ ] Submit to app stores
+  - [x] Submit iOS app to App Store for review ✅
+  - [ ] Submit Android app to Google Play (deferred)
 
 - [x] **Device Testing** ✅ IN PROGRESS
   - [x] Create production build for iOS ✅ **BUILD #9 COMPLETED**
-  - [ ] Create production build for Android
-  - [ ] Test on iOS devices via TestFlight
-  - [ ] Test on Android devices
+  - [x] Submit iOS build to App Store Connect ✅
+  - [ ] Create production build for Android (deferred)
+  - [ ] Test on iOS devices via TestFlight (awaiting review)
+  - [ ] Test on Android devices (deferred)
   - [ ] Test push notifications on devices
   - [ ] Test QR code scanning on devices
   - [ ] Test invite link flow on devices

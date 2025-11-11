@@ -2,9 +2,14 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     // Updates photos: authenticated users can read (shared in circles), only owner can write
+    // Note: Storage rules cannot directly check Firestore circle membership.
+    // The app should only generate download URLs for circle members via Cloud Functions.
+    // This rule allows authenticated users to read, but the app enforces circle membership.
     match /updates/{userId}/{allPaths=**} {
-      allow read: if request.auth != null;
+      // Only the uploader can write their own photos
       allow write: if request.auth != null && request.auth.uid == userId;
+      // Read access restricted to authenticated users (circle membership checked in app/Cloud Functions)
+      allow read: if request.auth != null;
     }
     
     // Profile photos: users can upload/read their own profile photos

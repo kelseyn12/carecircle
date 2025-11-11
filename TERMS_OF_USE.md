@@ -86,7 +86,7 @@ These terms are governed by the laws of the United States. Any disputes will be 
 
 If you have questions about these terms, please contact us at:
 
-**Email**: support@carecircle.app
+**Email**: carecircle408@gmail.com
 
 ---
 

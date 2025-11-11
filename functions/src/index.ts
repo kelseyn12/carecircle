@@ -78,8 +78,45 @@ async function sendPushNotification(
   }
 }
 
+// Rate limiting helper
+async function checkRateLimit(userId: string, action: string, maxRequests: number = 10, windowMs: number = 60000): Promise<void> {
+  const rateLimitKey = `rateLimit:${userId}:${action}`;
+  const now = Date.now();
+  const windowStart = now - windowMs;
+  
+  try {
+    const rateLimitRef = db.collection('rateLimits').doc(rateLimitKey);
+    const rateLimitDoc = await rateLimitRef.get();
+    
+    if (rateLimitDoc.exists) {
+      const data = rateLimitDoc.data()!;
+      const requests = (data.requests || []).filter((timestamp: number) => timestamp > windowStart);
+      
+      if (requests.length >= maxRequests) {
+        throw new Error(`Rate limit exceeded. Please try again in ${Math.ceil((requests[0] + windowMs - now) / 1000)} seconds.`);
+      }
+      
+      requests.push(now);
+      await rateLimitRef.update({ requests, lastRequest: now });
+    } else {
+      await rateLimitRef.set({ requests: [now], lastRequest: now });
+    }
+  } catch (error: any) {
+    if (error.message?.includes('Rate limit exceeded')) {
+      throw error;
+    }
+    // If rate limit check fails, allow the request (fail open for availability)
+    console.error('Rate limit check failed:', error);
+  }
+}
+
 // Cloud Function: Create Invite
-export const createInvite = onCall(async (request) => {
+export const createInvite = onCall(
+  {
+    maxInstances: 10,
+    enforceAppCheck: false, // Set to true when App Check is configured
+  },
+  async (request) => {
   try {
     const { circleId } = request.data as CreateInviteData;
     const userId = request.auth?.uid;
@@ -87,6 +124,9 @@ export const createInvite = onCall(async (request) => {
     if (!userId) {
       throw new Error('User must be authenticated');
     }
+
+    // Rate limiting: max 10 invites per minute per user
+    await checkRateLimit(userId, 'createInvite', 10, 60000);
 
     if (!circleId) {
       throw new Error('Circle ID is required');
@@ -128,7 +168,8 @@ export const createInvite = onCall(async (request) => {
     console.error('Error creating invite:', error);
     throw error;
   }
-});
+  }
+);
 
 // Cloud Function: Get Invite Info (for client to validate invite and resolve circleId)
 export const getInviteInfo = onCall(async (request) => {
@@ -166,13 +207,21 @@ export const getInviteInfo = onCall(async (request) => {
 });
 
 // Cloud Function: Submit Join Request (authenticated users only)
-export const submitJoinRequest = onCall(async (request) => {
+export const submitJoinRequest = onCall(
+  {
+    maxInstances: 10,
+    enforceAppCheck: false,
+  },
+  async (request) => {
   try {
     const { circleId, displayName, relation, inviteId } = request.data as SubmitJoinRequestData;
     const userId = request.auth?.uid;
     if (!userId) {
       throw new Error('User must be authenticated');
     }
+
+    // Rate limiting: max 5 join requests per minute per user
+    await checkRateLimit(userId, 'submitJoinRequest', 5, 60000);
     if (!circleId || !displayName || !relation) {
       throw new Error('Missing required fields');
     }
@@ -230,7 +279,8 @@ export const submitJoinRequest = onCall(async (request) => {
     console.error('Error submitting join request:', error);
     throw error;
   }
-});
+  }
+);
 
 // Cloud Function: List Pending Join Requests (owners only)
 export const listJoinRequests = onCall(async (request) => {
@@ -262,12 +312,20 @@ export const listJoinRequests = onCall(async (request) => {
 });
 
 // Cloud Function: Approve Join Request (owners only)
-export const ownerApproveJoinRequest = onCall(async (request) => {
+export const ownerApproveJoinRequest = onCall(
+  {
+    maxInstances: 10,
+    enforceAppCheck: false,
+  },
+  async (request) => {
   try {
     const { circleId, requestId } = request.data as OwnerJoinRequestActionData;
     const userId = request.auth?.uid;
     if (!userId) throw new Error('User must be authenticated');
     if (!circleId || !requestId) throw new Error('Missing required fields');
+
+    // Rate limiting: max 20 approvals per minute per owner
+    await checkRateLimit(userId, 'ownerApproveJoinRequest', 20, 60000);
 
     const circleRef = db.collection('circles').doc(circleId);
     const circleSnap = await circleRef.get();
@@ -280,6 +338,33 @@ export const ownerApproveJoinRequest = onCall(async (request) => {
     const reqSnap = await reqRef.get();
     if (!reqSnap.exists) throw new Error('Request not found');
     const reqData = reqSnap.data() as any;
+
+    // Ensure the user document has the correct displayName from the join request
+    // This fixes cases where the user document might have incorrect or missing displayName
+    try {
+      const userRef = db.collection('users').doc(reqData.userId);
+      const userSnap = await userRef.get();
+      if (userSnap.exists) {
+        const userData = userSnap.data();
+        // Update displayName if it's missing or different from the join request
+        if (!userData?.displayName || userData.displayName !== reqData.displayName) {
+          await userRef.update({
+            displayName: reqData.displayName,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+      } else {
+        // Create user document if it doesn't exist (shouldn't happen, but safety check)
+        await userRef.set({
+          displayName: reqData.displayName,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (userError) {
+      console.error('Error updating user document displayName:', userError);
+      // Don't fail the approval if user document update fails
+    }
 
     // Add member and role
     await circleRef.update({
@@ -294,7 +379,8 @@ export const ownerApproveJoinRequest = onCall(async (request) => {
     console.error('Error approving join request:', error);
     throw error;
   }
-});
+  }
+);
 
 // Cloud Function: Decline Join Request (owners only)
 export const ownerDeclineJoinRequest = onCall(async (request) => {
@@ -420,6 +506,18 @@ export const onUpdateCreated = onDocumentCreated(
 
       const users = (await Promise.all(userPromises)).filter(Boolean);
       
+      // Get the author's display name for the notification
+      let authorDisplayName = 'Someone';
+      try {
+        const authorDoc = await db.collection('users').doc(authorId).get();
+        if (authorDoc.exists) {
+          const authorData = authorDoc.data();
+          authorDisplayName = authorData?.displayName || 'Someone';
+        }
+      } catch (e) {
+        console.error('Error fetching author display name:', e);
+      }
+      
       // Update circle lastUpdateAt for unread indicators
       try {
         await db.collection('circles').doc(circleId).update({
@@ -436,7 +534,7 @@ export const onUpdateCreated = onDocumentCreated(
         }
 
         const title = 'New Update in CareCircle Connect';
-        const body = `${user.displayName || 'Someone'} posted an update`;
+        const body = `${authorDisplayName} posted an update`;
         const data = {
           circleId,
           updateId: event.params.updateId,

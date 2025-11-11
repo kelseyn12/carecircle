@@ -24,9 +24,9 @@ service cloud.firestore {
         // Owners can update metadata and roles
         (resource.data.ownerIds != null && request.auth.uid in resource.data.ownerIds) ||
         (resource.data.ownerId != null && request.auth.uid == resource.data.ownerId) ||
-        // Members can only update specific fields (but owners have full access above)
+        // Members can update specific fields (including leaving the circle)
         (request.auth.uid in resource.data.members &&
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(["members", "roles", "ownerIds", "updateAuthors"]))
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(["members", "roles", "ownerIds", "updateAuthors", "updatedAt"]))
       );
       allow delete: if request.auth != null && 
         request.auth.uid in resource.data.ownerIds;
@@ -69,6 +69,11 @@ service cloud.firestore {
     
     // Invites: only accessible via Cloud Functions
     match /invites/{inviteId} {
+      allow read, write: if false; // Only accessible via Cloud Functions
+    }
+    
+    // Rate limits: only Cloud Functions can write, no direct client access
+    match /rateLimits/{rateLimitId} {
       allow read, write: if false; // Only accessible via Cloud Functions
     }
   }

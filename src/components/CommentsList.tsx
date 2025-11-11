@@ -15,7 +15,8 @@ import SafeText from './SafeText';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-root-toast';
 import { Comment, User } from '../types';
-import { subscribeToComments, createComment, getUser } from '../lib/firestoreUtils';
+import { subscribeToComments, getCommentsPaginated, createComment, getUser } from '../lib/firestoreUtils';
+import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { useAuth } from '../lib/authContext';
 import { createCommentSchema } from '../validation/schemas';
 import { EMOJIS } from '../utils/emojiUtils';
@@ -32,18 +33,24 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, circleId, onClose
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [users, setUsers] = useState<Record<string, User>>({});
+  const [lastCommentDoc, setLastCommentDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMoreComments, setHasMoreComments] = useState(true);
 
-  // Subscribe to real-time comments
+  // Load initial comments with pagination
   useEffect(() => {
     if (!updateId) return;
 
-    const unsubscribe = subscribeToComments(updateId, (commentsData) => {
-      setComments(commentsData);
-      
-      // Fetch user data for all comment authors
-      const fetchUsers = async () => {
-        const userIds = Array.from(new Set(commentsData.map(c => c.authorId)));
+    const loadInitialComments = async () => {
+      try {
+        const result = await getCommentsPaginated(updateId, 20, undefined, circleId);
+        setComments(result.comments);
+        setLastCommentDoc(result.lastDoc);
+        setHasMoreComments(result.hasMore);
+        
+        // Fetch user data for all comment authors
+        const userIds = Array.from(new Set(result.comments.map(c => c.authorId)));
         const userMap: Record<string, User> = {};
         
         for (const userId of userIds) {
@@ -54,13 +61,102 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, circleId, onClose
         }
         
         setUsers(userMap);
-      };
-      
-      fetchUsers();
+      } catch (error) {
+        console.error('Error loading comments:', error);
+      }
+    };
+
+    loadInitialComments();
+  }, [updateId, circleId]);
+
+  // Subscribe to new comments (real-time for latest comments)
+  useEffect(() => {
+    if (!updateId || comments.length === 0) return;
+
+    // Get the most recent comment timestamp
+    const mostRecentComment = comments[comments.length - 1]?.createdAt;
+    if (!mostRecentComment) return;
+
+    // Subscribe to comments created after the most recent one we have
+    const unsubscribe = subscribeToComments(updateId, (commentsData) => {
+      // Filter to only new comments (created after our most recent)
+      const newComments = commentsData.filter(
+        comment => comment.createdAt.getTime() > mostRecentComment.getTime()
+      );
+
+      if (newComments.length > 0) {
+        // Add new comments to the end of the list
+        setComments(prev => {
+          const combined = [...prev, ...newComments];
+          // Remove duplicates
+          const unique = combined.filter((comment, index, self) =>
+            index === self.findIndex(c => c.id === comment.id)
+          );
+          return unique;
+        });
+
+        // Fetch user data for new authors
+        const userIds = Array.from(new Set(newComments.map(c => c.authorId)));
+        const userMap: Record<string, User> = { ...users };
+        
+        const fetchNewUsers = async () => {
+          for (const userId of userIds) {
+            if (!userMap[userId]) {
+              try {
+                const userData = await getUser(userId);
+                if (userData) {
+                  userMap[userId] = userData;
+                }
+              } catch (error) {
+                console.error('Error fetching user:', userId, error);
+              }
+            }
+          }
+          setUsers(prev => ({ ...prev, ...userMap }));
+        };
+        
+        fetchNewUsers();
+      }
     }, circleId);
 
     return unsubscribe;
-  }, [updateId, circleId]);
+  }, [updateId, circleId, comments.length > 0 ? comments[comments.length - 1]?.createdAt : null]);
+
+  // Load more comments
+  const handleLoadMore = async () => {
+    if (!updateId || !lastCommentDoc || loadingMore || !hasMoreComments) return;
+
+    setLoadingMore(true);
+    try {
+      const result = await getCommentsPaginated(updateId, 20, lastCommentDoc, circleId);
+      
+      if (result.comments.length > 0) {
+        setComments(prev => [...prev, ...result.comments]);
+        setLastCommentDoc(result.lastDoc);
+        setHasMoreComments(result.hasMore);
+
+        // Fetch user data for new authors
+        const userIds = Array.from(new Set(result.comments.map(c => c.authorId)));
+        const userMap: Record<string, User> = { ...users };
+        
+        for (const userId of userIds) {
+          if (!userMap[userId]) {
+            const userData = await getUser(userId);
+            if (userData) {
+              userMap[userId] = userData;
+            }
+          }
+        }
+        
+        setUsers(userMap);
+      }
+    } catch (error) {
+      console.error('Error loading more comments:', error);
+      Alert.alert('Error', 'Failed to load more comments');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const handleSubmitComment = async () => {
     if (!user || !newComment.trim()) return;
@@ -177,6 +273,27 @@ const CommentsList: React.FC<CommentsListProps> = ({ updateId, circleId, onClose
               Leave some encouragement {EMOJIS.BLUE_HEART}
             </SafeText>
           </View>
+        }
+        ListFooterComponent={
+          hasMoreComments ? (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <TouchableOpacity
+                onPress={handleLoadMore}
+                disabled={loadingMore}
+                style={{
+                  backgroundColor: loadingMore ? '#d1d5db' : '#3b82f6',
+                  borderRadius: 16,
+                  paddingHorizontal: 24,
+                  paddingVertical: 12,
+                  minWidth: 120,
+                }}
+              >
+                <SafeText style={{ color: '#ffffff', fontWeight: '600', fontSize: 16, textAlign: 'center' }}>
+                  {loadingMore ? 'Loading...' : 'Load More'}
+                </SafeText>
+              </TouchableOpacity>
+            </View>
+          ) : null
         }
       />
 

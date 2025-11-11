@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support - CareCircle Connect</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+        h1 {
+            color: #3b82f6;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h2 {
+            color: #1f2937;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        .section p {
+            color: #4b5563;
+            margin-bottom: 10px;
+        }
+        .contact-box {
+            background: #f9fafb;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .contact-box strong {
+            color: #1f2937;
+        }
+        .email-link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .email-link:hover {
+            text-decoration: underline;
+        }
+        .faq-item {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+        .faq-question {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        .faq-answer {
+            color: #4b5563;
+        }
+        .disclaimer {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 30px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CareCircle Connect</h1>
+        <p class="subtitle">Support & Help Center</p>
+
+        <div class="section">
+            <h2>Get Help</h2>
+            <p>We're here to help you with any questions or issues you may have with CareCircle Connect.</p>
+            
+            <div class="contact-box">
+                <p><strong>Contact Support:</strong></p>
+                <p style="margin-bottom: 15px;">
+                    Use the contact form below to reach us. We'll respond as soon as possible.
+                </p>
+                <form id="contactForm" style="margin-top: 15px;">
+                    <input 
+                        type="text" 
+                        id="name" 
+                        placeholder="Your Name" 
+                        required
+                        style="width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px;"
+                    />
+                    <input 
+                        type="email" 
+                        id="email" 
+                        placeholder="Your Email" 
+                        required
+                        style="width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px;"
+                    />
+                    <textarea 
+                        id="message" 
+                        placeholder="How can we help you?" 
+                        required
+                        rows="5"
+                        style="width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; resize: vertical; font-family: inherit;"
+                    ></textarea>
+                    <button 
+                        type="submit"
+                        style="width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;"
+                    >
+                        Send Message
+                    </button>
+                </form>
+                <p id="formMessage" style="margin-top: 15px; font-size: 0.9em; color: #6b7280; display: none;"></p>
+            </div>
+            <script>
+                document.getElementById('contactForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const name = document.getElementById('name').value;
+                    const email = document.getElementById('email').value;
+                    const message = document.getElementById('message').value;
+                    const formMessage = document.getElementById('formMessage');
+                    
+                    // Create mailto link (works on mobile and desktop)
+                    const subject = encodeURIComponent('CareCircle Connect Support Request from ' + name);
+                    const body = encodeURIComponent('Name: ' + name + '\\n\\nEmail: ' + email + '\\n\\nMessage: ' + message);
+                    const mailtoLink = 'mailto:carecircle408@gmail.com?subject=' + subject + '&body=' + body;
+                    
+                    // Open email client
+                    window.location.href = mailtoLink;
+                    
+                    // Show confirmation
+                    formMessage.style.display = 'block';
+                    formMessage.style.color = '#10b981';
+                    formMessage.textContent = 'Opening your email client... If it doesn\'t open, please email carecircle408@gmail.com directly.';
+                    
+                    // Reset form
+                    this.reset();
+                });
+            </script>
+        </div>
+
+        <div class="section">
+            <h2>Frequently Asked Questions</h2>
+            
+            <div class="faq-item">
+                <div class="faq-question">How do I create a circle?</div>
+                <div class="faq-answer">
+                    Tap the "+" button on the home screen, enter a name for your circle, and tap "Create Circle". You'll automatically be added as the owner.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I invite someone to my circle?</div>
+                <div class="faq-answer">
+                    Open your circle, tap the "👥" button, then tap "Create Invite Link". Share the link or QR code with the person you want to invite.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I post an update?</div>
+                <div class="faq-answer">
+                    Open your circle, tap the "+" button at the top, write your update, optionally add a photo, and tap "Post Update".
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Can I leave a circle?</div>
+                <div class="faq-answer">
+                    Yes, members can leave a circle at any time. Open the circle, go to Members, and tap "Leave Circle". Note: Owners must transfer ownership before leaving.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Is my data secure?</div>
+                <div class="faq-answer">
+                    Yes. All updates are encrypted, and only members of your circle can see your updates. We use industry-standard security practices to protect your data.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I change my password?</div>
+                <div class="faq-answer">
+                    Go to Settings (tap your profile icon), then tap "Change Password" and follow the instructions.
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Privacy & Terms</h2>
+            <p>
+                <a href="/privacy" class="email-link">Privacy Policy</a> | 
+                <a href="/terms" class="email-link">Terms of Use</a>
+            </p>
+        </div>
+
+        <div class="disclaimer">
+            <strong>Important:</strong> CareCircle Connect is an independent app designed to help families share updates privately. It's not affiliated with any healthcare provider or medical institution.
+        </div>
+    </div>
+</body>
+</html>
+

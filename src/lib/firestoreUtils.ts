@@ -10,6 +10,10 @@ import {
   query, 
   where, 
   orderBy, 
+  limit,
+  startAfter,
+  QueryDocumentSnapshot,
+  DocumentData,
   onSnapshot, 
   serverTimestamp,
   Timestamp 
@@ -449,21 +453,41 @@ export const leaveCircle = async (
       throw new Error('Circle not found');
     }
 
-    // Check if user is the owner
-    if (circle.ownerId === userId) {
+    // Check if user is an owner (check both ownerId and ownerIds for backwards compatibility)
+    const isOwner = circle.ownerId === userId || 
+                    (circle.ownerIds && circle.ownerIds.includes(userId));
+    
+    if (isOwner) {
       throw new Error('Owners cannot leave their own circle. Transfer ownership first.');
+    }
+
+    // Check if user is actually a member
+    if (!circle.members.includes(userId)) {
+      throw new Error('You are not a member of this circle');
     }
 
     const updatedMembers = circle.members.filter(id => id !== userId);
     const updatedRoles = { ...circle.roles };
     delete updatedRoles[userId];
+    
+    // Also remove from ownerIds if present
+    const updatedOwnerIds = circle.ownerIds 
+      ? circle.ownerIds.filter(id => id !== userId)
+      : undefined;
 
     const circleDoc = doc(circlesRef, circleId);
-    await firestoreUpdateDoc(circleDoc, {
+    const updateData: any = {
       members: updatedMembers,
       roles: updatedRoles,
       updatedAt: serverTimestamp(),
-    });
+    };
+    
+    // Only update ownerIds if it exists
+    if (updatedOwnerIds !== undefined) {
+      updateData.ownerIds = updatedOwnerIds.length > 0 ? updatedOwnerIds : [];
+    }
+    
+    await firestoreUpdateDoc(circleDoc, updateData);
   } catch (error) {
     console.error('Error leaving circle:', error);
     throw new Error('Failed to leave circle. Please try again.');
@@ -672,6 +696,106 @@ export const getCircleUpdates = async (circleId: string): Promise<Update[]> => {
     return updates;
   } catch (error) {
     console.error('Error getting circle updates:', error);
+    throw new Error('Failed to fetch updates. Please try again.');
+  }
+};
+
+/**
+ * Get paginated updates for a circle
+ * @param circleId - The circle ID
+ * @param pageSize - Number of updates to fetch per page (default: 15)
+ * @param lastUpdate - The last update document snapshot for pagination (optional)
+ * @returns Object with updates array and lastDoc for next page
+ */
+export const getCircleUpdatesPaginated = async (
+  circleId: string,
+  pageSize: number = 15,
+  lastDoc?: QueryDocumentSnapshot<DocumentData>
+): Promise<{ updates: Update[]; lastDoc: QueryDocumentSnapshot<DocumentData> | null; hasMore: boolean }> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    // Build query with pagination
+    let q = query(
+      updatesRef,
+      where('circleId', '==', circleId),
+      orderBy('createdAt', 'desc'),
+      limit(pageSize + 1) // Fetch one extra to check if there are more
+    );
+
+    // Add startAfter if we have a last document
+    if (lastDoc) {
+      q = query(
+        updatesRef,
+        where('circleId', '==', circleId),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastDoc),
+        limit(pageSize + 1)
+      );
+    }
+    
+    const querySnapshot = await getDocs(q);
+    const docs = querySnapshot.docs;
+    
+    // Check if there are more pages
+    const hasMore = docs.length > pageSize;
+    const updatesToProcess = hasMore ? docs.slice(0, pageSize) : docs;
+    const lastUpdateDoc = updatesToProcess.length > 0 ? updatesToProcess[updatesToProcess.length - 1] : null;
+    
+    // Get encryption key for this circle
+    const encryptionKey = await getCircleEncryptionKey(circleId);
+    
+    // Process documents (decrypt if needed)
+    const updatePromises = updatesToProcess.map(async (doc) => {
+      const data = doc.data();
+      let text = data.text;
+      
+      // Decrypt if encrypted
+      if (data.encrypted && encryptionKey) {
+        try {
+          text = await decryptText(data.text, encryptionKey);
+        } catch (decryptionError) {
+          console.error('Error decrypting update text:', decryptionError);
+          text = '[Encrypted content - decryption failed]';
+        }
+      }
+      
+      return {
+        id: doc.id,
+        circleId: data.circleId,
+        authorId: data.authorId,
+        text: text,
+        photoURL: data.photoURL,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        reactions: data.reactions || {},
+      };
+    });
+    
+    const updates = await Promise.all(updatePromises);
+
+    return {
+      updates,
+      lastDoc: lastUpdateDoc,
+      hasMore,
+    };
+  } catch (error: any) {
+    console.error('Error getting paginated circle updates:', error);
+    
+    // Check if it's a missing index error
+    if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
+      console.error('Firestore index missing. Please create a composite index for updates collection:');
+      console.error('Collection: updates');
+      console.error('Fields: circleId (Ascending), createdAt (Descending)');
+      throw new Error('Database index is being created. Please try again in a few moments.');
+    }
+    
+    // Check for permission errors
+    if (error?.code === 'permission-denied') {
+      throw new Error('You do not have permission to view updates in this circle.');
+    }
+    
     throw new Error('Failed to fetch updates. Please try again.');
   }
 };
@@ -1012,6 +1136,92 @@ export const subscribeToComments = (
   }, (error) => {
     console.error('Error in comments subscription:', error);
   });
+};
+
+/**
+ * Get paginated comments for an update
+ * @param updateId - The update ID
+ * @param pageSize - Number of comments to fetch per page (default: 20)
+ * @param lastComment - The last comment document snapshot for pagination (optional)
+ * @param circleId - Optional circle ID for encryption
+ * @returns Object with comments array and lastDoc for next page
+ */
+export const getCommentsPaginated = async (
+  updateId: string,
+  pageSize: number = 20,
+  lastComment?: QueryDocumentSnapshot<DocumentData>,
+  circleId?: string
+): Promise<{ comments: Comment[]; lastDoc: QueryDocumentSnapshot<DocumentData> | null; hasMore: boolean }> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    // Build query with pagination
+    let q = query(
+      commentsRef,
+      where('updateId', '==', updateId),
+      orderBy('createdAt', 'asc'),
+      limit(pageSize + 1) // Fetch one extra to check if there are more
+    );
+
+    // Add startAfter if we have a last document
+    if (lastComment) {
+      q = query(
+        commentsRef,
+        where('updateId', '==', updateId),
+        orderBy('createdAt', 'asc'),
+        startAfter(lastComment),
+        limit(pageSize + 1)
+      );
+    }
+    
+    const querySnapshot = await getDocs(q);
+    const docs = querySnapshot.docs;
+    
+    // Check if there are more pages
+    const hasMore = docs.length > pageSize;
+    const commentsToProcess = hasMore ? docs.slice(0, pageSize) : docs;
+    const lastCommentDoc = commentsToProcess.length > 0 ? commentsToProcess[commentsToProcess.length - 1] : null;
+    
+    // Get encryption key if circleId is provided
+    const encryptionKey = circleId ? await getCircleEncryptionKey(circleId) : null;
+    
+    // Process comments (decrypt if needed)
+    const commentPromises = commentsToProcess.map(async (doc) => {
+      const data = doc.data();
+      let text = data.text;
+      
+      // Decrypt if encrypted
+      if (data.encrypted && encryptionKey) {
+        try {
+          text = await decryptText(data.text, encryptionKey);
+        } catch (decryptionError) {
+          console.error('Error decrypting comment text:', decryptionError);
+          text = '[Encrypted content - decryption failed]';
+        }
+      }
+      
+      return {
+        id: doc.id,
+        updateId: data.updateId,
+        authorId: data.authorId,
+        text: text,
+        createdAt: data.createdAt?.toDate() || new Date(),
+      };
+    });
+    
+    const comments = await Promise.all(commentPromises);
+
+    return {
+      comments,
+      lastDoc: lastCommentDoc,
+      hasMore,
+    };
+  } catch (error) {
+    console.error('Error getting paginated comments:', error);
+    throw new Error('Failed to fetch comments. Please try again.');
+  }
 };
 
 // Update Author Management Functions

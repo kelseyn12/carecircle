@@ -6,16 +6,42 @@ import { RootSiblingParent } from 'react-native-root-siblings';
 import AppNavigator from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/lib/authContext';
 import { ErrorBoundary } from './src/lib/errorHandler';
+// ErrorBoundary is exported as a class, this import should work
 import './global.css';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import { NavigationContainerRefWithCurrent } from '@react-navigation/native';
+// Sentry for crash reporting (optional - only if DSN is provided)
+let Sentry: any = null;
+if (!__DEV__ && process.env.EXPO_PUBLIC_SENTRY_DSN) {
+  try {
+    Sentry = require('@sentry/react-native');
+    Sentry.init({
+      dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+      enableInExpoDevelopment: false,
+      debug: false,
+      environment: process.env.APP_ENV || 'production',
+      tracesSampleRate: 0.1, // 10% of transactions for performance monitoring
+    });
+  } catch (error) {
+    console.warn('Sentry not available or initialization failed:', error);
+  }
+}
 
 // 🧩 Global error handler
-if (typeof global !== 'undefined') {
-  const originalHandler = global.ErrorUtils?.getGlobalHandler?.();
-  global.ErrorUtils?.setGlobalHandler?.((error: Error, isFatal?: boolean) => {
+if (typeof global !== 'undefined' && (global as any).ErrorUtils) {
+  const originalHandler = (global as any).ErrorUtils?.getGlobalHandler?.();
+  (global as any).ErrorUtils?.setGlobalHandler?.((error: Error, isFatal?: boolean) => {
     console.error('Global error handler:', error, { isFatal });
+    if (!__DEV__ && Sentry) {
+      try {
+        Sentry.captureException(error, {
+          tags: { isFatal: isFatal?.toString() },
+        });
+      } catch (sentryError) {
+        console.warn('Sentry capture failed:', sentryError);
+      }
+    }
     if (originalHandler) originalHandler(error, isFatal);
   });
 }
@@ -24,6 +50,13 @@ if (typeof global !== 'undefined') {
 if (typeof process !== 'undefined' && process.on) {
   process.on('unhandledRejection', (reason: any) => {
     console.error('Unhandled promise rejection:', reason);
+    if (!__DEV__ && Sentry) {
+      try {
+        Sentry.captureException(reason instanceof Error ? reason : new Error(String(reason)));
+      } catch (sentryError) {
+        console.warn('Sentry capture failed:', sentryError);
+      }
+    }
   });
 }
 
@@ -63,7 +96,7 @@ export default function App() {
           // Ensure navigation is ready
           const navigateToJoin = () => {
             if (navigationRef.current?.navigate) {
-              navigationRef.current.navigate('Join', { inviteId });
+              (navigationRef.current as any).navigate('Join', { inviteId });
             } else {
               // If navigation not ready, retry shortly
               setTimeout(navigateToJoin, 300);
@@ -84,7 +117,7 @@ export default function App() {
         const parsed = new URL(url);
         const inviteId = parsed.searchParams.get('inviteId');
         if (inviteId && navigationRef.current?.navigate) {
-          navigationRef.current.navigate('Join', { inviteId });
+          (navigationRef.current as any).navigate('Join', { inviteId });
         }
       } catch (err) {
         console.error('Error handling runtime deep link:', err);

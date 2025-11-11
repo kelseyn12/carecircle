@@ -73,8 +73,9 @@ A React Native app that helps families share private updates with their circle o
 - **Production Hardening**: Hermes/minification-safe Firebase callables
 
 ### 🚧 In Progress
-- **App Store Submission**: iOS production build #9 completed, ready for TestFlight
-- **Device Testing**: iOS build ready for testing, Android build pending
+- **App Store Submission**: iOS app submitted to App Store Connect for review ✅
+- **Android Submission**: Deferred - will work on Android later
+- **Device Testing**: iOS build submitted, awaiting review feedback
 
 ## 🏗️ Project Structure
 
@@ -145,6 +146,10 @@ EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
 - User session management
 - Production-safe Firebase callable implementation
 - Error boundaries and global error handling
+- Rate limiting on Cloud Functions
+- CAPTCHA on authentication routes
+- Sentry crash reporting (production)
+- Firebase Storage access controls
 
 ### Planned
 - Rate limiting on API endpoints
