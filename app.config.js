@@ -37,6 +37,10 @@ export default {
           },
         ],
         ITSAppUsesNonExemptEncryption: false,
+        NSPhotoLibraryUsageDescription:
+          'CareCircle Connect needs access to your photo library so you can choose and share pictures in your family circle updates and messages.',
+        NSCameraUsageDescription:
+          'CareCircle Connect uses your camera to take photos for sharing updates with your CareCircle.',
       },
     },
 
