@@ -15,7 +15,7 @@ type SettingsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Set
 
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount } = useAuth();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -126,6 +126,48 @@ const SettingsScreen: React.FC = () => {
             } catch (error) {
               Alert.alert('Error', 'Failed to sign out. Please try again.');
             }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone. All your data, including updates, comments, and circle memberships, will be permanently deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            // Second confirmation
+            Alert.alert(
+              'Final Confirmation',
+              'This will permanently delete your account and all associated data. This cannot be undone. Are you absolutely sure?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Yes, Delete My Account',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setIsLoading(true);
+                    try {
+                      await deleteAccount();
+                      // User will be automatically signed out after account deletion
+                    } catch (error: any) {
+                      setIsLoading(false);
+                      Alert.alert(
+                        'Error',
+                        error.message || 'Failed to delete account. Please try again.',
+                        [{ text: 'OK' }]
+                      );
+                    }
+                  },
+                },
+              ]
+            );
           },
         },
       ]
@@ -378,14 +420,37 @@ const SettingsScreen: React.FC = () => {
           {/* Sign Out */}
           <TouchableOpacity
             onPress={handleSignOut}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-red-200"
+            disabled={isLoading}
+            className="bg-white rounded-2xl p-5 mb-6 shadow-sm border border-red-200"
             activeOpacity={0.7}
+            style={{ opacity: isLoading ? 0.5 : 1 }}
           >
             <View className="flex-row items-center">
               <Ionicons name="log-out-outline" size={24} color="#ef4444" />
               <SafeText className="text-lg font-semibold text-red-600 ml-4 leading-[26px]">
                 Sign Out
               </SafeText>
+            </View>
+          </TouchableOpacity>
+
+          {/* Delete Account */}
+          <TouchableOpacity
+            onPress={handleDeleteAccount}
+            disabled={isLoading}
+            className="bg-white rounded-2xl p-5 shadow-sm border border-red-300"
+            activeOpacity={0.7}
+            style={{ opacity: isLoading ? 0.5 : 1 }}
+          >
+            <View className="flex-row items-center">
+              <Ionicons name="trash-outline" size={24} color="#dc2626" />
+              <View className="flex-1 ml-4">
+                <SafeText className="text-lg font-semibold text-red-700 leading-[26px]">
+                  Delete Account
+                </SafeText>
+                <SafeText className="text-sm text-red-600 mt-1 leading-[20px]">
+                  Permanently delete your account and all data
+                </SafeText>
+              </View>
             </View>
           </TouchableOpacity>
         </View>

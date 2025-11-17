@@ -16,9 +16,12 @@ import {
   DocumentData,
   onSnapshot, 
   serverTimestamp,
-  Timestamp 
+  Timestamp,
+  writeBatch,
+  FieldValue
 } from 'firebase/firestore';
-import { db, functions } from './firebase';
+import { db, functions, storage } from './firebase';
+import { ref, deleteObject, listAll } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
 import { Circle, Update, User, Comment } from '../types';
 import { handleError, retryOperation } from './errorHandler';
@@ -1571,5 +1574,178 @@ export const updateUser = async (
   } catch (error) {
     console.error('Error updating user:', error);
     throw new Error('Failed to update user. Please try again.');
+  }
+};
+
+/**
+ * Delete user account and all associated data
+ * This function handles:
+ * - Removing user from all circles
+ * - Anonymizing updates and comments
+ * - Deleting user's photos from Storage
+ * - Deleting user document from Firestore
+ * Note: Firebase Auth account deletion must be done separately
+ */
+export const deleteAccount = async (userId: string): Promise<void> => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    // Step 1: Get all circles where user is a member
+    const circlesQuery = query(
+      circlesRef,
+      where('members', 'array-contains', userId)
+    );
+    const circlesSnapshot = await getDocs(circlesQuery);
+    const userCircles: Circle[] = [];
+    
+    circlesSnapshot.forEach((doc) => {
+      const data = doc.data();
+      userCircles.push({
+        id: doc.id,
+        title: data.title,
+        ownerId: data.ownerId,
+        ownerIds: data.ownerIds || [data.ownerId],
+        members: data.members || [],
+        updateAuthors: data.updateAuthors || [],
+        roles: data.roles || {},
+        createdAt: data.createdAt?.toDate() || new Date(),
+      });
+    });
+
+    // Step 2: Remove user from all circles
+    const batch = writeBatch(db);
+    for (const circle of userCircles) {
+      const isOwner = circle.ownerIds?.includes(userId) || circle.ownerId === userId;
+      const isOnlyOwner = isOwner && circle.ownerIds?.length === 1;
+      
+      if (isOnlyOwner) {
+        // If user is the only owner, we need to either:
+        // 1. Delete the circle (if no other members)
+        // 2. Transfer ownership to another member (if other members exist)
+        if (circle.members.length === 1) {
+          // Only owner, delete the circle
+          batch.delete(doc(circlesRef, circle.id));
+        } else {
+          // Transfer ownership to first other member
+          const otherMembers = circle.members.filter(id => id !== userId);
+          if (otherMembers.length > 0) {
+            const newOwnerId = otherMembers[0];
+            batch.update(doc(circlesRef, circle.id), {
+              ownerId: newOwnerId,
+              ownerIds: [newOwnerId],
+              members: circle.members.filter(id => id !== userId),
+              [`roles.${newOwnerId}`]: 'owner',
+              [`roles.${userId}`]: FieldValue.delete(),
+              updateAuthors: circle.updateAuthors.filter(id => id !== userId).concat([newOwnerId]),
+              updatedAt: serverTimestamp(),
+            });
+          }
+        }
+      } else {
+        // Regular member or co-owner, just remove from circle
+        const updatedMembers = circle.members.filter(id => id !== userId);
+        const updatedOwnerIds = circle.ownerIds?.filter(id => id !== userId) || [];
+        const updatedUpdateAuthors = circle.updateAuthors.filter(id => id !== userId);
+        const updatedRoles = { ...circle.roles };
+        delete updatedRoles[userId];
+        
+        batch.update(doc(circlesRef, circle.id), {
+          members: updatedMembers,
+          ownerIds: updatedOwnerIds.length > 0 ? updatedOwnerIds : [circle.ownerId],
+          updateAuthors: updatedUpdateAuthors,
+          roles: updatedRoles,
+          updatedAt: serverTimestamp(),
+        });
+      }
+    }
+
+    // Step 3: Anonymize updates by this user
+    const updatesQuery = query(
+      updatesRef,
+      where('authorId', '==', userId)
+    );
+    const updatesSnapshot = await getDocs(updatesQuery);
+    updatesSnapshot.forEach((updateDoc) => {
+      batch.update(doc(updatesRef, updateDoc.id), {
+        authorId: '[deleted]',
+        text: '[This update was deleted]',
+        photoURL: null,
+      });
+    });
+
+    // Step 4: Anonymize comments by this user
+    const commentsQuery = query(
+      commentsRef,
+      where('authorId', '==', userId)
+    );
+    const commentsSnapshot = await getDocs(commentsQuery);
+    commentsSnapshot.forEach((commentDoc) => {
+      batch.update(doc(commentsRef, commentDoc.id), {
+        authorId: '[deleted]',
+        text: '[This comment was deleted]',
+      });
+    });
+
+    // Step 5: Remove user's reactions from updates in circles they were a member of
+    // Only process updates in circles the user was a member of (more efficient)
+    for (const circle of userCircles) {
+      const circleUpdatesQuery = query(
+        updatesRef,
+        where('circleId', '==', circle.id)
+      );
+      const circleUpdatesSnapshot = await getDocs(circleUpdatesQuery);
+      circleUpdatesSnapshot.forEach((updateDoc) => {
+        const data = updateDoc.data();
+        const reactions = data.reactions || {};
+        if (reactions[userId]) {
+          const updatedReactions = { ...reactions };
+          delete updatedReactions[userId];
+          batch.update(doc(updatesRef, updateDoc.id), {
+            reactions: updatedReactions,
+          });
+        }
+      });
+    }
+
+    // Commit all Firestore changes
+    await batch.commit();
+
+    // Step 6: Delete user's photos from Storage
+    if (storage) {
+      try {
+        // Delete profile photos
+        const profileRef = ref(storage, `profiles/${userId}`);
+        try {
+          const profileList = await listAll(profileRef);
+          await Promise.all(profileList.items.map(item => deleteObject(item)));
+        } catch (profileError) {
+          // Profile folder might not exist, that's okay
+          console.warn('Error deleting profile photos:', profileError);
+        }
+
+        // Delete update photos
+        const updatesStorageRef = ref(storage, `updates/${userId}`);
+        try {
+          const updatesList = await listAll(updatesStorageRef);
+          await Promise.all(updatesList.items.map(item => deleteObject(item)));
+        } catch (updatesError) {
+          // Updates folder might not exist, that's okay
+          console.warn('Error deleting update photos:', updatesError);
+        }
+      } catch (storageError) {
+        console.error('Error deleting user photos from Storage:', storageError);
+        // Don't fail account deletion if storage deletion fails
+      }
+    }
+
+    // Step 7: Delete user document from Firestore
+    await deleteDoc(doc(usersRef, userId));
+
+    console.log('Account deletion completed successfully');
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    throw new Error('Failed to delete account. Please try again.');
   }
 };

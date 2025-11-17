@@ -347,6 +347,14 @@ A React Native (Expo, TypeScript) app that lets Care Leads create Circles, invit
   - [ ] Implement encrypted invite links
   - [ ] Add key rotation mechanism
 
+- [ ] **Firebase Cost Optimization** (Next Version)
+  - [ ] Add Firestore pagination and batch reads to reduce unnecessary reads
+  - [ ] Implement basic caching (using Firestore persistence or getDocsFromCache)
+  - [ ] Add an image compression helper using Expo ImageManipulator before upload (target 1080px width, quality 0.7)
+  - [ ] Add a note in Cloud Functions (createInvite, acceptInvite) about invocation costs and caching strategies
+  - [ ] Update README with notes on Firebase usage monitoring and billing alerts
+  - [ ] Add a "cost awareness" section to document typical limits (50k reads/day, 5GB storage)
+
 ## 🔧 Technical Implementation Notes
 
 ### Security Requirements

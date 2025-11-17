@@ -1,11 +1,12 @@
 // Authentication context for managing user state
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, signInWithCredential, OAuthProvider, GoogleAuthProvider } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, signInWithCredential, OAuthProvider, GoogleAuthProvider, deleteUser } from 'firebase/auth';
 import { Alert } from 'react-native';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db, getFCMToken } from './firebase';
 import { User as AppUser } from '../types';
 import { initializeNotifications } from './notificationService';
+import { deleteAccount as deleteAccountData } from './firestoreUtils';
 
 interface AuthContextType {
   user: AppUser | null;
@@ -16,6 +17,7 @@ interface AuthContextType {
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
   updateUserProfile: (updates: Partial<AppUser>) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -432,6 +434,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Update user profile
+  const handleDeleteAccount = async () => {
+    if (!auth?.currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    const userId = auth.currentUser.uid;
+
+    try {
+      // Step 1: Delete all user data from Firestore and Storage
+      await deleteAccountData(userId);
+
+      // Step 2: Delete Firebase Auth account
+      await deleteUser(auth.currentUser);
+
+      // Step 3: Sign out (this will clear local state)
+      await signOut(auth);
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      throw new Error(error.message || 'Failed to delete account. Please try again.');
+    }
+  };
+
   const updateUserProfile = async (updates: Partial<AppUser>) => {
     if (!user) throw new Error('No user logged in');
 
@@ -533,6 +557,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signInWithApple,
     signOut: handleSignOut,
     updateUserProfile,
+    deleteAccount: handleDeleteAccount,
   };
 
   return (
