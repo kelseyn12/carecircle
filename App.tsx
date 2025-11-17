@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useEffect, useRef } from 'react';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootSiblingParent } from 'react-native-root-siblings';
 import AppNavigator from './src/navigation/AppNavigator';
@@ -134,7 +134,7 @@ export default function App() {
           <AuthProvider>
             {/* 🚀 Pass the navigationRef down so it can be accessed in AppNavigator */}
             <AppNavigator navigationRef={navigationRef} />
-            <StatusBar style="auto" />
+            <StatusBar barStyle="default" />
           </AuthProvider>
         </RootSiblingParent>
       </SafeAreaProvider>
