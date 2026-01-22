@@ -1,21 +1,25 @@
 // Settings screen for user account management
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Alert, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, TouchableOpacity, Alert, ScrollView, TextInput, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../lib/authContext';
+import { useSubscription } from '../hooks/useSubscription';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { Linking } from 'react-native';
 import SafeText from '../components/SafeText';
+import { EMOJIS } from '../utils/emojiUtils';
 
 type SettingsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Settings'>;
 
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const { user, signOut, deleteAccount } = useAuth();
+  const { subscriptionStatus, refreshSubscription, FREE_CIRCLE_LIMIT } = useSubscription();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -25,6 +29,48 @@ const SettingsScreen: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+  const [showReauthModal, setShowReauthModal] = useState(false);
+  const [reauthPassword, setReauthPassword] = useState('');
+
+  // Refresh subscription status when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshSubscription();
+    }, [refreshSubscription])
+  );
+
+  const formatRenewalText = (expirationDate?: Date) => {
+    if (!expirationDate) return '';
+    return ` Renews at ${expirationDate.toLocaleString()}.`;
+  };
+
+  const handleManageSubscription = async () => {
+    // Apple does not allow cancelling subscriptions directly inside the app UI.
+    // Best UX is to deep link to the system subscriptions management page.
+    const iosSubscriptionsUrl = 'itms-apps://apps.apple.com/account/subscriptions';
+    const webSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';
+    const targetUrl = Platform.OS === 'ios' ? iosSubscriptionsUrl : webSubscriptionsUrl;
+    const fallbackInstructions =
+      'To manage or cancel your subscription, go to iPhone Settings → [Your Name] → Subscriptions.';
+
+    try {
+      const supported = await Linking.canOpenURL(targetUrl);
+      if (supported) {
+        await Linking.openURL(targetUrl);
+        return;
+      }
+      // Fallback to the web URL if the itms-apps scheme isn't supported for some reason
+      const webSupported = await Linking.canOpenURL(webSubscriptionsUrl);
+      if (webSupported) {
+        await Linking.openURL(webSubscriptionsUrl);
+      } else {
+        Alert.alert('Manage Subscription', fallbackInstructions);
+      }
+    } catch (error) {
+      console.error('Error opening subscription management:', error);
+      Alert.alert('Manage Subscription', fallbackInstructions);
+    }
+  };
 
   // Validate new password
   const validateNewPassword = (password: string): string => {
@@ -158,11 +204,44 @@ const SettingsScreen: React.FC = () => {
                       // User will be automatically signed out after account deletion
                     } catch (error: any) {
                       setIsLoading(false);
-                      Alert.alert(
-                        'Error',
-                        error.message || 'Failed to delete account. Please try again.',
-                        [{ text: 'OK' }]
-                      );
+                      
+                      // Handle re-authentication requirement
+                      // Check both error code and message
+                      const isReauthRequired = 
+                        error.code === 'auth/requires-recent-login' || 
+                        error.message === 'REAUTH_REQUIRED' ||
+                        error.message?.includes('requires-recent-login');
+                      
+                      const isAuthRemains = error.message === 'REAUTH_REQUIRED_AUTH_REMAINS';
+                      
+                      if (isAuthRemains) {
+                        // Data was deleted but Auth account remains
+                        Alert.alert(
+                          'Account Data Deleted',
+                          'Your account data has been successfully deleted. However, your authentication account could not be deleted due to security requirements. You have been signed out. If you want to completely remove your authentication account, please contact support or sign in again and try deleting your account.',
+                          [{ text: 'OK' }]
+                        );
+                      } else if (isReauthRequired) {
+                        // Check if user is using email/password
+                        const providerId = auth?.currentUser?.providerData[0]?.providerId;
+                        if (providerId === 'password' && auth?.currentUser?.email) {
+                          // Show password input modal
+                          setShowReauthModal(true);
+                        } else {
+                          // For Google/Apple, user needs to sign in again
+                          Alert.alert(
+                            'Re-authentication Required',
+                            'For security, you need to sign in again to delete your account. Please sign out and sign back in, then try deleting your account.',
+                            [{ text: 'OK' }]
+                          );
+                        }
+                      } else {
+                        Alert.alert(
+                          'Error',
+                          error.message || 'Failed to delete account. Please try again.',
+                          [{ text: 'OK' }]
+                        );
+                      }
                     }
                   },
                 },
@@ -233,6 +312,83 @@ const SettingsScreen: React.FC = () => {
                 </SafeText>
               </View>
             </View>
+          </View>
+
+          {/* Subscription Management Section */}
+          <View className="bg-white rounded-2xl p-5 mb-6 shadow-sm border border-gray-100">
+            <View className="flex-row items-center mb-4">
+              <Ionicons 
+                name={subscriptionStatus.isPremium ? "star" : "star-outline"} 
+                size={24} 
+                color={subscriptionStatus.isPremium ? "#fbbf24" : "#3b82f6"} 
+              />
+              <View className="flex-1 ml-4">
+                <SafeText className="text-lg font-semibold text-gray-900 leading-[26px]">
+                  {subscriptionStatus.isPremium ? 'Premium Subscription' : 'Free Plan'}
+                </SafeText>
+                {subscriptionStatus.isPremium && subscriptionStatus.expirationDate ? (
+                  <SafeText className="text-sm text-gray-500 mt-1 leading-[20px]">
+                    {formatRenewalText(subscriptionStatus.expirationDate)}
+                  </SafeText>
+                ) : (
+                  <SafeText className="text-sm text-gray-500 mt-1 leading-[20px]">
+                    {subscriptionStatus.isPremium ? 'Active' : `${FREE_CIRCLE_LIMIT} circle included`}
+                  </SafeText>
+                )}
+              </View>
+            </View>
+            
+            {subscriptionStatus.isPremium ? (
+              <>
+                <TouchableOpacity
+                  onPress={handleManageSubscription}
+                  className="bg-gray-50 rounded-xl p-3 mt-2 border border-gray-100"
+                  activeOpacity={0.7}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1">
+                      <Ionicons name="settings-outline" size={20} color="#3b82f6" />
+                      <SafeText className="text-gray-900 font-semibold text-sm ml-2 leading-[20px]">
+                        Manage Subscription
+                      </SafeText>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={async () => {
+                    await refreshSubscription();
+                    Alert.alert(
+                      'Subscription Info',
+                      'If you cancel your subscription, you\'ll keep Premium access until the end of your current billing period. After that, you\'ll be limited to 1 circle.\n\nTo cancel:\n1. Tap "Manage Subscription" above\n2. Or go to Settings → Apple ID → Subscriptions',
+                      [{ text: 'OK' }]
+                    );
+                  }}
+                  className="mt-2"
+                  activeOpacity={0.7}
+                >
+                  <SafeText className="text-gray-500 text-xs leading-[16px] text-center">
+                    Tap to learn about cancellation
+                  </SafeText>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Paywall')}
+                className="bg-gray-50 rounded-xl p-3 mt-2 border border-gray-100"
+                activeOpacity={0.7}
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <Ionicons name="star-outline" size={20} color="#3b82f6" />
+                    <SafeText className="text-gray-900 font-semibold text-sm ml-2 leading-[20px]">
+                      Upgrade to Premium
+                    </SafeText>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Change Password Section */}
@@ -455,6 +611,91 @@ const SettingsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Re-authentication Modal for Account Deletion */}
+      <Modal
+        visible={showReauthModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowReauthModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 24, width: '100%', maxWidth: 400 }}>
+            <SafeText className="text-xl font-semibold text-gray-900 mb-2">Re-authentication Required</SafeText>
+            <SafeText className="text-base text-gray-600 mb-6">
+              Please enter your password to confirm account deletion:
+            </SafeText>
+            
+            <View style={{ marginBottom: 20 }}>
+              <TextInput
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#e5e7eb',
+                  borderRadius: 12,
+                  padding: 12,
+                  fontSize: 16,
+                  backgroundColor: '#f9fafb',
+                }}
+                placeholder="Password"
+                placeholderTextColor="#9ca3af"
+                secureTextEntry
+                value={reauthPassword}
+                onChangeText={setReauthPassword}
+                autoFocus
+              />
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowReauthModal(false);
+                  setReauthPassword('');
+                }}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  borderRadius: 12,
+                  backgroundColor: '#f3f4f6',
+                  alignItems: 'center',
+                }}
+              >
+                <SafeText className="text-base font-semibold text-gray-700">Cancel</SafeText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={async () => {
+                  if (!reauthPassword) {
+                    Alert.alert('Error', 'Password is required to delete your account.');
+                    return;
+                  }
+                  setShowReauthModal(false);
+                  setIsLoading(true);
+                  try {
+                    await deleteAccount(reauthPassword);
+                    setReauthPassword('');
+                  } catch (deleteError: any) {
+                    setIsLoading(false);
+                    setReauthPassword('');
+                    Alert.alert(
+                      'Error',
+                      deleteError.message || 'Failed to delete account. Please try again.',
+                      [{ text: 'OK' }]
+                    );
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  borderRadius: 12,
+                  backgroundColor: '#ef4444',
+                  alignItems: 'center',
+                }}
+              >
+                <SafeText className="text-base font-semibold text-white">Delete</SafeText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };

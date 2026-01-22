@@ -9,9 +9,11 @@ import {
   subscribeToUserCircles 
 } from './firestoreUtils';
 import { useAuth } from './authContext';
+import { useSubscription } from '../hooks/useSubscription';
 
 export const useCircles = () => {
   const { user } = useAuth();
+  const { canCreateCircle: checkCanCreateCircle } = useSubscription();
   const [circles, setCircles] = useState<Circle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +44,13 @@ export const useCircles = () => {
       throw new Error('User must be logged in to create a circle');
     }
 
+    // Check if user can create more circles based on total circles ever created
+    // This prevents users from gaming the system by deleting and recreating circles
+    const totalCirclesCreated = user.totalCirclesCreated || 0;
+    if (!checkCanCreateCircle(totalCirclesCreated)) {
+      throw new Error('CIRCLE_LIMIT_REACHED');
+    }
+
     try {
       setError(null);
       const circleId = await createCircle({
@@ -56,7 +65,7 @@ export const useCircles = () => {
       setError(errorMessage);
       throw new Error(errorMessage);
     }
-  }, [user]);
+  }, [user, checkCanCreateCircle]);
 
   // Update circle
   const updateCircleData = useCallback(async (

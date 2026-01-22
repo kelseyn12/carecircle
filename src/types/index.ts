@@ -10,6 +10,10 @@ export interface User {
   createdAt: Date;
   circlesMuted?: string[]; // Array of circle IDs where user has muted notifications
   lastViewedCircles?: Record<string, Date>; // circleId -> last viewed timestamp
+  isPremium?: boolean; // Subscription status
+  subscriptionExpiresAt?: Date; // Subscription expiration date
+  productIdentifier?: string; // Product identifier for the subscription
+  totalCirclesCreated?: number; // Total number of circles user has ever created (prevents gaming the system)
 }
 
 export interface Circle {
@@ -69,6 +73,7 @@ export type RootStackParamList = {
   MemberManagement: { circleId: string };
   Comments: { updateId: string; circleId?: string };
   Settings: undefined;
+  Paywall: undefined;
 };
 
 // Form validation types

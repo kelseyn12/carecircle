@@ -17,6 +17,7 @@ import JoinScreen from '../screens/JoinScreen';
 import MemberManagementScreen from '../screens/MemberManagementScreen';
 import CommentsScreen from '../screens/CommentsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import PaywallScreen from '../screens/PaywallScreen';
 
 // Import auth context
 import { useAuth } from '../lib/authContext';
@@ -70,6 +71,7 @@ const AppNavigator: React.FC<{ navigationRef?: any }> = ({ navigationRef }) => {
             <Stack.Screen name="MemberManagement" component={MemberManagementScreen} />
             <Stack.Screen name="Comments" component={CommentsScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Paywall" component={PaywallScreen} />
           </>
         ) : (
           <Stack.Screen name="SignIn" component={SignInScreen} />

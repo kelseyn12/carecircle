@@ -67,6 +67,19 @@ export const createCircle = async (circleData: {
       createdAt: serverTimestamp(),
     });
     
+    // Increment total circles created counter for the user (prevents gaming the system)
+    try {
+      const userRef = doc(usersRef, circleData.ownerId);
+      const userDoc = await getDoc(userRef);
+      const currentCount = userDoc.data()?.totalCirclesCreated || 0;
+      await firestoreUpdateDoc(userRef, {
+        totalCirclesCreated: currentCount + 1,
+      });
+    } catch (counterError) {
+      console.error('Error updating total circles created counter:', counterError);
+      // Don't fail circle creation if counter update fails
+    }
+    
     // Create encryption key for this circle
     try {
       await createCircleEncryptionKey(docRef.id);
@@ -1591,6 +1604,10 @@ export const deleteAccount = async (userId: string): Promise<void> => {
     throw new Error('Firestore not initialized');
   }
 
+  // Note: Authentication is verified in handleDeleteAccount before calling this
+  // Firestore security rules will enforce permissions
+  // We don't check auth.currentUser here because it's called while user is authenticated
+
   try {
     // Step 1: Get all circles where user is a member
     const circlesQuery = query(
@@ -1614,25 +1631,143 @@ export const deleteAccount = async (userId: string): Promise<void> => {
       });
     });
 
-    // Step 2: Remove user from all circles
-    const batch = writeBatch(db);
+    // Step 2: Prepare batch operations
+    // Firestore batches have a limit of 500 operations, so we need to split into multiple batches if needed
+    // CRITICAL: We must commit updates/comments/reactions batches BEFORE circle removal batches
+    // because security rules check current document state, not proposed state
+    const MAX_BATCH_SIZE = 500;
+    
+    // Step 2a: Anonymize updates/comments/reactions FIRST (while user is still a member)
+    let currentBatch = writeBatch(db);
+    let batchSize = 0;
+    const updateBatchesToCommit: Array<ReturnType<typeof writeBatch>> = [];
+
+    const saveBatchIfNeeded = (batchList: Array<ReturnType<typeof writeBatch>>) => {
+      if (batchSize >= MAX_BATCH_SIZE) {
+        batchList.push(currentBatch);
+        currentBatch = writeBatch(db);
+        batchSize = 0;
+      }
+    };
+
+    // Anonymize updates by this user
+    // Query through circles the user is a member of (to avoid security rule issues)
+    const updatesToAnonymize: Array<{ id: string; circleId: string }> = [];
     for (const circle of userCircles) {
-      const isOwner = circle.ownerIds?.includes(userId) || circle.ownerId === userId;
-      const isOnlyOwner = isOwner && circle.ownerIds?.length === 1;
+      const circleUpdatesQuery = query(
+        updatesRef,
+        where('circleId', '==', circle.id),
+        where('authorId', '==', userId)
+      );
+      const circleUpdatesSnapshot = await getDocs(circleUpdatesQuery);
+      circleUpdatesSnapshot.docs.forEach(updateDoc => {
+        updatesToAnonymize.push({ id: updateDoc.id, circleId: circle.id });
+      });
+    }
+    for (const updateInfo of updatesToAnonymize) {
+      saveBatchIfNeeded(updateBatchesToCommit);
+      currentBatch.update(doc(updatesRef, updateInfo.id), {
+        authorId: '[deleted]',
+        text: '[This update was deleted]',
+        photoURL: null,
+      });
+      batchSize++;
+    }
+
+    // Anonymize comments by this user
+    // Query through updates in circles the user is a member of
+    const commentsToAnonymize: Array<{ id: string }> = [];
+    for (const updateInfo of updatesToAnonymize) {
+      const updateCommentsQuery = query(
+        commentsRef,
+        where('updateId', '==', updateInfo.id),
+        where('authorId', '==', userId)
+      );
+      const updateCommentsSnapshot = await getDocs(updateCommentsQuery);
+      updateCommentsSnapshot.docs.forEach(commentDoc => {
+        commentsToAnonymize.push({ id: commentDoc.id });
+      });
+    }
+    for (const commentInfo of commentsToAnonymize) {
+      saveBatchIfNeeded(updateBatchesToCommit);
+      currentBatch.update(doc(commentsRef, commentInfo.id), {
+        authorId: '[deleted]',
+        text: '[This comment was deleted]',
+      });
+      batchSize++;
+    }
+
+    // Remove user's reactions from updates in circles they were a member of
+    for (const circle of userCircles) {
+      const circleUpdatesQuery = query(
+        updatesRef,
+        where('circleId', '==', circle.id)
+      );
+      const circleUpdatesSnapshot = await getDocs(circleUpdatesQuery);
+      for (const updateDoc of circleUpdatesSnapshot.docs) {
+        const data = updateDoc.data();
+        const reactions = data.reactions || {};
+        if (reactions[userId]) {
+          saveBatchIfNeeded(updateBatchesToCommit);
+          const updatedReactions = { ...reactions };
+          delete updatedReactions[userId];
+          currentBatch.update(doc(updatesRef, updateDoc.id), {
+            reactions: updatedReactions,
+          });
+          batchSize++;
+        }
+      }
+    }
+
+    // Add the last update batch if it has operations
+    if (batchSize > 0) {
+      updateBatchesToCommit.push(currentBatch);
+    }
+
+    // Commit all update/comment/reaction batches FIRST
+    for (let i = 0; i < updateBatchesToCommit.length; i++) {
+      const batchToCommit = updateBatchesToCommit[i];
+      try {
+        await batchToCommit.commit();
+      } catch (batchError: any) {
+        // Log which operation failed for debugging
+        if (batchError.code === 'permission-denied' || batchError.code === 'PERMISSION_DENIED') {
+          throw new Error(`Permission denied while updating user content (batch ${i + 1}). Please ensure you are signed in. Error: ${batchError.message}`);
+        }
+        throw batchError;
+      }
+    }
+
+    // Step 2b: Remove user from circles AFTER all updates/comments/reactions are done
+    currentBatch = writeBatch(db);
+    batchSize = 0;
+    const circleBatchesToCommit: Array<ReturnType<typeof writeBatch>> = [];
+
+    for (const circle of userCircles) {
+      // Determine ownership status - check both ownerId and ownerIds for backwards compatibility
+      const ownerIdsList = circle.ownerIds || (circle.ownerId ? [circle.ownerId] : []);
+      const isOwner = ownerIdsList.includes(userId) || circle.ownerId === userId;
+      const ownerCount = ownerIdsList.length;
+      const isOnlyOwner = isOwner && ownerCount === 1;
+      
+      saveBatchIfNeeded(circleBatchesToCommit);
       
       if (isOnlyOwner) {
         // If user is the only owner, we need to either:
         // 1. Delete the circle (if no other members)
         // 2. Transfer ownership to another member (if other members exist)
         if (circle.members.length === 1) {
-          // Only owner, delete the circle
-          batch.delete(doc(circlesRef, circle.id));
+          // Only owner and only member, delete the circle
+          // Security rule: allow delete if request.auth.uid in resource.data.ownerIds
+          currentBatch.delete(doc(circlesRef, circle.id));
+          batchSize++;
         } else {
           // Transfer ownership to first other member
+          // Security rule: owners can update metadata (including ownerId)
           const otherMembers = circle.members.filter(id => id !== userId);
           if (otherMembers.length > 0) {
             const newOwnerId = otherMembers[0];
-            batch.update(doc(circlesRef, circle.id), {
+            currentBatch.update(doc(circlesRef, circle.id), {
               ownerId: newOwnerId,
               ownerIds: [newOwnerId],
               members: circle.members.filter(id => id !== userId),
@@ -1641,76 +1776,77 @@ export const deleteAccount = async (userId: string): Promise<void> => {
               updateAuthors: circle.updateAuthors.filter(id => id !== userId).concat([newOwnerId]),
               updatedAt: serverTimestamp(),
             });
+            batchSize++;
           }
         }
-      } else {
-        // Regular member or co-owner, just remove from circle
+      } else if (isOwner) {
+        // Co-owner (not the only owner) - remove from ownerIds and members
+        // Security rule: owners can update metadata (including ownerId)
         const updatedMembers = circle.members.filter(id => id !== userId);
-        const updatedOwnerIds = circle.ownerIds?.filter(id => id !== userId) || [];
+        const updatedOwnerIds = ownerIdsList.filter(id => id !== userId);
         const updatedUpdateAuthors = circle.updateAuthors.filter(id => id !== userId);
         const updatedRoles = { ...circle.roles };
         delete updatedRoles[userId];
         
-        batch.update(doc(circlesRef, circle.id), {
+        // Ensure we maintain at least one owner
+        const finalOwnerIds = updatedOwnerIds.length > 0 ? updatedOwnerIds : ownerIdsList.filter(id => id !== userId);
+        const finalOwnerId = finalOwnerIds.length > 0 ? finalOwnerIds[0] : circle.ownerId;
+        
+        currentBatch.update(doc(circlesRef, circle.id), {
+          ownerId: finalOwnerId,
+          ownerIds: finalOwnerIds,
           members: updatedMembers,
-          ownerIds: updatedOwnerIds.length > 0 ? updatedOwnerIds : [circle.ownerId],
           updateAuthors: updatedUpdateAuthors,
           roles: updatedRoles,
           updatedAt: serverTimestamp(),
         });
+        batchSize++;
+      } else {
+        // Regular member (not an owner), just remove from circle
+        // Security rule: members can update: members, roles, ownerIds, updateAuthors, updatedAt
+        // NOTE: Cannot update ownerId - only owners can do that
+        const updatedMembers = circle.members.filter(id => id !== userId);
+        const updatedOwnerIds = ownerIdsList.filter(id => id !== userId);
+        const updatedUpdateAuthors = circle.updateAuthors.filter(id => id !== userId);
+        const updatedRoles = { ...circle.roles };
+        delete updatedRoles[userId];
+        
+        // For members, we can only update the allowed fields (not ownerId)
+        const updateData: any = {
+          members: updatedMembers,
+          updateAuthors: updatedUpdateAuthors,
+          roles: updatedRoles,
+          updatedAt: serverTimestamp(),
+        };
+        
+        // Only update ownerIds if it exists (members can update this field)
+        if (circle.ownerIds) {
+          updateData.ownerIds = updatedOwnerIds.length > 0 ? updatedOwnerIds : ownerIdsList;
+        }
+        
+        currentBatch.update(doc(circlesRef, circle.id), updateData);
+        batchSize++;
       }
     }
 
-    // Step 3: Anonymize updates by this user
-    const updatesQuery = query(
-      updatesRef,
-      where('authorId', '==', userId)
-    );
-    const updatesSnapshot = await getDocs(updatesQuery);
-    updatesSnapshot.forEach((updateDoc) => {
-      batch.update(doc(updatesRef, updateDoc.id), {
-        authorId: '[deleted]',
-        text: '[This update was deleted]',
-        photoURL: null,
-      });
-    });
-
-    // Step 4: Anonymize comments by this user
-    const commentsQuery = query(
-      commentsRef,
-      where('authorId', '==', userId)
-    );
-    const commentsSnapshot = await getDocs(commentsQuery);
-    commentsSnapshot.forEach((commentDoc) => {
-      batch.update(doc(commentsRef, commentDoc.id), {
-        authorId: '[deleted]',
-        text: '[This comment was deleted]',
-      });
-    });
-
-    // Step 5: Remove user's reactions from updates in circles they were a member of
-    // Only process updates in circles the user was a member of (more efficient)
-    for (const circle of userCircles) {
-      const circleUpdatesQuery = query(
-        updatesRef,
-        where('circleId', '==', circle.id)
-      );
-      const circleUpdatesSnapshot = await getDocs(circleUpdatesQuery);
-      circleUpdatesSnapshot.forEach((updateDoc) => {
-        const data = updateDoc.data();
-        const reactions = data.reactions || {};
-        if (reactions[userId]) {
-          const updatedReactions = { ...reactions };
-          delete updatedReactions[userId];
-          batch.update(doc(updatesRef, updateDoc.id), {
-            reactions: updatedReactions,
-          });
-        }
-      });
+    // Add the last circle batch if it has operations
+    if (batchSize > 0) {
+      circleBatchesToCommit.push(currentBatch);
     }
-
-    // Commit all Firestore changes
-    await batch.commit();
+    
+    // Commit all circle removal batches AFTER update batches
+    for (let i = 0; i < circleBatchesToCommit.length; i++) {
+      const batchToCommit = circleBatchesToCommit[i];
+      try {
+        await batchToCommit.commit();
+      } catch (batchError: any) {
+        // Log which operation failed for debugging
+        if (batchError.code === 'permission-denied' || batchError.code === 'PERMISSION_DENIED') {
+          throw new Error(`Permission denied while removing user from circles (batch ${i + 1}). Please ensure you are signed in. Error: ${batchError.message}`);
+        }
+        throw batchError;
+      }
+    }
 
     // Step 6: Delete user's photos from Storage
     if (storage) {
@@ -1741,11 +1877,30 @@ export const deleteAccount = async (userId: string): Promise<void> => {
     }
 
     // Step 7: Delete user document from Firestore
-    await deleteDoc(doc(usersRef, userId));
+    try {
+      await deleteDoc(doc(usersRef, userId));
+    } catch (userDocError: any) {
+      console.error('Error deleting user document:', userDocError);
+      // If user document deletion fails, it might already be deleted or have permission issues
+      // Continue with account deletion process
+      if (userDocError.code !== 'permission-denied') {
+        throw userDocError;
+      }
+    }
 
     console.log('Account deletion completed successfully');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting account:', error);
-    throw new Error('Failed to delete account. Please try again.');
+    
+    // Provide more specific error messages
+    if (error.code === 'permission-denied') {
+      throw new Error('Permission denied. Please make sure you are signed in and try again.');
+    } else if (error.code === 'unavailable') {
+      throw new Error('Network error. Please check your connection and try again.');
+    } else if (error.message) {
+      throw new Error(error.message);
+    } else {
+      throw new Error('Failed to delete account. Please try again.');
+    }
   }
 };

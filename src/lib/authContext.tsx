@@ -1,12 +1,21 @@
 // Authentication context for managing user state
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, signInWithCredential, OAuthProvider, GoogleAuthProvider, deleteUser } from 'firebase/auth';
-import { Alert } from 'react-native';
+import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, signInWithCredential, OAuthProvider, GoogleAuthProvider, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { Alert, Platform } from 'react-native';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db, getFCMToken } from './firebase';
 import { User as AppUser } from '../types';
 import { initializeNotifications } from './notificationService';
 import { deleteAccount as deleteAccountData } from './firestoreUtils';
+
+// Use conditional import for RevenueCat (not available in Expo Go)
+let Purchases: any = null;
+try {
+  Purchases = require('react-native-purchases').default || require('react-native-purchases');
+} catch (error) {
+  // RevenueCat not available (e.g., in Expo Go)
+  console.warn('RevenueCat not available for account deletion cleanup.');
+}
 
 interface AuthContextType {
   user: AppUser | null;
@@ -60,6 +69,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       photoURL: firebaseUser.photoURL || userData?.photoURL,
       expoPushToken: userData?.expoPushToken,
       createdAt: userData?.createdAt?.toDate() || new Date(),
+      isPremium: userData?.isPremium || false,
+      subscriptionExpiresAt: userData?.subscriptionExpiresAt?.toDate() || undefined,
+      productIdentifier: userData?.productIdentifier,
+      totalCirclesCreated: userData?.totalCirclesCreated || 0,
     };
   };
 
@@ -84,6 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           email,
           createdAt,
           expoPushToken,
+          totalCirclesCreated: 0, // Initialize counter to prevent gaming the system
           ...additionalData,
         });
       } catch (error) {
@@ -434,24 +448,87 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Update user profile
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = async (password?: string): Promise<void> => {
     if (!auth?.currentUser) {
       throw new Error('No user logged in');
     }
 
     const userId = auth.currentUser.uid;
+    const currentUser = auth.currentUser;
 
     try {
-      // Step 1: Delete all user data from Firestore and Storage
+      // Step 1: Re-authenticate user (required by Firebase for account deletion)
+      // This ensures the user has recently authenticated before deleting their account
+      const providerId = currentUser.providerData[0]?.providerId;
+      
+      if (providerId === 'password' && currentUser.email) {
+        // Email/password authentication - need password
+        if (!password) {
+          throw new Error('REAUTH_REQUIRED');
+        }
+        const credential = EmailAuthProvider.credential(currentUser.email, password);
+        await reauthenticateWithCredential(currentUser, credential);
+      } else if (providerId === 'google.com' || providerId === 'apple.com') {
+        // For OAuth providers (Google/Apple), re-authentication is complex
+        // Firebase requires recent authentication, but we can't easily re-auth OAuth users
+        // The best approach is to try deletion and if it fails, ask user to sign out/in
+        // For now, we'll skip re-auth for OAuth and let Firebase handle it
+        // If it fails, the error will be caught and handled in the UI
+      } else {
+        // Unknown provider - try to proceed anyway (might work for some providers)
+        console.warn('Unknown auth provider, attempting deletion without re-auth');
+      }
+
+      // Step 2: Log out from RevenueCat (cleanup subscription tracking)
+      try {
+        if (Purchases && typeof Purchases.logOut === 'function') {
+          await Purchases.logOut();
+        }
+      } catch (revenueCatError) {
+        // Don't fail account deletion if RevenueCat logout fails
+        console.warn('Error logging out from RevenueCat:', revenueCatError);
+      }
+
+      // Step 3: Delete all user data from Firestore and Storage FIRST
+      // Do this while user is still authenticated (needed for security rules)
       await deleteAccountData(userId);
 
-      // Step 2: Delete Firebase Auth account
-      await deleteUser(auth.currentUser);
+      // Step 4: Delete Firebase Auth account (requires re-auth)
+      // If this fails, data is already deleted, which is the main goal
+      try {
+        await deleteUser(currentUser);
+      } catch (authError: any) {
+        // If Auth deletion fails due to requires-recent-login, that's okay
+        // The Firestore data is already deleted, which is the main goal
+        const errorCode = authError.code || authError?.error?.code;
+        const errorMessage = authError.message || authError?.error?.message || '';
+        
+        if (errorCode === 'auth/requires-recent-login' || 
+            errorMessage.includes('requires-recent-login')) {
+          // Data is already deleted, but Auth account remains
+          // Sign out the user and show a message
+          await signOut(auth);
+          throw new Error('REAUTH_REQUIRED_AUTH_REMAINS');
+        }
+        // For other errors, still sign out and throw
+        await signOut(auth);
+        throw authError;
+      }
 
-      // Step 3: Sign out (this will clear local state)
+      // Step 5: Sign out (this will clear local state)
       await signOut(auth);
     } catch (error: any) {
       console.error('Error deleting account:', error);
+      
+      // Handle specific Firebase Auth errors
+      if (error.code === 'auth/requires-recent-login') {
+        throw new Error('REAUTH_REQUIRED');
+      }
+      
+      if (error.message === 'REAUTH_REQUIRED') {
+        throw new Error('REAUTH_REQUIRED');
+      }
+      
       throw new Error(error.message || 'Failed to delete account. Please try again.');
     }
   };

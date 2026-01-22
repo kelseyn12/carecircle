@@ -6,7 +6,7 @@ export default {
   expo: {
     name: 'CareCircle Connect',
     slug: 'care-circle',
-    version: '1.0.0',
+    version: '1.0.1',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
@@ -20,6 +20,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.carecircle.app',
+      buildNumber: '22',
       associatedDomains: ['applinks:care-circle-15fd5.web.app'],
       // Google Sign-In requires the reverse client ID as a URL scheme
       // Format: com.googleusercontent.apps.{CLIENT_ID}
