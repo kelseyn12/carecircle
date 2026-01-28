@@ -32,6 +32,13 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
+
+# Build files (contain sensitive keys)
+*.ipa
+*.apk
+build-*.ipa
+build-*.apk
 
 # typescript
 *.tsbuildinfo
