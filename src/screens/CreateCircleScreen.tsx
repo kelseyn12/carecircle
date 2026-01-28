@@ -10,6 +10,9 @@ import { useCircles } from '../lib/useCircles';
 import { useAuth } from '../lib/authContext';
 import { useSubscription } from '../hooks/useSubscription';
 import { initializeNotifications } from '../lib/notificationService';
+import { getUser } from '../lib/firestoreUtils';
+// Import async canCreateCircle that fetches fresh subscription data
+import { canCreateCircle as canCreateCircleAsync } from '../lib/subscriptionService';
 import SafeText from '../components/SafeText';
 
 type CreateCircleScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CreateCircle'>;
@@ -32,14 +35,35 @@ const CreateCircleScreen: React.FC = () => {
   // Check if user has reached circle limit based on total circles ever created
   // This prevents users from gaming the system by deleting and recreating circles
   // Premium users should never see the limit message
+  // IMPORTANT: Always check the latest subscription status, not cached values
   const totalCirclesCreated = user?.totalCirclesCreated || 0;
   const isPremium = subscriptionStatus.isPremium;
-  const hasReachedLimit = !isPremium && !canCreateCircle(totalCirclesCreated);
+  // Double-check: premium users can always create circles
+  const hasReachedLimit = isPremium ? false : !canCreateCircle(totalCirclesCreated);
 
   const handleCreateCircle = async () => {
     try {
+      if (!user) {
+        Alert.alert('Error', 'You must be logged in to create a circle.');
+        return;
+      }
+
+      // Refresh subscription status before checking limit
+      await refreshSubscription();
+      
+      // CRITICAL: Fetch fresh user data directly from Firestore to get the latest totalCirclesCreated
+      // The user object in state might be stale after creating a circle
+      const freshUserData = await getUser(user.id);
+      const currentTotal = freshUserData?.totalCirclesCreated || 0;
+      
+      // CRITICAL: Use the async canCreateCircleAsync that fetches FRESH subscription data
+      // This avoids stale closure issues with React hook state
+      // The hook's subscriptionStatus.isPremium may be stale even after refreshSubscription()
+      // because React state updates are asynchronous and batched
+      const canCreate = await canCreateCircleAsync(currentTotal);
+      
       // Check if user has reached limit before attempting creation
-      if (hasReachedLimit) {
+      if (!canCreate) {
         Alert.alert(
           'Circle Limit Reached',
           `You've reached the free limit of ${FREE_CIRCLE_LIMIT} circle${FREE_CIRCLE_LIMIT > 1 ? 's' : ''}. Upgrade to Premium to create unlimited circles!`,

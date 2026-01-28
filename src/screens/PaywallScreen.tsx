@@ -92,12 +92,23 @@ const PaywallScreen: React.FC = () => {
         );
       }
     } catch (err: any) {
-      // Handle "already subscribed" case - check if they're actually premium
-      if (err.message?.includes('already subscribed') || err.message?.includes('already purchased') || err.userCancelled === false) {
-        // Refresh subscription status first
+      // Handle "already subscribed" case - this can happen if user is signed in with different email but same Apple ID
+      // RevenueCat tracks by Apple ID, not email, so subscriptions are shared across emails for the same Apple ID
+      const errorMessage = err.message || err.toString() || '';
+      const isAlreadySubscribedError = 
+        errorMessage.includes('already subscribed') || 
+        errorMessage.includes('already purchased') ||
+        errorMessage.includes('already owns') ||
+        (err.userCancelled === false && errorMessage.toLowerCase().includes('subscription'));
+      
+      if (isAlreadySubscribedError) {
+        // Refresh subscription status first to get the latest state
         await refreshSubscription();
         
-        // Check current subscription status
+        // Wait a moment for sync to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Check current subscription status from RevenueCat
         const currentStatus = await getSubscriptionStatus();
         if (currentStatus.isPremium) {
           // They are actually subscribed, navigate to CreateCircle
@@ -117,10 +128,11 @@ const PaywallScreen: React.FC = () => {
           );
           return;
         } else {
-          // They're not actually subscribed, show error
+          // They're not actually subscribed, but RevenueCat says they are
+          // This might be a sync issue - try restoring purchases
           Alert.alert(
-            'Subscription Issue',
-            'There was an issue with your subscription. Please try restoring purchases or contact support.',
+            'Subscription Detected',
+            'A subscription was found on your Apple ID. Restoring purchases to activate it.',
             [
               {
                 text: 'Restore Purchases',
@@ -128,7 +140,17 @@ const PaywallScreen: React.FC = () => {
                   try {
                     await handleRestore();
                     await refreshSubscription();
-                    navigation.navigate('CreateCircle');
+                    // Check again after restore
+                    const statusAfterRestore = await getSubscriptionStatus();
+                    if (statusAfterRestore.isPremium) {
+                      navigation.navigate('CreateCircle');
+                    } else {
+                      Alert.alert(
+                        'Subscription Not Found',
+                        'No active subscription was found. Please try purchasing again or contact support.',
+                        [{ text: 'OK' }]
+                      );
+                    }
                   } catch (restoreError) {
                     // Error already handled in handleRestore
                   }

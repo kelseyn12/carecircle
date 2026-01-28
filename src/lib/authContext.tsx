@@ -1,6 +1,6 @@
 // Authentication context for managing user state
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, signInWithCredential, OAuthProvider, GoogleAuthProvider, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, signInWithCredential, OAuthProvider, GoogleAuthProvider, deleteUser, reauthenticateWithCredential, EmailAuthProvider, sendPasswordResetEmail } from 'firebase/auth';
 import { Alert, Platform } from 'react-native';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db, getFCMToken } from './firebase';
@@ -27,6 +27,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateUserProfile: (updates: Partial<AppUser>) => Promise<void>;
   deleteAccount: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,7 +66,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return {
       id: firebaseUser.uid,
-      displayName: firebaseUser.displayName || userData?.displayName || '',
+      displayName: userData?.displayName || firebaseUser.displayName || 'User',
       photoURL: firebaseUser.photoURL || userData?.photoURL,
       expoPushToken: userData?.expoPushToken,
       createdAt: userData?.createdAt?.toDate() || new Date(),
@@ -92,8 +93,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const expoPushToken = await getFCMToken();
 
       try {
+        // Use additionalData.displayName if provided, otherwise use Firebase displayName, otherwise 'User'
+        const finalDisplayName = additionalData?.displayName || displayName || 'User';
         await setDoc(userRef, {
-          displayName,
+          displayName: finalDisplayName,
           email,
           createdAt,
           expoPushToken,
@@ -102,6 +105,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
       } catch (error) {
         console.error('Error creating user document:', error);
+      }
+    } else if (additionalData?.displayName) {
+      // Update display name if provided and user document exists
+      try {
+        await setDoc(userRef, {
+          displayName: additionalData.displayName,
+          ...additionalData,
+        }, { merge: true });
+      } catch (error) {
+        console.error('Error updating user document:', error);
       }
     }
   };
@@ -128,6 +141,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(result.user, { displayName });
       await createUserDocument(result.user, { displayName });
+      
+      // IMPORTANT: After signup, manually update the local user state with the correct displayName
+      // This fixes a race condition where onAuthStateChanged fires before Firestore doc is created
+      setUser({
+        id: result.user.uid,
+        displayName: displayName,
+        photoURL: result.user.photoURL || undefined,
+        createdAt: new Date(),
+        totalCirclesCreated: 0,
+        isPremium: false,
+      });
+    } catch (error: any) {
+      throw new Error(getAuthErrorMessage(error.code));
+    }
+  };
+
+  // Reset password
+  const resetPassword = async (email: string) => {
+    if (!auth) {
+      throw new Error('Firebase Auth not initialized. Please check your Firebase configuration.');
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
     } catch (error: any) {
       throw new Error(getAuthErrorMessage(error.code));
     }
@@ -260,10 +296,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Create or update user document (non-blocking)
       try {
+        const displayName = userCredential.user.displayName || userInfo.user.name || 'User';
         await createUserDocument(userCredential.user, {
-          displayName: userCredential.user.displayName || userInfo.user.name || 'User',
+          displayName: displayName,
           photoURL: userCredential.user.photoURL || userInfo.user.photo || undefined,
         });
+        // If display name is still 'User', try to update from userInfo
+        if (displayName === 'User' && userInfo.user.name) {
+          await updateProfile(userCredential.user, { displayName: userInfo.user.name });
+          await createUserDocument(userCredential.user, { displayName: userInfo.user.name });
+        }
       } catch (docError) {
         // Non-critical error - log but don't fail sign-in
         console.warn('Failed to create user document:', docError);
@@ -393,9 +435,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Create user document (non-blocking)
       try {
+        const displayName = userCredential.user.displayName || 
+                           (credential.fullName ? `${credential.fullName.givenName || ''} ${credential.fullName.familyName || ''}`.trim() : '') ||
+                           'User';
         await createUserDocument(userCredential.user, {
-          displayName: userCredential.user.displayName || credential.fullName?.givenName || 'User',
+          displayName: displayName || 'User',
         });
+        // If display name is still 'User', update it from credential if available
+        if (displayName === 'User' && credential.fullName) {
+          const nameFromCredential = `${credential.fullName.givenName || ''} ${credential.fullName.familyName || ''}`.trim();
+          if (nameFromCredential) {
+            await updateProfile(userCredential.user, { displayName: nameFromCredential });
+            await createUserDocument(userCredential.user, { displayName: nameFromCredential });
+          }
+        }
       } catch (docError) {
         // Non-critical error - log but don't fail sign-in
         console.warn('Failed to create user document:', docError);
@@ -455,28 +508,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const userId = auth.currentUser.uid;
     const currentUser = auth.currentUser;
+    let authDeletionSucceeded = false; // Track if Auth deletion succeeded
 
     try {
       // Step 1: Re-authenticate user (required by Firebase for account deletion)
       // This ensures the user has recently authenticated before deleting their account
-      const providerId = currentUser.providerData[0]?.providerId;
+      const providerData = currentUser.providerData || [];
+      const providerId = providerData.length > 0 ? providerData[0]?.providerId : null;
       
+      let reauthSucceeded = false;
       if (providerId === 'password' && currentUser.email) {
         // Email/password authentication - need password
         if (!password) {
           throw new Error('REAUTH_REQUIRED');
         }
-        const credential = EmailAuthProvider.credential(currentUser.email, password);
-        await reauthenticateWithCredential(currentUser, credential);
+        try {
+          const credential = EmailAuthProvider.credential(currentUser.email, password);
+          await reauthenticateWithCredential(currentUser, credential);
+          reauthSucceeded = true;
+        } catch (reauthError: any) {
+          // If re-auth fails, throw the error so UI can handle it
+          if (reauthError.code === 'auth/requires-recent-login' || 
+              reauthError.message?.includes('requires-recent-login')) {
+            throw new Error('REAUTH_REQUIRED');
+          }
+          throw reauthError;
+        }
       } else if (providerId === 'google.com' || providerId === 'apple.com') {
         // For OAuth providers (Google/Apple), re-authentication is complex
         // Firebase requires recent authentication, but we can't easily re-auth OAuth users
         // The best approach is to try deletion and if it fails, ask user to sign out/in
         // For now, we'll skip re-auth for OAuth and let Firebase handle it
         // If it fails, the error will be caught and handled in the UI
+        reauthSucceeded = true; // Assume success for OAuth (will be validated by deleteUser)
       } else {
-        // Unknown provider - try to proceed anyway (might work for some providers)
-        console.warn('Unknown auth provider, attempting deletion without re-auth');
+        // Unknown provider or no provider data - try to proceed anyway
+        // This might work if the user has recently authenticated
+        reauthSucceeded = true; // Assume success (will be validated by deleteUser)
       }
 
       // Step 2: Log out from RevenueCat (cleanup subscription tracking)
@@ -497,6 +565,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // If this fails, data is already deleted, which is the main goal
       try {
         await deleteUser(currentUser);
+        authDeletionSucceeded = true;
       } catch (authError: any) {
         // If Auth deletion fails due to requires-recent-login, that's okay
         // The Firestore data is already deleted, which is the main goal
@@ -507,17 +576,62 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             errorMessage.includes('requires-recent-login')) {
           // Data is already deleted, but Auth account remains
           // Sign out the user and show a message
-          await signOut(auth);
+          try {
+            if (auth) {
+              await signOut(auth);
+            }
+          } catch (signOutError) {
+            console.warn('Error signing out after failed Auth deletion:', signOutError);
+          }
           throw new Error('REAUTH_REQUIRED_AUTH_REMAINS');
         }
         // For other errors, still sign out and throw
-        await signOut(auth);
+        try {
+          if (auth) {
+            await signOut(auth);
+          }
+        } catch (signOutError) {
+          console.warn('Error signing out after Auth deletion error:', signOutError);
+        }
         throw authError;
       }
 
       // Step 5: Sign out (this will clear local state)
-      await signOut(auth);
+      // Note: If account was successfully deleted, currentUser will be null
+      // so signOut might not be necessary, but we try it anyway to clear any cached state
+      // If signOut fails because user is already deleted, that's expected and fine
+      // IMPORTANT: Don't throw errors here - account deletion was successful
+      try {
+        if (auth && auth.currentUser) {
+          await signOut(auth);
+        }
+      } catch (signOutError: any) {
+        // If signOut fails because user is already deleted, that's expected and fine
+        // The account deletion was successful, so this is not an error
+        // Silently ignore - account deletion succeeded
+      }
     } catch (error: any) {
+      // Check if account was actually deleted (success case with minor error)
+      // This can happen if deletion succeeded but signOut failed
+      const accountWasDeleted = error.message?.includes('user-not-found') || 
+                                 error.code === 'auth/user-not-found' ||
+                                 !auth?.currentUser; // User is null, deletion likely succeeded
+      
+      // Also check if the error is from signOut after successful deletion
+      // If authDeletionSucceeded is true, we know deletion worked
+      if (accountWasDeleted || authDeletionSucceeded) {
+        // Account was successfully deleted, just sign out silently if needed
+        try {
+          if (auth && auth.currentUser) {
+            await signOut(auth);
+          }
+        } catch (signOutError) {
+          // Ignore sign out errors if user is already deleted
+        }
+        // Don't throw error - deletion was successful
+        return;
+      }
+      
       console.error('Error deleting account:', error);
       
       // Handle specific Firebase Auth errors
@@ -529,7 +643,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('REAUTH_REQUIRED');
       }
       
-      throw new Error(error.message || 'Failed to delete account. Please try again.');
+      // Handle "undefined is not a function" errors - provide more context
+      const errorMessage = error.message || error.toString() || '';
+      if (errorMessage.includes('undefined is not a function') || 
+          errorMessage.includes('is not a function')) {
+        console.error('Function call error details:', {
+          error: errorMessage,
+          stack: error.stack,
+          code: error.code,
+          name: error.name,
+        });
+        throw new Error('An error occurred during account deletion. Please try signing out and signing back in, then try again.');
+      }
+      
+      throw new Error(errorMessage || 'Failed to delete account. Please try again.');
     }
   };
 
@@ -562,6 +689,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return 'No account found with this email address.';
       case 'auth/wrong-password':
         return 'Incorrect password. Please try again.';
+      case 'auth/invalid-credential':
+        // New Firebase error code that combines wrong-password and user-not-found
+        return 'Invalid email or password. Please check your credentials and try again.';
+      case 'auth/invalid-login-credentials':
+        return 'Invalid email or password. Please check your credentials and try again.';
       case 'auth/email-already-in-use':
         return 'An account with this email already exists.';
       case 'auth/weak-password':
@@ -572,7 +704,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return 'Too many failed attempts. Please try again later.';
       case 'auth/network-request-failed':
         return 'Network error. Please check your connection.';
+      case 'auth/user-disabled':
+        return 'This account has been disabled. Please contact support.';
+      case 'auth/operation-not-allowed':
+        return 'Email/password sign-in is not enabled. Please contact support.';
       default:
+        console.warn('Unhandled auth error code:', errorCode);
         return 'An error occurred. Please try again.';
     }
   };
@@ -635,6 +772,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signOut: handleSignOut,
     updateUserProfile,
     deleteAccount: handleDeleteAccount,
+    resetPassword,
   };
 
   return (

@@ -82,15 +82,21 @@ const CircleFeedScreen: React.FC = () => {
 
       try {
         const result = await getCircleUpdatesPaginated(circleId, 15);
-        setUpdates(result.updates);
+        // Filter out deleted updates (where authorId is '[deleted]')
+        const validUpdates = result.updates.filter(update => 
+          update.authorId !== '[deleted]' && 
+          update.text !== '[This update was deleted]'
+        );
+        setUpdates(validUpdates);
         setLastUpdateDoc(result.lastDoc);
         setHasMoreUpdates(result.hasMore);
         
-        // Fetch user names for all authors
-        const authorIds = Array.from(new Set(result.updates.map(u => u.authorId)));
+        // Fetch user names for all authors (excluding deleted)
+        const authorIds = Array.from(new Set(validUpdates.map(u => u.authorId)));
         const namesMap: Record<string, string> = {};
         
         for (const authorId of authorIds) {
+          if (authorId === '[deleted]') continue;
           try {
             const userData = await getUser(authorId);
             if (userData) {
@@ -124,24 +130,28 @@ const CircleFeedScreen: React.FC = () => {
 
     // Subscribe to updates created after the most recent one we have
     const unsubscribe = subscribeToCircleUpdates(circleId, async (updatesData) => {
-      // Filter to only new updates (created after our most recent)
+      // Filter to only new updates (created after our most recent) and exclude deleted ones
       const newUpdates = updatesData.filter(
-        update => update.createdAt.getTime() > mostRecentUpdate.getTime()
+        update => update.createdAt.getTime() > mostRecentUpdate.getTime() &&
+                  update.authorId !== '[deleted]' &&
+                  update.text !== '[This update was deleted]'
       );
 
       if (newUpdates.length > 0) {
         // Add new updates to the beginning of the list
         setUpdates(prev => {
           const combined = [...newUpdates, ...prev];
-          // Remove duplicates
+          // Remove duplicates and deleted updates
           const unique = combined.filter((update, index, self) =>
-            index === self.findIndex(u => u.id === update.id)
+            index === self.findIndex(u => u.id === update.id) &&
+            update.authorId !== '[deleted]' &&
+            update.text !== '[This update was deleted]'
           );
           return unique;
         });
 
-        // Fetch user names for new authors
-        const authorIds = Array.from(new Set(newUpdates.map(u => u.authorId)));
+        // Fetch user names for new authors (excluding deleted)
+        const authorIds = Array.from(new Set(newUpdates.map(u => u.authorId).filter(id => id !== '[deleted]')));
         const namesMap: Record<string, string> = { ...userNames };
         
         for (const authorId of authorIds) {
@@ -172,13 +182,19 @@ const CircleFeedScreen: React.FC = () => {
     try {
       const result = await getCircleUpdatesPaginated(circleId, 15, lastUpdateDoc);
       
-      if (result.updates.length > 0) {
-        setUpdates(prev => [...prev, ...result.updates]);
+      // Filter out deleted updates
+      const validUpdates = result.updates.filter(update => 
+        update.authorId !== '[deleted]' && 
+        update.text !== '[This update was deleted]'
+      );
+      
+      if (validUpdates.length > 0) {
+        setUpdates(prev => [...prev, ...validUpdates]);
         setLastUpdateDoc(result.lastDoc);
         setHasMoreUpdates(result.hasMore);
 
-        // Fetch user names for new authors
-        const authorIds = Array.from(new Set(result.updates.map(u => u.authorId)));
+        // Fetch user names for new authors (excluding deleted)
+        const authorIds = Array.from(new Set(validUpdates.map(u => u.authorId).filter(id => id !== '[deleted]')));
         const namesMap: Record<string, string> = { ...userNames };
         
         for (const authorId of authorIds) {

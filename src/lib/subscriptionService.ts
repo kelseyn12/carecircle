@@ -1,11 +1,13 @@
 // Subscription service using RevenueCat
 // Use dynamic import to avoid errors in Expo Go (RevenueCat requires native build)
+// NOTE: This conditional import ONLY affects Expo Go. In production builds (TestFlight/App Store),
+// RevenueCat will be available and work normally since react-native-purchases is included in the bundle.
 let Purchases: any = null;
 let CustomerInfo: any = null;
 let PurchasesOffering: any = null;
 let PurchasesPackage: any = null;
 
-// Try to import RevenueCat (will fail gracefully in Expo Go)
+// Try to import RevenueCat (will fail gracefully in Expo Go, but works in production builds)
 try {
   const PurchasesModule = require('react-native-purchases');
   Purchases = PurchasesModule.default || PurchasesModule;
@@ -13,13 +15,14 @@ try {
   PurchasesOffering = PurchasesModule.PurchasesOffering;
   PurchasesPackage = PurchasesModule.PurchasesPackage;
 } catch (error) {
-  // RevenueCat not available (e.g., in Expo Go)
-  console.warn('RevenueCat not available. Subscription features will be disabled.');
+  // RevenueCat not available (only happens in Expo Go, not in production builds)
+  // In TestFlight/App Store builds, this require() will succeed and RevenueCat will work
+  console.warn('RevenueCat not available. This is expected in Expo Go. Subscription features will be disabled.');
 }
 
 import { Platform } from 'react-native';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
 
 // RevenueCat API key - should be set in environment variables
 const REVENUECAT_API_KEY_IOS = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS || '';
@@ -39,20 +42,20 @@ export interface SubscriptionStatus {
 }
 
 let isInitialized = false;
+let currentRevenueCatUserId: string | null = null;
 
 /**
  * Initialize RevenueCat SDK
  */
 export const initializePurchases = async (userId: string): Promise<void> => {
-  if (isInitialized) {
-    return;
-  }
-
   try {
     // Check if Purchases is available (requires native build)
+    // In production builds (TestFlight/App Store), Purchases will be available
+    // This check only fails in Expo Go
     if (!Purchases || typeof Purchases.configure !== 'function') {
-      console.warn('RevenueCat SDK not available. This requires a development build, not Expo Go.');
-      isInitialized = false; // Mark as attempted but failed
+      console.warn('RevenueCat SDK not available. This is expected in Expo Go. In production builds, RevenueCat will work normally.');
+      isInitialized = false;
+      currentRevenueCatUserId = null;
       return;
     }
 
@@ -60,18 +63,28 @@ export const initializePurchases = async (userId: string): Promise<void> => {
     
     if (!apiKey) {
       console.warn('RevenueCat API key not configured. Subscription features will be disabled.');
-      isInitialized = false; // Mark as attempted but failed
+      isInitialized = false;
+      currentRevenueCatUserId = null;
       return;
     }
 
-    await Purchases.configure({ apiKey });
-    await Purchases.logIn(userId);
-    isInitialized = true;
+    // Configure if not already configured
+    if (!isInitialized) {
+      await Purchases.configure({ apiKey });
+      isInitialized = true;
+    }
+
+    // If user ID changed, re-login to RevenueCat
+    if (currentRevenueCatUserId !== userId) {
+      await Purchases.logIn(userId);
+      currentRevenueCatUserId = userId;
+    }
   } catch (error) {
     console.error('Error initializing RevenueCat:', error);
     // Don't throw - allow app to continue without subscriptions
     console.warn('Continuing without RevenueCat. Subscription features will be disabled.');
-    isInitialized = false; // Mark as attempted but failed
+    isInitialized = false;
+    currentRevenueCatUserId = null;
   }
 };
 
@@ -84,7 +97,24 @@ export const getSubscriptionStatus = async (): Promise<SubscriptionStatus> => {
       return { isPremium: false, isActive: false };
     }
 
+    // Ensure we're using the current authenticated user's UID
+    const currentUser = auth?.currentUser;
+    if (!currentUser) {
+      return { isPremium: false, isActive: false };
+    }
+
+    // Make sure RevenueCat is logged in with the current Firebase user
+    if (currentRevenueCatUserId !== currentUser.uid) {
+      await Purchases.logIn(currentUser.uid);
+      currentRevenueCatUserId = currentUser.uid;
+    }
+
     const customerInfo = await Purchases.getCustomerInfo();
+    
+    // Note: We don't check originalAppUserId because it shows the first user ID (often anonymous),
+    // not the current logged-in user. Purchases.logIn() handles user association.
+    // Apple subscriptions are device/Apple ID based, which is expected iOS behavior.
+
     const isPremium = customerInfo.entitlements.active[ENTITLEMENT_IDENTIFIER] !== undefined;
     const entitlement = customerInfo.entitlements.active[ENTITLEMENT_IDENTIFIER];
 
@@ -110,7 +140,27 @@ export const refreshAndSyncSubscription = async (): Promise<SubscriptionStatus> 
       return { isPremium: false, isActive: false };
     }
 
+    // Ensure we're using the current authenticated user's UID
+    const currentUser = auth?.currentUser;
+    if (!currentUser) {
+      return { isPremium: false, isActive: false };
+    }
+
+    // Make sure RevenueCat is logged in with the current Firebase user
+    if (currentRevenueCatUserId !== currentUser.uid) {
+      await Purchases.logIn(currentUser.uid);
+      currentRevenueCatUserId = currentUser.uid;
+    }
+
     const customerInfo = await Purchases.getCustomerInfo();
+    
+    // Note: We previously checked originalAppUserId to verify ownership, but this was incorrect.
+    // originalAppUserId shows the FIRST user ID (often an anonymous $RCAnonymousID), not the current user.
+    // Since we call Purchases.logIn(firebaseUserId) before this, RevenueCat handles the user association.
+    // Apple subscriptions are tied to Apple ID, so if the user has an active subscription on their
+    // Apple ID, they should get premium access on any Firebase account they use on that device.
+    // This is the expected iOS subscription behavior (family sharing, device-based).
+
     await syncSubscriptionToFirestore(customerInfo);
 
     const isPremium = customerInfo.entitlements.active[ENTITLEMENT_IDENTIFIER] !== undefined;
@@ -204,11 +254,20 @@ export const syncSubscriptionToFirestore = async (customerInfo: any): Promise<vo
   }
 
   try {
-    const userId = customerInfo.originalAppUserId;
-    if (!userId) {
-      console.warn('No user ID found in customer info');
+    // Use the currently authenticated user's UID to ensure security rules pass
+    // This is more secure than trusting customerInfo.originalAppUserId
+    const currentUser = auth?.currentUser;
+    if (!currentUser) {
+      console.warn('No authenticated user found, skipping subscription sync');
       return;
     }
+
+    const userId = currentUser.uid;
+    
+    // Note: We don't check originalAppUserId because it shows the first user ID (often anonymous),
+    // not the current logged-in user. Apple subscriptions are tied to Apple ID, so if a user
+    // has an active subscription on their Apple ID, they get premium on their current Firebase account.
+    // This is expected iOS subscription behavior.
 
     const isPremium = customerInfo.entitlements.active[ENTITLEMENT_IDENTIFIER] !== undefined;
     const entitlement = customerInfo.entitlements.active[ENTITLEMENT_IDENTIFIER];

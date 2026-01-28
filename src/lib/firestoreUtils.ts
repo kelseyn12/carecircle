@@ -18,7 +18,7 @@ import {
   serverTimestamp,
   Timestamp,
   writeBatch,
-  FieldValue
+  increment
 } from 'firebase/firestore';
 import { db, functions, storage } from './firebase';
 import { ref, deleteObject, listAll } from 'firebase/storage';
@@ -68,12 +68,11 @@ export const createCircle = async (circleData: {
     });
     
     // Increment total circles created counter for the user (prevents gaming the system)
+    // Use increment() for atomic updates to prevent race conditions
     try {
       const userRef = doc(usersRef, circleData.ownerId);
-      const userDoc = await getDoc(userRef);
-      const currentCount = userDoc.data()?.totalCirclesCreated || 0;
       await firestoreUpdateDoc(userRef, {
-        totalCirclesCreated: currentCount + 1,
+        totalCirclesCreated: increment(1),
       });
     } catch (counterError) {
       console.error('Error updating total circles created counter:', counterError);
@@ -154,6 +153,12 @@ export const getUser = async (userId: string): Promise<User | null> => {
       lastViewedCircles: Object.fromEntries(
         Object.entries(data.lastViewedCircles || {}).map(([k, v]: any) => [k, v?.toDate ? v.toDate() : new Date(v)])
       ),
+      // CRITICAL: Include totalCirclesCreated for paywall enforcement
+      totalCirclesCreated: data.totalCirclesCreated || 0,
+      // Include subscription fields
+      isPremium: data.isPremium || false,
+      subscriptionExpiresAt: data.subscriptionExpiresAt?.toDate(),
+      productIdentifier: data.productIdentifier,
     };
   } catch (error) {
     console.error('Error getting user:', error);
@@ -685,11 +690,29 @@ export const getCircleUpdates = async (circleId: string): Promise<Update[]> => {
       
       // Decrypt if encrypted
       if (data.encrypted && encryptionKey) {
-        try {
-          text = await decryptText(data.text, encryptionKey);
-        } catch (decryptionError) {
-          console.error('Error decrypting update text:', decryptionError);
-          text = '[Encrypted content - decryption failed]';
+        // Check if text exists and is a string
+        if (!data.text || typeof data.text !== 'string') {
+          text = '[Encrypted content - invalid data]';
+        } else {
+          try {
+            text = await decryptText(data.text, encryptionKey);
+          } catch (decryptionError: any) {
+            // If decryption fails, check if it might be plain text (legacy data)
+            const errorMessage = decryptionError?.message || '';
+            const isBase64Error = errorMessage.includes('base64') || 
+                                  errorMessage.includes('Invalid base64') ||
+                                  errorMessage.includes('invalid character');
+            
+            if (isBase64Error) {
+              // Data might not actually be encrypted (legacy plain text data)
+              // Silently fall back to plain text - this is expected for legacy data
+              text = data.text;
+            } else {
+              // Other decryption errors - log and show fallback message
+              console.error('Error decrypting update text:', decryptionError);
+              text = '[Encrypted content - decryption failed]';
+            }
+          }
         }
       }
       
@@ -770,11 +793,29 @@ export const getCircleUpdatesPaginated = async (
       
       // Decrypt if encrypted
       if (data.encrypted && encryptionKey) {
-        try {
-          text = await decryptText(data.text, encryptionKey);
-        } catch (decryptionError) {
-          console.error('Error decrypting update text:', decryptionError);
-          text = '[Encrypted content - decryption failed]';
+        // Check if text exists and is a string
+        if (!data.text || typeof data.text !== 'string') {
+          text = '[Encrypted content - invalid data]';
+        } else {
+          try {
+            text = await decryptText(data.text, encryptionKey);
+          } catch (decryptionError: any) {
+            // If decryption fails, check if it might be plain text (legacy data)
+            const errorMessage = decryptionError?.message || '';
+            const isBase64Error = errorMessage.includes('base64') || 
+                                  errorMessage.includes('Invalid base64') ||
+                                  errorMessage.includes('invalid character');
+            
+            if (isBase64Error) {
+              // Data might not actually be encrypted (legacy plain text data)
+              // Silently fall back to plain text - this is expected for legacy data
+              text = data.text;
+            } else {
+              // Other decryption errors - log and show fallback message
+              console.error('Error decrypting update text:', decryptionError);
+              text = '[Encrypted content - decryption failed]';
+            }
+          }
         }
       }
       
@@ -891,11 +932,29 @@ export const subscribeToCircleUpdates = (
       
       // Decrypt if encrypted
       if (data.encrypted && encryptionKey) {
-        try {
-          text = await decryptText(data.text, encryptionKey);
-        } catch (decryptionError) {
-          console.error('Error decrypting update text:', decryptionError);
-          text = '[Encrypted content - decryption failed]';
+        // Check if text exists and is a string
+        if (!data.text || typeof data.text !== 'string') {
+          text = '[Encrypted content - invalid data]';
+        } else {
+          try {
+            text = await decryptText(data.text, encryptionKey);
+          } catch (decryptionError: any) {
+            // If decryption fails, check if it might be plain text (legacy data)
+            const errorMessage = decryptionError?.message || '';
+            const isBase64Error = errorMessage.includes('base64') || 
+                                  errorMessage.includes('Invalid base64') ||
+                                  errorMessage.includes('invalid character');
+            
+            if (isBase64Error) {
+              // Data might not actually be encrypted (legacy plain text data)
+              // Silently fall back to plain text - this is expected for legacy data
+              text = data.text;
+            } else {
+              // Other decryption errors - log and show fallback message
+              console.error('Error decrypting update text:', decryptionError);
+              text = '[Encrypted content - decryption failed]';
+            }
+          }
         }
       }
       
@@ -1074,11 +1133,23 @@ export const getComments = async (updateId: string, circleId?: string): Promise<
       
       // Decrypt if encrypted
       if (data.encrypted && encryptionKey) {
-        try {
-          text = await decryptText(data.text, encryptionKey);
-        } catch (decryptionError) {
-          console.error('Error decrypting comment text:', decryptionError);
-          text = '[Encrypted content - decryption failed]';
+        // Check if text exists and is a string
+        if (!data.text || typeof data.text !== 'string') {
+          text = '[Encrypted content - invalid data]';
+        } else {
+          try {
+            text = await decryptText(data.text, encryptionKey);
+          } catch (decryptionError: any) {
+            // If decryption fails, check if it might be plain text (legacy data)
+            const errorMessage = decryptionError?.message || '';
+            if (errorMessage.includes('base64') || errorMessage.includes('invalid')) {
+              // Data might not actually be encrypted - use as-is
+              text = data.text;
+            } else {
+              console.error('Error decrypting comment text:', decryptionError);
+              text = '[Encrypted content - decryption failed]';
+            }
+          }
         }
       }
       
@@ -1130,11 +1201,23 @@ export const subscribeToComments = (
       
       // Decrypt if encrypted
       if (data.encrypted && encryptionKey) {
-        try {
-          text = await decryptText(data.text, encryptionKey);
-        } catch (decryptionError) {
-          console.error('Error decrypting comment text:', decryptionError);
-          text = '[Encrypted content - decryption failed]';
+        // Check if text exists and is a string
+        if (!data.text || typeof data.text !== 'string') {
+          text = '[Encrypted content - invalid data]';
+        } else {
+          try {
+            text = await decryptText(data.text, encryptionKey);
+          } catch (decryptionError: any) {
+            // If decryption fails, check if it might be plain text (legacy data)
+            const errorMessage = decryptionError?.message || '';
+            if (errorMessage.includes('base64') || errorMessage.includes('invalid')) {
+              // Data might not actually be encrypted - use as-is
+              text = data.text;
+            } else {
+              console.error('Error decrypting comment text:', decryptionError);
+              text = '[Encrypted content - decryption failed]';
+            }
+          }
         }
       }
       
@@ -1210,11 +1293,23 @@ export const getCommentsPaginated = async (
       
       // Decrypt if encrypted
       if (data.encrypted && encryptionKey) {
-        try {
-          text = await decryptText(data.text, encryptionKey);
-        } catch (decryptionError) {
-          console.error('Error decrypting comment text:', decryptionError);
-          text = '[Encrypted content - decryption failed]';
+        // Check if text exists and is a string
+        if (!data.text || typeof data.text !== 'string') {
+          text = '[Encrypted content - invalid data]';
+        } else {
+          try {
+            text = await decryptText(data.text, encryptionKey);
+          } catch (decryptionError: any) {
+            // If decryption fails, check if it might be plain text (legacy data)
+            const errorMessage = decryptionError?.message || '';
+            if (errorMessage.includes('base64') || errorMessage.includes('invalid')) {
+              // Data might not actually be encrypted - use as-is
+              text = data.text;
+            } else {
+              console.error('Error decrypting comment text:', decryptionError);
+              text = '[Encrypted content - decryption failed]';
+            }
+          }
         }
       }
       

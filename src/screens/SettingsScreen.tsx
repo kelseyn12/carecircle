@@ -18,7 +18,7 @@ type SettingsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Set
 
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
-  const { user, signOut, deleteAccount } = useAuth();
+  const { user, signOut, deleteAccount, updateUserProfile } = useAuth();
   const { subscriptionStatus, refreshSubscription, FREE_CIRCLE_LIMIT } = useSubscription();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -31,6 +31,8 @@ const SettingsScreen: React.FC = () => {
   const [passwordError, setPasswordError] = useState('');
   const [showReauthModal, setShowReauthModal] = useState(false);
   const [reauthPassword, setReauthPassword] = useState('');
+  const [showEditDisplayName, setShowEditDisplayName] = useState(false);
+  const [editDisplayName, setEditDisplayName] = useState('');
 
   // Refresh subscription status when screen comes into focus
   useFocusEffect(
@@ -223,7 +225,8 @@ const SettingsScreen: React.FC = () => {
                         );
                       } else if (isReauthRequired) {
                         // Check if user is using email/password
-                        const providerId = auth?.currentUser?.providerData[0]?.providerId;
+                        const providerData = auth?.currentUser?.providerData || [];
+                        const providerId = providerData.length > 0 ? providerData[0]?.providerId : null;
                         if (providerId === 'password' && auth?.currentUser?.email) {
                           // Show password input modal
                           setShowReauthModal(true);
@@ -312,6 +315,18 @@ const SettingsScreen: React.FC = () => {
                 </SafeText>
               </View>
             </View>
+            <TouchableOpacity
+              onPress={() => {
+                setEditDisplayName(user?.displayName || '');
+                setShowEditDisplayName(true);
+              }}
+              className="mt-4"
+              activeOpacity={0.7}
+            >
+              <SafeText className="text-blue-600 font-semibold text-sm">
+                Edit Display Name
+              </SafeText>
+            </TouchableOpacity>
           </View>
 
           {/* Subscription Management Section */}
@@ -695,10 +710,103 @@ const SettingsScreen: React.FC = () => {
             </View>
           </View>
         </View>
-      </Modal>
-    </KeyboardAvoidingView>
-  );
-};
+        </Modal>
 
-export default SettingsScreen;
+        {/* Edit Display Name Modal */}
+        <Modal
+          visible={showEditDisplayName}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowEditDisplayName(false)}
+        >
+          <View style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+          }}>
+            <View style={{
+              backgroundColor: '#ffffff',
+              borderRadius: 20,
+              padding: 24,
+              width: '100%',
+              maxWidth: 400,
+            }}>
+              <SafeText className="text-2xl font-bold text-gray-900 mb-4">
+                Edit Display Name
+              </SafeText>
+              <TextInput
+                value={editDisplayName}
+                onChangeText={setEditDisplayName}
+                placeholder="Enter display name"
+                maxLength={50}
+                autoFocus
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#d1d5db',
+                  borderRadius: 12,
+                  padding: 12,
+                  fontSize: 16,
+                  marginBottom: 20,
+                  backgroundColor: '#ffffff',
+                }}
+              />
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowEditDisplayName(false);
+                    setEditDisplayName('');
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    borderRadius: 12,
+                    backgroundColor: '#f3f4f6',
+                    alignItems: 'center',
+                  }}
+                >
+                  <SafeText className="text-base font-semibold text-gray-700">Cancel</SafeText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (!editDisplayName.trim()) {
+                      Alert.alert('Error', 'Display name cannot be empty.');
+                      return;
+                    }
+                    if (editDisplayName.trim().length > 50) {
+                      Alert.alert('Error', 'Display name must be 50 characters or less.');
+                      return;
+                    }
+                    setIsLoading(true);
+                    try {
+                      await updateUserProfile({ displayName: editDisplayName.trim() });
+                      setShowEditDisplayName(false);
+                      setEditDisplayName('');
+                      Alert.alert('Success', 'Display name updated successfully.');
+                    } catch (error: any) {
+                      Alert.alert('Error', error.message || 'Failed to update display name.');
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    borderRadius: 12,
+                    backgroundColor: '#3b82f6',
+                    alignItems: 'center',
+                  }}
+                >
+                  <SafeText className="text-base font-semibold text-white">Save</SafeText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </KeyboardAvoidingView>
+    );
+  };
+  
+  export default SettingsScreen;
 

@@ -87,7 +87,12 @@ export const useSubscription = () => {
 
       // Then refresh from RevenueCat and sync to Firestore (if available)
       const revenueCatStatus = await refreshAndSyncSubscription();
+      // Always use RevenueCat status if it says premium, or if it differs from Firestore
+      // This ensures we show premium status correctly even if Firestore is stale
       if (revenueCatStatus.isPremium || firestoreStatus.isPremium !== revenueCatStatus.isPremium) {
+        setSubscriptionStatus(revenueCatStatus);
+      } else {
+        // If RevenueCat says not premium but Firestore says premium, trust RevenueCat (source of truth)
         setSubscriptionStatus(revenueCatStatus);
       }
     } catch (err) {

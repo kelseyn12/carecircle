@@ -6,14 +6,16 @@ import {
   createCircle, 
   updateCircle, 
   deleteCircle,
-  subscribeToUserCircles 
+  subscribeToUserCircles,
+  getUser
 } from './firestoreUtils';
 import { useAuth } from './authContext';
-import { useSubscription } from '../hooks/useSubscription';
+// Import the async canCreateCircle that fetches fresh subscription data
+// This avoids stale closure issues with React hook state
+import { canCreateCircle as canCreateCircleAsync } from './subscriptionService';
 
 export const useCircles = () => {
   const { user } = useAuth();
-  const { canCreateCircle: checkCanCreateCircle } = useSubscription();
   const [circles, setCircles] = useState<Circle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +46,17 @@ export const useCircles = () => {
       throw new Error('User must be logged in to create a circle');
     }
 
+    // CRITICAL: Fetch fresh user data directly from Firestore to get the latest totalCirclesCreated
+    // The user object in state might be stale after creating a circle
+    const freshUserData = await getUser(user.id);
+    const totalCirclesCreated = freshUserData?.totalCirclesCreated || 0;
+    
     // Check if user can create more circles based on total circles ever created
     // This prevents users from gaming the system by deleting and recreating circles
-    const totalCirclesCreated = user.totalCirclesCreated || 0;
-    if (!checkCanCreateCircle(totalCirclesCreated)) {
+    // IMPORTANT: Use the async canCreateCircleAsync function that fetches FRESH subscription data
+    // This avoids stale closure issues with React hook state that could allow unauthorized circle creation
+    const canCreate = await canCreateCircleAsync(totalCirclesCreated);
+    if (!canCreate) {
       throw new Error('CIRCLE_LIMIT_REACHED');
     }
 
@@ -65,7 +74,7 @@ export const useCircles = () => {
       setError(errorMessage);
       throw new Error(errorMessage);
     }
-  }, [user, checkCanCreateCircle]);
+  }, [user]);
 
   // Update circle
   const updateCircleData = useCallback(async (

@@ -206,7 +206,33 @@ export async function decryptText(
   key: string
 ): Promise<string> {
   try {
+    // Validate input
+    if (!encryptedData || typeof encryptedData !== 'string' || encryptedData.trim() === '') {
+      throw new Error('Invalid encrypted data: empty or null');
+    }
+    
+    if (!key || typeof key !== 'string' || key.trim() === '') {
+      throw new Error('Invalid encryption key: empty or null');
+    }
+    
+    // Check if data looks like base64 (basic validation)
+    // Base64 strings should only contain A-Z, a-z, 0-9, +, /, and = for padding
+    const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+    if (!base64Regex.test(encryptedData)) {
+      throw new Error('Invalid base64 format in encrypted data');
+    }
+    
+    // Check minimum length (IV_LENGTH = 12 bytes = at least 16 base64 characters)
+    if (encryptedData.length < 16) {
+      throw new Error('Encrypted data too short to contain valid IV');
+    }
+    
     const combined = base64ToArrayBuffer(encryptedData);
+    
+    // Validate that we have enough data for IV
+    if (combined.length < IV_LENGTH) {
+      throw new Error('Encrypted data does not contain valid IV');
+    }
     
     // Extract IV and encrypted data
     const iv = combined.slice(0, IV_LENGTH);
@@ -223,8 +249,17 @@ export async function decryptText(
     }
     
     return arrayBufferToString(decrypted.buffer);
-  } catch (error) {
-    console.error('Error decrypting text:', error);
+  } catch (error: any) {
+    // Don't log base64 validation errors - they're expected for legacy plain text data
+    // The caller will handle these gracefully
+    const errorMessage = error?.message || '';
+    const isBase64ValidationError = errorMessage.includes('base64') || 
+                                    errorMessage.includes('Invalid base64') ||
+                                    errorMessage.includes('invalid character');
+    
+    if (!isBase64ValidationError) {
+      console.error('Error decrypting text:', error);
+    }
     throw new Error('Failed to decrypt data');
   }
 }
@@ -342,12 +377,33 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 function base64ToArrayBuffer(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
+  try {
+    // Validate base64 string before decoding
+    if (!base64 || typeof base64 !== 'string') {
+      throw new Error('Invalid base64 input: must be a non-empty string');
+    }
+    
+    // Remove whitespace
+    const cleaned = base64.trim();
+    
+    // Check for valid base64 characters
+    const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+    if (!base64Regex.test(cleaned)) {
+      throw new Error('Invalid base64 format: contains invalid characters');
+    }
+    
+    const binary = atob(cleaned);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  } catch (error: any) {
+    if (error.message?.includes('Invalid base64')) {
+      throw error;
+    }
+    throw new Error(`Found invalid character when decoding base64 string: ${error.message || error}`);
   }
-  return bytes;
 }
 
 function stringToArrayBuffer(str: string): Uint8Array {

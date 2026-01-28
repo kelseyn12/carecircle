@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 5.2.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -17,8 +17,7 @@
     "preview": {
       "distribution": "internal",
       "ios": {
-        "simulator": false,
-        "autoIncrement": true
+        "simulator": false
       },
       "android": {
         "buildType": "apk"
@@ -26,12 +25,10 @@
     },
     "production": {
       "ios": {
-        "simulator": false,
-        "autoIncrement": true
+        "simulator": false
       },
       "android": {
-        "buildType": "app-bundle",
-        "autoIncrement": true
+        "buildType": "app-bundle"
       }
     },
     "development-simulator": {

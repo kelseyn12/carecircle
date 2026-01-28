@@ -63,7 +63,7 @@ const validatePassword = (password: string, isSignUp: boolean): string => {
 
 const SignInScreen: React.FC = () => {
   const navigation = useNavigation<SignInScreenNavigationProp>();
-  const { signIn, signUp, signInWithGoogle, signInWithApple } = useAuth();
+  const { signIn, signUp, signInWithGoogle, signInWithApple, resetPassword } = useAuth();
   const insets = useSafeAreaInsets();
   
   const [email, setEmail] = useState('');
@@ -77,6 +77,7 @@ const SignInScreen: React.FC = () => {
   const [captcha, setCaptcha] = useState<CaptchaChallenge>(generateCaptcha());
   const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [captchaError, setCaptchaError] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   // Handle sign in
   const handleSignIn = async () => {
@@ -146,6 +147,50 @@ const SignInScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Handle forgot password
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert('Email Required', 'Please enter your email address first, then tap "Forgot Password".');
+      return;
+    }
+
+    // Validate email format
+    const emailValidationError = validateEmail(email);
+    if (emailValidationError) {
+      Alert.alert('Invalid Email', emailValidationError);
+      return;
+    }
+
+    Alert.alert(
+      'Reset Password',
+      `Send password reset email to ${email}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send',
+          onPress: async () => {
+            try {
+              setIsResettingPassword(true);
+              await resetPassword(email);
+              Alert.alert(
+                'Email Sent',
+                'If an account exists with this email, you will receive a password reset link. Please check your inbox (and spam folder).',
+                [{ text: 'OK' }]
+              );
+            } catch (error) {
+              Alert.alert(
+                'Error',
+                error instanceof Error ? error.message : 'Failed to send reset email. Please try again.'
+              );
+            } finally {
+              setIsResettingPassword(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -321,9 +366,9 @@ const SignInScreen: React.FC = () => {
 
               <TouchableOpacity
                 onPress={isSignUp ? handleSignUp : handleSignIn}
-                disabled={isLoading}
+                disabled={isLoading || isResettingPassword}
                 style={{ 
-                  opacity: isLoading ? 0.7 : 1,
+                  opacity: isLoading || isResettingPassword ? 0.7 : 1,
                   marginTop: 32,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
@@ -352,18 +397,39 @@ const SignInScreen: React.FC = () => {
                 </LinearGradient>
               </TouchableOpacity>
 
+              {/* Forgot Password - only show on sign in */}
+              {!isSignUp && (
+                <TouchableOpacity
+                  onPress={handleForgotPassword}
+                  disabled={isLoading || isResettingPassword}
+                  style={{
+                    marginTop: 16,
+                    alignItems: 'center',
+                    opacity: isResettingPassword ? 0.7 : 1,
+                  }}
+                >
+                  <SafeText className="text-blue-500 text-base font-medium leading-[24px]">
+                    {isResettingPassword ? 'Sending...' : 'Forgot Password?'}
+                  </SafeText>
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity
                 onPress={() => setIsSignUp(!isSignUp)}
-                disabled={isLoading}
+                disabled={isLoading || isResettingPassword}
                 style={{
                   backgroundColor: '#f3f4f6',
                   borderRadius: 16,
                   paddingVertical: 16,
-                  opacity: isLoading ? 0.7 : 1,
+                  marginTop: isSignUp ? 16 : 0,
+                  opacity: isLoading || isResettingPassword ? 0.7 : 1,
                 }}
               >
                 <SafeText className="text-gray-700 text-center font-semibold text-lg leading-[26px]">
-                  {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+                  {isSignUp ? 'Already have an account?' : 'Need an account?'}
+                </SafeText>
+                <SafeText className="text-blue-500 text-center font-bold text-lg leading-[26px] mt-1">
+                  {isSignUp ? 'Sign In' : 'Sign Up'}
                 </SafeText>
               </TouchableOpacity>
             </View>

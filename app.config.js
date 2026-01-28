@@ -20,7 +20,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.carecircle.app',
-      buildNumber: '22',
+      buildNumber: '36',
       associatedDomains: ['applinks:care-circle-15fd5.web.app'],
       // Google Sign-In requires the reverse client ID as a URL scheme
       // Format: com.googleusercontent.apps.{CLIENT_ID}
