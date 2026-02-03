@@ -1,6 +1,6 @@
 // Paywall screen for subscription management
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, TouchableOpacity, Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -18,7 +18,54 @@ import SafeText from '../components/SafeText';
 import { EMOJIS } from '../utils/emojiUtils';
 import { getSubscriptionStatus } from '../lib/subscriptionService';
 
+// Required for App Store Guideline 3.1.2 - visible on paywall
+const PRIVACY_POLICY_URL = 'https://care-circle-15fd5.web.app/privacy';
+const TERMS_OF_USE_EULA_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+
+// Apple-required auto-renewal disclosure (Guideline 3.1.2)
+const AUTO_RENEWAL_DISCLOSURE =
+  'Payment will be charged to your Apple ID account at confirmation of purchase. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Account will be charged for renewal within 24 hours prior to the end of the current period.';
+
 type PaywallScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Paywall'>;
+
+const getPackageTitle = (pkg: any): string => {
+  if (!pkg) return 'Subscription';
+  const id = (pkg.identifier || '').toLowerCase();
+  const type = (pkg.packageType || '').toUpperCase();
+  if (id.includes('annual') || type === 'ANNUAL') return 'Annual';
+  if (id.includes('monthly') || type === 'MONTHLY') return 'Monthly';
+  if (id.includes('weekly') || type === 'WEEKLY') return 'Weekly';
+  return pkg.identifier || 'Subscription';
+};
+
+const getPackageDuration = (pkg: any): string => {
+  if (!pkg) return '—';
+  const type = (pkg.packageType || '').toUpperCase();
+  const id = (pkg.identifier || '').toLowerCase();
+  if (type === 'ANNUAL' || id.includes('annual')) return '1 year';
+  if (type === 'MONTHLY' || id.includes('monthly')) return '1 month';
+  if (type === 'WEEKLY' || id.includes('weekly')) return '1 week';
+  return '—';
+};
+
+const openExternalLink = async (url: string): Promise<void> => {
+  try {
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert('Unable to open link', 'This link cannot be opened.');
+    }
+  } catch {
+    Alert.alert('Unable to open link', 'This link cannot be opened.');
+  }
+};
+
+const getPackagePrice = (pkg: any): string => {
+  if (!pkg?.product) return '—';
+  const price = (pkg.product.localizedPriceString ?? pkg.product.priceString) || '';
+  return price || '—';
+};
 
 const PaywallScreen: React.FC = () => {
   const navigation = useNavigation<PaywallScreenNavigationProp>();
@@ -31,7 +78,7 @@ const PaywallScreen: React.FC = () => {
     if (offerings && offerings.availablePackages.length > 0) {
       // Prefer annual package (check for $rc_annual, annual, or ANNUAL type)
       const annualPackage = offerings.availablePackages.find(
-        pkg => pkg.identifier === '$rc_annual' || 
+        (pkg: any) => pkg.identifier === '$rc_annual' || 
                pkg.identifier === 'annual' || 
                pkg.packageType === 'ANNUAL'
       );
@@ -389,7 +436,7 @@ const PaywallScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* Annual subscription display */}
+            {/* Subscription info (Guideline 3.1.2): title, duration, price */}
             {loading ? (
               <View style={{ alignItems: 'center', paddingVertical: 24 }}>
                 <ActivityIndicator size="large" color="#60a5fa" />
@@ -400,7 +447,7 @@ const PaywallScreen: React.FC = () => {
             ) : selectedPackage ? (
               <View style={{
                 backgroundColor: '#eff6ff',
-                borderRadius: 20,
+                borderRadius: 24,
                 padding: 24,
                 marginBottom: 24,
                 borderWidth: 2,
@@ -412,22 +459,19 @@ const PaywallScreen: React.FC = () => {
                 elevation: 3,
               }}>
                 <View style={{ alignItems: 'center' }}>
-                  <View style={{
-                    backgroundColor: '#ffffff',
-                    borderRadius: 12,
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    marginBottom: 12,
-                  }}>
-                    <SafeText style={{ fontSize: 14, fontWeight: '600', color: '#3b82f6', textTransform: 'uppercase' }}>
-                      Annual Subscription
-                    </SafeText>
-                  </View>
+                  <SafeText style={{ fontSize: 14, fontWeight: '600', color: '#3b82f6', textTransform: 'uppercase', marginBottom: 8 }}>
+                    {getPackageTitle(selectedPackage)} Subscription
+                  </SafeText>
+                  <SafeText style={{ color: '#6b7280', fontSize: 15, marginBottom: 8 }}>
+                    Duration: {getPackageDuration(selectedPackage)}
+                  </SafeText>
                   <SafeText style={{ fontSize: 36, fontWeight: 'bold', color: '#1f2937', marginBottom: 4 }}>
-                    {selectedPackage.product.priceString}
+                    {getPackagePrice(selectedPackage)}
                   </SafeText>
                   <SafeText style={{ color: '#6b7280', fontSize: 15 }}>
-                    per year {EMOJIS.BLUE_HEART}
+                    {getPackageDuration(selectedPackage) === '—'
+                      ? 'See App Store for duration'
+                      : `per ${getPackageDuration(selectedPackage).replace('1 ', '')} ${EMOJIS.BLUE_HEART}`}
                   </SafeText>
                 </View>
               </View>
@@ -476,6 +520,23 @@ const PaywallScreen: React.FC = () => {
               </TouchableOpacity>
             )}
 
+            {/* Apple-required auto-renewal disclosure (Guideline 3.1.2) - only when a package is selected and not loading */}
+            {selectedPackage && !loading && (
+              <View style={{
+                marginTop: 20,
+                paddingVertical: 16,
+                paddingHorizontal: 16,
+                backgroundColor: '#f9fafb',
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: '#f3f4f6',
+              }}>
+                <SafeText style={{ color: '#6b7280', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+                  {AUTO_RENEWAL_DISCLOSURE}
+                </SafeText>
+              </View>
+            )}
+
             {/* Error message */}
             {error && (
               <View style={{ marginTop: 16, padding: 12, backgroundColor: '#fee2e2', borderRadius: 12 }}>
@@ -502,12 +563,43 @@ const PaywallScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Terms */}
-          <View style={{ paddingHorizontal: 16, marginBottom: 24 }}>
-            <SafeText style={{ color: '#9ca3af', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
-              Payment will be charged to your Apple ID account at the confirmation of purchase.
-              Subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period.
-            </SafeText>
+          {/* Privacy Policy & Terms of Use (EULA) - visible, tappable links (Guideline 3.1.2), CareCircle design */}
+          <View style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 24,
+            paddingVertical: 16,
+            paddingHorizontal: 24,
+            backgroundColor: '#ffffff',
+            borderRadius: 24,
+            borderWidth: 1,
+            borderColor: '#f3f4f6',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 4,
+            elevation: 2,
+          }}>
+            <TouchableOpacity
+              onPress={() => openExternalLink(PRIVACY_POLICY_URL)}
+              activeOpacity={0.7}
+            >
+              <SafeText style={{ color: '#60a5fa', fontSize: 15, fontWeight: '600', textDecorationLine: 'underline' }}>
+                Privacy Policy
+              </SafeText>
+            </TouchableOpacity>
+            <SafeText style={{ color: '#9ca3af', fontSize: 15 }}>•</SafeText>
+            <TouchableOpacity
+              onPress={() => openExternalLink(TERMS_OF_USE_EULA_URL)}
+              activeOpacity={0.7}
+            >
+              <SafeText style={{ color: '#60a5fa', fontSize: 15, fontWeight: '600', textDecorationLine: 'underline' }}>
+                Terms of Use (EULA)
+              </SafeText>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
